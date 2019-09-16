@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CompoundsService } from './compounds.service';
 import { ReadCSVService } from './read-csv.service';
 import * as XLSX from 'xlsx';
@@ -9,7 +9,7 @@ import * as XLSX from 'xlsx';
     providers: [CompoundsService, ReadCSVService]
 })
 
-export class ReadCSVComponent{
+export class ReadCSVComponent implements OnInit{
     compounds: string[];
     private readCSVService: ReadCSVService;
     blurText: string;
@@ -19,6 +19,10 @@ export class ReadCSVComponent{
         this.compounds = compoundsService.getCompounds();
         this.blurText = "";
         this.isValid = false;
+    }
+
+    ngOnInit() {
+
     }
 
     fileChanged($event) {
