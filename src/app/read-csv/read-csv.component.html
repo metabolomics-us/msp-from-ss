@@ -1,0 +1,6 @@
+<p><input id="name" type="text" (blur)="showBlurText()" (focus)="showFocusText()">{{ blurText }}</p>
+<input id="fileInput" type='file' (change)="fileChanged($event)" checked><br>
+<button class="btn btn-primary" [disabled]="!isValid" (click)="clickMe($event)">Submit</button>
+<div *ngFor="let compound of compounds">
+    <p>{{ compound }}</p>
+</div>

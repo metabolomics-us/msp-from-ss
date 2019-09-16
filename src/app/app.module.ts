@@ -4,9 +4,11 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
+import { ReadCSVComponent } from './read-csv/read-csv.component'
+
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent, ReadCSVComponent
   ],
   imports: [
     BrowserModule,
