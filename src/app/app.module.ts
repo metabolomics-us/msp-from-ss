@@ -4,15 +4,14 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
-import { ReadCSVComponent } from './read-csv/read-csv.component'
+import { ReadCsvComponent } from './read-csv/read-csv.component'
 
 @NgModule({
   declarations: [
-    AppComponent, ReadCSVComponent
+    AppComponent, ReadCsvComponent
   ],
   imports: [
-    BrowserModule,
-    AppRoutingModule
+    BrowserModule, AppRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]
