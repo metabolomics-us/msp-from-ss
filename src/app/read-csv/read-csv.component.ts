@@ -13,6 +13,8 @@ export class ReadCsvComponent implements OnInit{
     compounds: string[];
     submitValid: boolean;
 
+    lines: any[];
+
     constructor(private compoundsService: CompoundsService, private readCsvService: ReadCsvService) {
         console.log("Constructor");
         // this.readCsvService.readFile(event).subscribe((value) => {
@@ -41,6 +43,7 @@ export class ReadCsvComponent implements OnInit{
         // this.compoundsService.printEventData(changeEvent);
 
         this.readCsvService.readFile(files);
+        // lines = this.readCsvService.readFile(files);
 
 
         // var files = changeEvent.target.files, reader = new FileReader();
