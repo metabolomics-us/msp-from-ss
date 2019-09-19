@@ -32,18 +32,23 @@ export class ReadCsvService {
         var newRange = XLSX.utils.encode_range(range);
         var msmsArrayHeaders = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:headers, range:newRange});
         
+        var spectrum: string[];
         var strData: string = "";
         msmsArrayHeaders.forEach(element => {
-          strData = strData + 
-            "Name: " + element["Metabolite name"] + '\n' +
-            "PrecursorMZ: " + element["Average Mz"] + '\n' +
-            "Precursor_type: " + element["Adduct type"]  + '\n' +
-            "\n\n";
-          // console.log(element["Metabolite name"])
+          strData += 
+            "Name: " + element["Metabolite name"] + "\n" +
+            "InChIKey: " + element["INCHIKEY"] + "\n" +
+            "Precursor Type: " + element["Adduct type"] + "\n" +
+            "Precursor Mz: " + element["Average Mz"] + "\n" +
+            "Retention Time: " + element["Average Rt(min)"] + "\n" +
+            "Formula: " + element["Formula"] + "\n";
+          spectrum = element["MS/MS spectrum"].split(" ");
+          strData += "Num Peaks: " + spectrum.length.toString() + "\n";
+          spectrum.forEach(pair => {
+            strData += pair.replace(":", " ") + "\n";
+          });
+          strData = strData + "\n\n";
         });
-
-        // Doesn't work, now Function in FileReader called mspFromJson()
-        // this.mspFromJson();
 
         var FileSaver = require('file-saver');
         var blob = new Blob([strData], {type: "text/plain;charset=utf-8"});
