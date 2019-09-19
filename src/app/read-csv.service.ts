@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
 import * as XLSX from 'xlsx';
-import { Series, DataFrame } from 'pandas-js';
 import { element } from 'protractor';
-import * as d3 from 'd3';
 
 @Injectable({
     providedIn: 'root'
@@ -34,10 +31,24 @@ export class ReadCsvService {
         range.s.r = i + 1;
         var newRange = XLSX.utils.encode_range(range);
         var msmsArrayHeaders = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:headers, range:newRange});
-        // console.log("mAH", msmsArrayHeaders);
+        
+        var strData: string = "";
         msmsArrayHeaders.forEach(element => {
-          console.log(element["Metabolite name"])
+          strData = strData + 
+            "Name: " + element["Metabolite name"] + '\n' +
+            "PrecursorMZ: " + element["Average Mz"] + '\n' +
+            "Precursor_type: " + element["Adduct type"]  + '\n' +
+            "\n\n";
+          // console.log(element["Metabolite name"])
         });
+
+        // Doesn't work, now Function in FileReader called mspFromJson()
+        // this.mspFromJson();
+
+        var FileSaver = require('file-saver');
+        var blob = new Blob([strData], {type: "text/plain;charset=utf-8"});
+        FileSaver.saveAs(blob, "test.msp");
+
       });
 
       if (sheetData[0]) {
@@ -45,4 +56,6 @@ export class ReadCsvService {
       }
 
     }
+
+    
 }

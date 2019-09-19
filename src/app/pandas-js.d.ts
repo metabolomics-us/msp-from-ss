@@ -4,3 +4,4 @@
 declare module 'pandas-js';
 // For some reason I can put this here...bad programming practice?
 declare module 'd3';
+declare module 'file-saver';

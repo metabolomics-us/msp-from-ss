@@ -20,6 +20,8 @@
     "@angular/platform-browser-dynamic": "~8.2.4",
     "@angular/router": "~8.2.4",
     "d3": "^5.12.0",
+    "file-saver": "^2.0.2",
+    "fs": "0.0.1-security",
     "pandas-js": "^0.2.4",
     "rxjs": "~6.4.0",
     "tslib": "^1.10.0",
