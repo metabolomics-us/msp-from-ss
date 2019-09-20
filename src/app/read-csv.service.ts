@@ -10,7 +10,7 @@ export class ReadCsvService {
 
     constructor() { }
 
-    readFile(sheetData: FileList) {
+    makeMSP(sheetData: FileList) {
         
         var reader = new FileReader();
 
@@ -46,13 +46,13 @@ export class ReadCsvService {
                 spectrum = element["MS/MS spectrum"].split(" ");
                 strData += "Num Peaks: " + spectrum.length.toString() + "\n";
                 spectrum.forEach(pair => {
-                strData += pair.replace(":", " ") + "\n";
+                    strData += pair.replace(":", " ") + "\n";
                 });
                 strData = strData + "\n\n";
             });
 
             var blob = new Blob([strData], {type: "text/plain;charset=utf-8"});
-            fs.saveAs(blob, "test.msp");
+            fs.saveAs(blob, sheetData[0].name.split(".")[0] + ".msp");
 
         });
       
@@ -61,6 +61,5 @@ export class ReadCsvService {
         }
 
     }
-
-    
+  
 }

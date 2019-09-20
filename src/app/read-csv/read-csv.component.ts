@@ -10,7 +10,7 @@ import { ReadCsvService } from '../read-csv.service';
 export class ReadCsvComponent implements OnInit{
     
     submitValid: boolean;
-    lines: any[];
+    files: FileList;
 
     constructor(private readCsvService: ReadCsvService) {}   
 
@@ -19,11 +19,14 @@ export class ReadCsvComponent implements OnInit{
     }
 
     fileSelected(changeEvent: Event) {
-        this.submitValid = true;
         var target = <HTMLInputElement>changeEvent.target;
-        var files = target.files;
 
-        this.readCsvService.readFile(files);
+        this.submitValid = true;
+        this.files = target.files; 
+    }
+
+    readFile() {
+        this.readCsvService.makeMSP(this.files);
     }
 
 }
