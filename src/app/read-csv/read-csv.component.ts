@@ -3,19 +3,22 @@ import { ReadCsvService } from '../read-csv.service';
 
 @Component({
     selector: 'read-csv',
-    templateUrl: 'read-csv.component.html',  
+    templateUrl: 'read-csv.component.html',
+    styleUrls: ['read-csv.component.css'],
     providers: [ReadCsvService]
 })
 
 export class ReadCsvComponent implements OnInit{
     
     submitValid: boolean;
+    errorText: string;
     files: FileList;
 
     constructor(private readCsvService: ReadCsvService) {}   
 
     ngOnInit() {
         this.submitValid = false;
+        this.errorText = "";
     }
 
     fileSelected(changeEvent: Event) {
