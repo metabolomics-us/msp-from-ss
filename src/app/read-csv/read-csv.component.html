@@ -1,3 +1,4 @@
+<h2>Choose a file to upload</h2>
 <input id="fileInput" type='file' (change)="fileSelected($event)" checked><br>
 <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
-<!-- <p id="errorText">{ errorText }</p> -->
+<p id="errorText">{{ errorText }}</p>

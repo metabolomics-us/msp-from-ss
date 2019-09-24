@@ -29,7 +29,12 @@ export class ReadCsvComponent implements OnInit{
     }
 
     readFile() {
-        this.readCsvService.makeMSP(this.files);
+        if (this.files) {
+            this.readCsvService.makeMSP(this.files);
+            this.submitValid = false;
+        } else {
+            this.errorText = "Select file before clicking 'Submit'";
+        }
     }
 
 }

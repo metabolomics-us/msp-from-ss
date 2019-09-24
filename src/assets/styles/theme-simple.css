@@ -1,0 +1,90 @@
+/**
+ * Simple Fiehn Lab Theme
+ */
+
+body {
+    background-color: #f8f8f8;
+    font-family: "Garamond,Baskerville,Baskerville Old Face,Hoefler Text,Times New Roman,serif";
+}
+
+#page-wrapper {
+    margin-right: auto;
+    margin-left: auto;
+    /*max-width: 767px;*/
+}
+
+.nav, .pagination, .carousel, .panel-title a { cursor: pointer; }
+
+
+/* Navigation */
+.navbar-default .navbar-brand {
+    color: #FFCD00;
+    font-size: large;
+    margin-bottom: 0px;
+}
+
+.navbar-default .navbar-brand:hover,
+.navbar-default .navbar-brand:focus {
+    color: #FFCD00;
+}
+
+.navbar-default {
+    background-color: #1A3E68;
+    border-bottom: 5px solid #DFC166;
+}
+
+.dropdown-toggle, .dropdown-menu {
+    cursor: pointer;
+}
+
+.navbar .nav > .active > a,
+.navbar .nav > .active > a:hover,
+.navbar .nav > .active > a:focus {
+    background-color: #335379;
+    color: #DFC166;
+}
+
+.navbar-default .navbar-nav > li > a {
+    color: white;
+    font-size: medium;
+}
+
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+    color: #DFC166;
+    background-color: transparent;
+}
+
+.navbar-default .navbar-nav > .open > a,
+.navbar-default .navbar-nav > .open > a:hover,
+.navbar-default .navbar-nav > .open > a:focus {
+    background-color: #335379;
+    color: #DFC166;
+}
+
+.dropdown-menu > li > a:hover {
+    color: white;
+    background-color: #335379;
+}
+
+.navbar-nav > li > .dropdown-menu {
+    margin-top: 5px;
+    border-radius: 10px;
+}
+
+.dropdown-menu:after {
+    position: inherit;
+    left: 3px;
+    top: -5px;
+    width: inherit;
+    height: inherit;
+    content: '';
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid white;
+}
+
+.navbar .navbar-right > li > .dropdown-menu:after {
+    left: auto;
+    right: 3px;
+}
