@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { ReadCsvService } from '../read-csv.service';
 
 @Component({
@@ -23,15 +23,18 @@ export class ReadCsvComponent implements OnInit{
 
     fileSelected(changeEvent: Event) {
         var target = <HTMLInputElement>changeEvent.target;
-
         this.submitValid = true;
         this.files = target.files; 
     }
 
     readFile() {
         if (this.files) {
-            this.readCsvService.makeMSP(this.files);
+
+            var nameElements = this.files[0].name.split(".");
+            if (nameElements[1] == "xlsx") this.readCsvService.mspFromXlsx(this.files);
+            else if (nameElements[1] == "csv") this.readCsvService.mspFromCsv();
             this.submitValid = false;
+            
         } else {
             this.errorText = "Select file before clicking 'Submit'";
         }

@@ -33,7 +33,11 @@ export class ReadCsvService{
         return mspString;
     }
 
-    makeMSP(sheetData: FileList) {
+    mspFromCsv() {
+
+    }
+
+    mspFromXlsx(sheetData: FileList) {
 
         var reader = new FileReader();
 
@@ -48,14 +52,14 @@ export class ReadCsvService{
             var wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
             var msmsArray: any[] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
 
-            console.log(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]).split("\n")[4]);
+            // console.log(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]).split("\n")[4]);
 
             var headers: string[];
             var i: number;
             for (i = 0; i < msmsArray.length; i++) {
                 if (msmsArray[i][0]) {
-                headers = <any>msmsArray[i];
-                break;
+                    headers = <any>msmsArray[i];
+                    break;
                 }
             }
             // !ref means default
@@ -71,8 +75,6 @@ export class ReadCsvService{
         });
       
         if (sheetData[0]) {
-            // var nameElements = sheetData[0].name.split(".");
-            // console.log("SD: ", nameElements[nameElements.length - 1]);
             reader.readAsBinaryString(sheetData[0]);
         }
 

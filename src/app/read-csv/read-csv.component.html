@@ -1,4 +1,13 @@
-<h2>Choose a file to upload</h2>
+<h2>MSP From Spreadsheet</h2>
+<p>Convert a spreadsheet of MS/MS data into a .msp file.</p>
+<p>Click 'Browse' and select an excel or csv file. Then click 'Submit' to download a converted .msp text file.</p>
+<p>
+    Your spreadsheet should include columns with these labels: Average Rt(min), Average Mz, Metabolite name, Adduct type, 
+    Formula, INCHIKEY, MS1 isotopic spectrum, MS/MS spectrum. It may include other columns, but those will not be included
+    in the final product.
+</p>
+<div>Download example spreadsheets <a href="#">here</a> and <a href="#">here</a></div>
+<div>Download an example of the result <a href="#">here</a></div><br>
 <input id="fileInput" type='file' (change)="fileSelected($event)" checked><br>
 <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
 <p id="errorText">{{ errorText }}</p>
