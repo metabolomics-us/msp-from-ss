@@ -4,11 +4,11 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
-import { ReadCsvComponent } from './read-csv/read-csv.component'
+import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.component'
 
 @NgModule({
   declarations: [
-    AppComponent, ReadCsvComponent
+    AppComponent, ReadSpreadsheetComponent
   ],
   imports: [
     BrowserModule, AppRoutingModule

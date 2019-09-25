@@ -1,14 +1,14 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { element } from 'protractor';
-import * as fs from 'file-saver';
 import { read } from 'fs';
 import { type } from 'os';
+import { saveAs } from 'file-saver';
 
 @Injectable({
     providedIn: 'root'
 })
-export class ReadCsvService{
+export class ReadSpreadsheetService{
 
     constructor() { }
 
@@ -70,8 +70,7 @@ export class ReadCsvService{
 
             var blob = new Blob([this.buildMSPString(msmsArrayHeaders)], {type: "text/plain;charset=utf-8"});
             // Why does this line remove all console logs? What does saveAs do here?
-            fs.saveAs(blob, sheetData[0].name.split(".")[0] + ".msp");
-
+            saveAs(blob, sheetData[0].name.split(".")[0] + ".msp");
         });
       
         if (sheetData[0]) {
