@@ -1,8 +1,5 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
-import { element } from 'protractor';
-import { read } from 'fs';
-import { type } from 'os';
 import { saveAs } from 'file-saver';
 
 @Injectable({
@@ -41,19 +38,12 @@ export class ReadSpreadsheetService{
 
         var reader = new FileReader();
 
-        // reader.addEventListener('error', function() {
-        //     console.log("error");
-        // });
-
         reader.addEventListener('load', (loadEvent) => {
 
             // Explicit type declaration so that Angular won't throw an error
             var target: FileReader = <FileReader>loadEvent.target;
             var wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
             var msmsArray: any[] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-
-            // console.log(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]).split("\n")[4]);
-
             var headers: string[];
             var i: number;
             for (i = 0; i < msmsArray.length; i++) {

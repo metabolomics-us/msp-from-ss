@@ -1,7 +1,12 @@
 /* You can add global styles to this file, and also import other style files */
-@import url("./assets/styles/main.css");
-@import url("./assets/styles/theme.css");
 
+@import url("./assets/styles/mona-vendor.css");
 @import url("./assets/styles/mona-main.css");
+/* 
+This file references font files in the same directory and I did not want to mess with it
+so I am importing a CSS file from fonts/ not styles/
+*/
+@import url("./assets/fonts/h5p-font-awesome.min.css");
 
-/* @import url("./assets/styles/mona-vendor.css"); */
+@import url("./assets/styles/theme.css");
+@import url("./assets/styles/main.css");

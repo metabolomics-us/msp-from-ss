@@ -3,20 +3,22 @@
 <p>Click 'Browse' and select an excel or csv file. Then click 'Submit' to download a converted .msp text file.</p>
 <p>
     Your spreadsheet should include columns with these labels: Average Rt(min), Average Mz, Metabolite name, Adduct type, 
-    Formula, INCHIKEY, MS1 isotopic spectrum, MS/MS spectrum. It may include other columns, but those will not be included
+    Formula, INCHIKEY, MS1 isotopic spectrum, and MS/MS spectrum. It may include other columns, but those will not be included
     in the final product.
 </p>
 <div>
-    Download example spreadsheets 
+    Download example spreadsheets to upload 
     <a href="../../assets/files-to-read/example_spreadsheet_large.xlsx" download="example_spreadsheet_large.xlsx">here</a> and
     <a href="../../assets/files-to-read/example_spreadsheet_small.xlsx" download="example_spreadsheet_small.xlsx">here</a>.
     <!-- <a id="exampleLarge" href="#" (click)="getExampleSpreadsheet($event)">here</a> and 
     <a id="exampleSmall" href="#" (click)="getExampleSpreadsheet($event)">here</a> -->
 </div>
 <div>
-    Download an example of the result 
+    Download an example of the resulting .msp file 
     <a href="../../assets/files-to-read/example.msp" download="example.msp">here</a>.
 </div><br>
-<input id="fileInput" type='file' (change)="fileSelected($event)" checked><br>
+<input id="fileInput" type="file" (change)="fileSelected($event)" value="Hi there">
+<!-- <label for="fileInput">Choose a file</label> -->
+<br>
 <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
 <p id="errorText">{{ errorText }}</p>
