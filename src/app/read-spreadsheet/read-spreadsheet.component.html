@@ -10,15 +10,12 @@
     Download example spreadsheets to upload 
     <a href="../../assets/files-to-read/example_spreadsheet_large.xlsx" download="example_spreadsheet_large.xlsx">here</a> and
     <a href="../../assets/files-to-read/example_spreadsheet_small.xlsx" download="example_spreadsheet_small.xlsx">here</a>.
-    <!-- <a id="exampleLarge" href="#" (click)="getExampleSpreadsheet($event)">here</a> and 
-    <a id="exampleSmall" href="#" (click)="getExampleSpreadsheet($event)">here</a> -->
 </div>
 <div>
     Download an example of the resulting .msp file 
     <a href="../../assets/files-to-read/example.msp" download="example.msp">here</a>.
 </div><br>
 <input id="fileInput" type="file" (change)="fileSelected($event)" value="Hi there">
-<!-- <label for="fileInput">Choose a file</label> -->
 <br>
 <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
 <p id="errorText">{{ errorText }}</p>
