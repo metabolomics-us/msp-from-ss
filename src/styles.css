@@ -1,3 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 @import url("./assets/styles/main.css");
 @import url("./assets/styles/theme.css");
+
+@import url("./assets/styles/mona-main.css");
+
+/* @import url("./assets/styles/mona-vendor.css"); */
