@@ -42,7 +42,7 @@ export class ReadSpreadsheetComponent implements OnInit{
             // Process either excel or csv spreadsheet
             var nameElements = this.files[0].name.split(".");
             if (nameElements[1] == "xlsx") this.readSpreadsheetService.mspFromXlsx(this.files);
-            else if (nameElements[1] == "csv") this.readSpreadsheetService.mspFromCsv();
+            else if (nameElements[1] == "csv") this.readSpreadsheetService.mspFromCsv(this.files);
 
             //Disable the Submit button
             this.submitValid = false;
