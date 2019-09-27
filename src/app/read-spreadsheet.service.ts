@@ -13,33 +13,11 @@ export class ReadSpreadsheetService{
     constructor() {}
 
 
-    // Check array for column headers
-    validateHeaders(headers: string[]): boolean {
-        // validation
-        return false;
-    }
-
-
-    // Get the line in the data that contains the headers
-    getHeaderPosition(lines: string[][]): number {
-        for (var i = 0; i < lines.length; i++) {
-            if (this.validateHeaders(lines[i])) {
-                return i;
-            }
-        }
-        // The headers are incorrectly labeled
-        return -1;
-    }
-
-
-    // Builds JSON array of dictionaries
-    buildJsonArray(headers: string[], data: string[][]): any[] {
-        return [];
-    }
-
-
     // Create a string from a 2x2 array of MS/MS data
     buildMspStringFromJson(dataArray: any): string {
+
+        console.log("6");
+        
         // Initialize string to be returned
         var mspString: string = "";
 
@@ -70,8 +48,68 @@ export class ReadSpreadsheetService{
     } // end buildMspStringFromJson
 
 
+    // Builds JSON array of dictionaries
+    buildJsonArray(headers: string[], data: string[][]): any[] {
+
+        console.log("5");
+
+        var i: number, j: number, dict: any = {}, jObj: any = [];
+        // Building a dictionary with headers as the keys and data as the values
+        for (i = 0; i < data.length; i++) {
+            dict = {};
+            for (j = 0; j < headers.length; j++) {
+                dict[headers[j]] = data[i][j];
+            }
+            // Create a JSON object of dictionaries
+            jObj.push(dict);
+        }
+        return jObj;
+    }
+
+
+    // Check array for column headers
+    validateHeaders(line: any[]): boolean {
+
+        console.log("4");
+
+        // List of necessary columns as uppercase strings
+        const cols = ["AVERAGE RT(MIN)", "AVERAGE MZ", "METABOLITE NAME", "ADDUCT TYPE", 
+        "FORMULA", "INCHIKEY", "MS1 ISOTOPIC SPECTRUM", "MS/MS SPECTRUM"];
+        // Format the line of data from the MS/MS spreadsheet to be similar to that of cols
+        //  i.e. all uppercase strings
+        const formattedLine = line.map(x => String(x).toUpperCase());
+        // Check if the line contains all necessary columns; return false if a column is missing
+        cols.forEach((col: string) => {
+            if (!line.includes(col)) {
+                return false;
+            }
+        });
+        return true;
+    }
+
+
+    // Some MS/MS data spreadsheets do not have their headers as the first row
+    //  Get the line in the MS data spreadsheet that contains the headers
+    getHeaderPosition(lines: string[][]): number {
+
+        console.log("3");
+
+        // Iterate through the lines of data for the column headers
+        for (var i = 0; i < lines.length; i++) {
+            if (this.validateHeaders(lines[i])) {
+                return i;
+            }
+        }
+        // The headers are incorrectly labeled
+        return -1;
+    }
+
+
     // Create .msp file from an array of data
     buildMspFile(msmsArray: string[][], fileName: string) {
+
+        console.log("2");
+
         var headerPosition = this.getHeaderPosition(msmsArray);
         if (headerPosition >= 0) {
             var headers = msmsArray[headerPosition];
@@ -90,17 +128,23 @@ export class ReadSpreadsheetService{
     // Create .msp text file from a .csv file
     mspFromCsv(sheetData: FileList) {
 
+        console.log("1");
+
         var reader = new FileReader();
 
+        // Create callback function for when the excel file has been loaded by the FileReader()
         reader.addEventListener('load', (loadEvent) => {
+            // <FileReader> - explicit type declaration so that Angular won't throw an error
             var target: FileReader = <FileReader>loadEvent.target;
             var msmsText: string = <string>target.result;
+            // Turn the string of data into a 2x2 array
             var msmsArray: string[][] = msmsText.split("\n").map(line => line.split(","));
             var sheetName = sheetData[0].name;
             this.buildMspFile(msmsArray, sheetName);
         });
 
         if (sheetData[0]){
+            // Read the excel file and execute callback function from addEventListener
             reader.readAsText(sheetData[0]);
         }
 
@@ -110,47 +154,21 @@ export class ReadSpreadsheetService{
     // Create .msp text file from an excel file
     mspFromXlsx(sheetData: FileList) {
 
+        console.log("1");
+
         var reader = new FileReader();
 
         // Create callback function for when the excel file has been loaded by the FileReader()
         reader.addEventListener('load', (loadEvent) => {
-
             // <FileReader> - explicit type declaration so that Angular won't throw an error
             var target: FileReader = <FileReader>loadEvent.target;
             var wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
 
             // Convert spreadsheet data to JSON data
-            // Using header:1 will generate an array of arrays that we will traverse to find column headers
-            var msmsArray: any[] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
-
-            //separateHeadersData(msmsArray)
-
-            // In the test spreadsheet, the column names weren't the top line; find them and store them
-            //  as column headers
-            var headers: string[];
-            var i: number;
-            for (i = 0; i < msmsArray.length; i++) {
-                if (msmsArray[i][0]) {
-                    headers = <any>msmsArray[i];
-                    break;
-                }
-            }
-
-            // Exclude any empty rows at the beginning of the spreadsheet by resetting its range
-            // !ref accesses the default range of the spreadsheet
-            var range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
-            range.s.r = i + 1;
-            var newRange = XLSX.utils.encode_range(range);
-
-            // Create a new array of arrays with the proper column headers and range
-            var msmsArrayHeaders = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:headers, range:newRange});
-
-            // Create a string of the data to be written into a .msp file using buildMspStringFromJson()
-            //  Create a blob from the resulting string
-            var blob = new Blob([this.buildMspStringFromJson(msmsArrayHeaders)], {type: "text/plain;charset=utf-8"});
-            
-            // User will be prompted to save a .msp for their data
-            saveAs(blob, sheetData[0].name.split(".")[0] + ".msp");
+            // Using header:1 will generate a 2x2 array
+            var msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+            var sheetName = sheetData[0].name;
+            this.buildMspFile(msmsArray, sheetName);
         });
       
         if (sheetData[0]) {
