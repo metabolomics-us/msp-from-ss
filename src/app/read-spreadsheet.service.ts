@@ -15,8 +15,6 @@ export class ReadSpreadsheetService{
 
     // Create a string from a 2x2 array of MS/MS data
     buildMspStringFromJson(dataArray: any): string {
-
-        console.log("6");
         
         // Initialize string to be returned
         var mspString: string = "";
@@ -51,8 +49,6 @@ export class ReadSpreadsheetService{
     // Builds JSON array of dictionaries
     buildJsonArray(headers: string[], data: string[][]): any[] {
 
-        console.log("5");
-
         var i: number, j: number, dict: any = {}, jObj: any = [];
         // Building a dictionary with headers as the keys and data as the values
         for (i = 0; i < data.length; i++) {
@@ -70,20 +66,27 @@ export class ReadSpreadsheetService{
     // Check array for column headers
     validateHeaders(line: any[]): boolean {
 
-        console.log("4");
-
         // List of necessary columns as uppercase strings
         const cols = ["AVERAGE RT(MIN)", "AVERAGE MZ", "METABOLITE NAME", "ADDUCT TYPE", 
         "FORMULA", "INCHIKEY", "MS1 ISOTOPIC SPECTRUM", "MS/MS SPECTRUM"];
         // Format the line of data from the MS/MS spreadsheet to be similar to that of cols
         //  i.e. all uppercase strings
         const formattedLine = line.map(x => String(x).toUpperCase());
+
         // Check if the line contains all necessary columns; return false if a column is missing
-        cols.forEach((col: string) => {
-            if (!line.includes(col)) {
+        //  This is apparently asynchronous, though Google tells me foreach loops are not...wtf
+        // cols.forEach((col: string) => {
+        //     if (!formattedLine.includes(col)) {
+        //         return false;
+        //     }
+        // });
+
+        var i: number;
+        for (i = 0; i < cols.length; i ++) {
+            if (!formattedLine.includes(cols[i])) {
                 return false;
             }
-        });
+        }
         return true;
     }
 
@@ -108,9 +111,8 @@ export class ReadSpreadsheetService{
     // Create .msp file from an array of data
     buildMspFile(msmsArray: string[][], fileName: string) {
 
-        console.log("2");
-
         var headerPosition = this.getHeaderPosition(msmsArray);
+
         if (headerPosition >= 0) {
             var headers = msmsArray[headerPosition];
             var data = msmsArray.slice(headerPosition + 1, msmsArray.length);
@@ -128,8 +130,6 @@ export class ReadSpreadsheetService{
     // Create .msp text file from a .csv file
     mspFromCsv(sheetData: FileList) {
 
-        console.log("1");
-
         var reader = new FileReader();
 
         // Create callback function for when the excel file has been loaded by the FileReader()
@@ -137,8 +137,10 @@ export class ReadSpreadsheetService{
             // <FileReader> - explicit type declaration so that Angular won't throw an error
             var target: FileReader = <FileReader>loadEvent.target;
             var msmsText: string = <string>target.result;
+            msmsText = msmsText.trim();
             // Turn the string of data into a 2x2 array
             var msmsArray: string[][] = msmsText.split("\n").map(line => line.split(","));
+
             var sheetName = sheetData[0].name;
             this.buildMspFile(msmsArray, sheetName);
         });
@@ -154,8 +156,6 @@ export class ReadSpreadsheetService{
     // Create .msp text file from an excel file
     mspFromXlsx(sheetData: FileList) {
 
-        console.log("1");
-
         var reader = new FileReader();
 
         // Create callback function for when the excel file has been loaded by the FileReader()
@@ -168,6 +168,7 @@ export class ReadSpreadsheetService{
             // Using header:1 will generate a 2x2 array
             var msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
             var sheetName = sheetData[0].name;
+
             this.buildMspFile(msmsArray, sheetName);
         });
       
