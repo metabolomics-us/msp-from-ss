@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { read } from 'fs';
-import { load } from 'ssf/types';
-import { stringify } from 'querystring';
 
 @Injectable({
     providedIn: 'root'
@@ -14,7 +11,7 @@ export class ReadSpreadsheetService{
 
 
     // Create a string from a 2x2 array of MS/MS data
-    buildMspStringFromJson(dataArray: any): string {
+    buildMspStringFromArray(dataArray: any): string {
         
         // Initialize string to be returned
         var mspString: string = "";
@@ -43,24 +40,24 @@ export class ReadSpreadsheetService{
         });
         return mspString;
 
-    } // end buildMspStringFromJson
+    } // end buildMspStringFromArray
 
 
-    // Builds JSON array of dictionaries
-    buildJsonArray(headers: string[], data: string[][]): any[] {
-
-        var i: number, j: number, dict: any = {}, jObj: any = [];
-        // Building a dictionary with headers as the keys and data as the values
+    // Builds array of dictionaries 
+    buildDictArray(headers: string[], data: string[][]): any[] {
+        // Iterate through data and build dictionary
+        // keys=headers[], values=row of data[][]
+        var i: number, j: number, dict: any = {}, arr: any = [];
         for (i = 0; i < data.length; i++) {
             dict = {};
             for (j = 0; j < headers.length; j++) {
                 dict[headers[j]] = data[i][j];
             }
-            // Create a JSON object of dictionaries
-            jObj.push(dict);
+            // Add dictionary to the array
+            arr.push(dict);
         }
-        return jObj;
-    }
+        return arr;
+    } // end buildDictArray
 
 
     // Check array for column headers
@@ -74,13 +71,6 @@ export class ReadSpreadsheetService{
         const formattedLine = line.map(x => String(x).toUpperCase());
 
         // Check if the line contains all necessary columns; return false if a column is missing
-        //  This is apparently asynchronous, though Google tells me foreach loops are not...wtf
-        // cols.forEach((col: string) => {
-        //     if (!formattedLine.includes(col)) {
-        //         return false;
-        //     }
-        // });
-
         var i: number;
         for (i = 0; i < cols.length; i ++) {
             if (!formattedLine.includes(cols[i])) {
@@ -88,16 +78,14 @@ export class ReadSpreadsheetService{
             }
         }
         return true;
-    }
+    } // end validateHeaders
 
 
     // Some MS/MS data spreadsheets do not have their headers as the first row
     //  Get the line in the MS data spreadsheet that contains the headers
     getHeaderPosition(lines: string[][]): number {
 
-        console.log("3");
-
-        // Iterate through the lines of data for the column headers
+        // Iterate through the lines of data for row of headers
         for (var i = 0; i < lines.length; i++) {
             if (this.validateHeaders(lines[i])) {
                 return i;
@@ -108,16 +96,23 @@ export class ReadSpreadsheetService{
     }
 
 
-    // Create .msp file from an array of data
+    // Create .msp file from a 2x2 array of data
     buildMspFile(msmsArray: string[][], fileName: string) {
 
+        // Get the row number where the headers are located
         var headerPosition = this.getHeaderPosition(msmsArray);
-
+        // If the data contains a row of headers
         if (headerPosition >= 0) {
+
+            // Split the array into headers and data
             var headers = msmsArray[headerPosition];
             var data = msmsArray.slice(headerPosition + 1, msmsArray.length);
-            var jsonObj = this.buildJsonArray(headers, data);
-            var mspString = this.buildMspStringFromJson(jsonObj);
+
+            // Create an array of dictionaries
+            var msmsDictArray = this.buildDictArray(headers, data);
+            // Turn array into a string
+            var mspString = this.buildMspStringFromArray(msmsDictArray);
+            // Turn string into Blob object so that it can be written into a file
             var blob = new Blob([mspString], {type: "text/plain;charset=utf-8"});
             // User will be prompted to save a .msp for their data
             saveAs(blob, fileName.split(".")[0] + ".msp");
@@ -134,14 +129,17 @@ export class ReadSpreadsheetService{
 
         // Create callback function for when the excel file has been loaded by the FileReader()
         reader.addEventListener('load', (loadEvent) => {
+            // Turn the spreadsheet data into a string
             // <FileReader> - explicit type declaration so that Angular won't throw an error
             var target: FileReader = <FileReader>loadEvent.target;
             var msmsText: string = <string>target.result;
             msmsText = msmsText.trim();
+
             // Turn the string of data into a 2x2 array
             var msmsArray: string[][] = msmsText.split("\n").map(line => line.split(","));
 
             var sheetName = sheetData[0].name;
+            // Create .msp file
             this.buildMspFile(msmsArray, sheetName);
         });
 
@@ -165,10 +163,11 @@ export class ReadSpreadsheetService{
             var wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
 
             // Convert spreadsheet data to JSON data
-            // Using header:1 will generate a 2x2 array
+            // Using {header:1} will generate a 2x2 array
             var msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1});
+            
             var sheetName = sheetData[0].name;
-
+            // Create .msp file
             this.buildMspFile(msmsArray, sheetName);
         });
       
