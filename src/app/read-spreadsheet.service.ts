@@ -7,8 +7,9 @@ import { saveAs } from 'file-saver';
 })
 export class ReadSpreadsheetService{
 
-    constructor() {}
+    errorText: string;
 
+    constructor() {}
 
     // Create a string from a 2x2 array of MS/MS data
     buildMspStringFromArray(dataArray: any): string {
@@ -117,7 +118,7 @@ export class ReadSpreadsheetService{
             // User will be prompted to save a .msp for their data
             saveAs(blob, fileName.split(".")[0] + ".msp");
         } else {
-            // throw error
+            alert("Check column headers; one may be missing or misspelled");
         }
     }
 
@@ -146,6 +147,8 @@ export class ReadSpreadsheetService{
         if (sheetData[0]){
             // Read the excel file and execute callback function from addEventListener
             reader.readAsText(sheetData[0]);
+        } else {
+            alert("Choose valid excel or .csv file")
         }
 
     } // end mspFromCsv
@@ -174,6 +177,8 @@ export class ReadSpreadsheetService{
         if (sheetData[0]) {
             // Read the excel file and execute callback function from addEventListener
             reader.readAsBinaryString(sheetData[0]);
+        } else {
+            alert("Choose valid excel or .csv file")
         }
 
     } // end mspFromXlsx

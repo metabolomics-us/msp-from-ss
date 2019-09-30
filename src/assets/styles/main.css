@@ -9,10 +9,36 @@
  } */
 
 .btn-primary {
-     padding: 15px 30px;
+     padding: 10px 15px;
  }
 
 /* #fileInput {
 	color:#337ab7;
 	background-color:#fff;
 } */
+
+/*Green color: background-color: #33b768; */
+
+
+.new-button {
+    display: inline-block;
+    padding: 15px 15px; 
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: #337ab7;
+    font-size: 16px;
+    color: #fff;
+}
+
+input[type="file"] {
+    position: absolute;
+    z-index: -1;
+    top: 6px;
+    left: 0;
+    font-size: 15px;
+    color: rgb(153,153,153);
+}
+
+.button-wrap {
+    position: relative;
+}

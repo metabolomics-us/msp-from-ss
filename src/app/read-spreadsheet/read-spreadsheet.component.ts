@@ -43,12 +43,13 @@ export class ReadSpreadsheetComponent implements OnInit{
             var nameElements = this.files[0].name.split(".");
             if (nameElements[1] == "xlsx") this.readSpreadsheetService.mspFromXlsx(this.files);
             else if (nameElements[1] == "csv") this.readSpreadsheetService.mspFromCsv(this.files);
+            else alert("Please choose an excel or .csv file");
 
             //Disable the Submit button
             this.submitValid = false;
             
         } else {
-            this.errorText = "Select file before clicking 'Submit'";
+            alert("Select file before clicking 'Submit'");
         }
     }
 

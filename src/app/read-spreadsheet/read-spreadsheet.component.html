@@ -15,7 +15,10 @@
     Download an example of the resulting .msp file 
     <a href="../../assets/files-to-read/example.msp" download="example.msp">here</a>.
 </div><br>
-<input id="fileInput" type="file" (change)="fileSelected($event)" value="Hi there">
-<br>
+
+<div class="button-wrap">
+    <label class="new-button" for="fileInput">Choose Spreadsheet</label>
+    <input id="fileInput" type="file" (change)="fileSelected($event)">
+</div>
 <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
 <p id="errorText">{{ errorText }}</p>
