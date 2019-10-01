@@ -23,21 +23,24 @@ export class ReadSpreadsheetService{
         // Traverse each row of dataArray and build mspString
         //  Each row represents data for one metabolite
         dataArray.forEach((element:any) => {
-            mspString += 
-            "Name: " + element["Metabolite name"] + "\n" +
-            "InChIKey: " + element["INCHIKEY"] + "\n" +
-            "Precursor Type: " + element["Adduct type"] + "\n" +
-            "Precursor Mz: " + element["Average Mz"] + "\n" +
-            "Retention Time: " + element["Average Rt(min)"] + "\n" +
-            "Formula: " + element["Formula"] + "\n";
-
-            // Create array of mass/intensity peaks to be written into the string line by line
-            spectrum = element["MS/MS spectrum"].split(" ");
-            mspString += "Num Peaks: " + spectrum.length.toString() + "\n";
-            spectrum.forEach(massIntensity => {
-                mspString += massIntensity.replace(":", " ") + "\n";
-            });
-            mspString = mspString + "\n\n";
+            try {
+                mspString += 
+                "Name: " + element["Metabolite name"] + "\n" +
+                "InChIKey: " + element["INCHIKEY"] + "\n" +
+                "Precursor Type: " + element["Adduct type"] + "\n" +
+                "Precursor Mz: " + element["Average Mz"] + "\n" +
+                "Retention Time: " + element["Average Rt(min)"] + "\n" +
+                "Formula: " + element["Formula"] + "\n";
+                // Create array of mass/intensity peaks to be written into the string line by line
+                spectrum = element["MS/MS spectrum"].split(" ");
+                mspString += "Num Peaks: " + spectrum.length.toString() + "\n";
+                spectrum.forEach(massIntensity => {
+                    mspString += massIntensity.replace(":", " ") + "\n";
+                });
+                mspString = mspString + "\n\n";
+            } catch(err) {
+                document.getElementById("errorText").innerHTML = err.message;
+            }
         });
         return mspString;
 
@@ -118,7 +121,8 @@ export class ReadSpreadsheetService{
             // User will be prompted to save a .msp for their data
             saveAs(blob, fileName.split(".")[0] + ".msp");
         } else {
-            alert("Check column headers; one may be missing or misspelled");
+            // alert("Check column headers; one may be missing or misspelled");
+            document.getElementById("errorText").innerHTML = "Check column headers; one may be missing or misspelled";
         }
     }
 
@@ -148,7 +152,8 @@ export class ReadSpreadsheetService{
             // Read the excel file and execute callback function from addEventListener
             reader.readAsText(sheetData[0]);
         } else {
-            alert("Choose valid excel or .csv file")
+            // alert("Choose valid excel or .csv file");
+            document.getElementById("errorText").innerHTML = "Choose valid excel or .csv file";
         }
 
     } // end mspFromCsv
@@ -178,7 +183,8 @@ export class ReadSpreadsheetService{
             // Read the excel file and execute callback function from addEventListener
             reader.readAsBinaryString(sheetData[0]);
         } else {
-            alert("Choose valid excel or .csv file")
+            // alert("Choose valid excel or .csv file");
+            document.getElementById("errorText").innerHTML = "Choose valid excel or .csv file";
         }
 
     } // end mspFromXlsx

@@ -11,7 +11,7 @@ import { ReadSpreadsheetService } from '../read-spreadsheet.service';
 export class ReadSpreadsheetComponent implements OnInit{
     
     submitValid: boolean;
-    errorText: string;
+    // errorText: string;
     files: FileList;
 
     constructor(private readSpreadsheetService: ReadSpreadsheetService) {}   
@@ -19,8 +19,9 @@ export class ReadSpreadsheetComponent implements OnInit{
     ngOnInit() {
         // Submit button disabled
         this.submitValid = false;
+        document.getElementById("errorText").innerHTML = "";
 
-        this.errorText = "";
+        // this.errorText = "TESTING";
     }
 
     // Called when user selects spreadsheet to be turned into a .msp
@@ -43,13 +44,14 @@ export class ReadSpreadsheetComponent implements OnInit{
             var nameElements = this.files[0].name.split(".");
             if (nameElements[1] == "xlsx") this.readSpreadsheetService.mspFromXlsx(this.files);
             else if (nameElements[1] == "csv") this.readSpreadsheetService.mspFromCsv(this.files);
-            else alert("Please choose an excel or .csv file");
+            else document.getElementById("errorText").innerHTML = "Please choose an excel or .csv file";
 
             //Disable the Submit button
             this.submitValid = false;
             
         } else {
-            alert("Select file before clicking 'Submit'");
+            // alert("Select file before clicking 'Submit'");
+            document.getElementById("errorText").innerHTML = "Select file before clicking 'Submit'";
         }
     }
 
