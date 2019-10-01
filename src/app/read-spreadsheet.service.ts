@@ -121,7 +121,6 @@ export class ReadSpreadsheetService{
             // User will be prompted to save a .msp for their data
             saveAs(blob, fileName.split(".")[0] + ".msp");
         } else {
-            // alert("Check column headers; one may be missing or misspelled");
             document.getElementById("errorText").innerHTML = "Check column headers; one may be missing or misspelled";
         }
     }
@@ -152,7 +151,6 @@ export class ReadSpreadsheetService{
             // Read the excel file and execute callback function from addEventListener
             reader.readAsText(sheetData[0]);
         } else {
-            // alert("Choose valid excel or .csv file");
             document.getElementById("errorText").innerHTML = "Choose valid excel or .csv file";
         }
 
@@ -183,7 +181,6 @@ export class ReadSpreadsheetService{
             // Read the excel file and execute callback function from addEventListener
             reader.readAsBinaryString(sheetData[0]);
         } else {
-            // alert("Choose valid excel or .csv file");
             document.getElementById("errorText").innerHTML = "Choose valid excel or .csv file";
         }
 

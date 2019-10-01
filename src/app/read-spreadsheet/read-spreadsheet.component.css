@@ -2,14 +2,6 @@
     padding: 10px 15px;
 }
 
-/* #fileInput {
-   color:#337ab7;
-   background-color:#fff;
-} */
-
-/*Green color: background-color: #33b768; */
-
-
 .new-button {
    display: inline-block;
    padding: 15px 15px; 
@@ -32,6 +24,12 @@ input[type="file"] {
 .button-wrap {
     margin-top: 10px;
     position: relative;
+}
+
+#fileName {
+    margin-left: 10px;
+    font-style: italic;
+    font-weight: bold;
 }
 
 #errorText {

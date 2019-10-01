@@ -1,4 +1,17 @@
-# ReadCSV
+# MSP From Spreadsheet
+
+Build .msp files from spreadsheets of mass spectrometry data. Users will upload a spreadsheet with these column headers:
+
+- Average Rt(min)
+- Average Mz
+- Metabolite name
+- Adduct type
+- Formula
+- INCHIKEY
+- MS1 isotopic spectrum
+- MS/MS spectrum
+
+The user will then be prompted to download a .msp text file with their data.
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.3.3.
 

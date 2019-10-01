@@ -13,15 +13,15 @@ export class ReadSpreadsheetComponent implements OnInit{
     submitValid: boolean;
     // errorText: string;
     files: FileList;
+    fileName: string;
 
     constructor(private readSpreadsheetService: ReadSpreadsheetService) {}   
 
     ngOnInit() {
         // Submit button disabled
         this.submitValid = false;
+        this.fileName = "";
         document.getElementById("errorText").innerHTML = "";
-
-        // this.errorText = "TESTING";
     }
 
     // Called when user selects spreadsheet to be turned into a .msp
@@ -32,6 +32,7 @@ export class ReadSpreadsheetComponent implements OnInit{
         this.submitValid = true;
         // Store selected file
         this.files = target.files;
+        this.fileName = target.files[0].name;
     }
 
     // Called when the user submits their spreadsheet
@@ -48,9 +49,9 @@ export class ReadSpreadsheetComponent implements OnInit{
 
             //Disable the Submit button
             this.submitValid = false;
+            this.fileName = "";
             
         } else {
-            // alert("Select file before clicking 'Submit'");
             document.getElementById("errorText").innerHTML = "Select file before clicking 'Submit'";
         }
     }

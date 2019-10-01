@@ -4,7 +4,7 @@
 <p>
     Your spreadsheet should include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 
     'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', and 'MS/MS spectrum'. It may include other columns, but those will not be included
-    in the final product.
+    in the final product. Spelling is important but capitalization is not.
 </p>
 <div>
     Download example spreadsheets to upload 
@@ -19,7 +19,7 @@
 <div class="button-wrap">
     <label class="new-button" for="fileInput">Browse...</label>
     <input id="fileInput" type="file" (change)="fileSelected($event)">
+    <span id="fileName">{{ fileName }}</span>
 </div>
 <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
-<!-- <p id="errorText">{{ errorText }}</p> -->
 <p id="errorText"></p>
