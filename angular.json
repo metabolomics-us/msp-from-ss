@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "Read-CSV": {
+    "Read-Spreadsheet": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/Read-CSV",
+            "outputPath": "dist/Read-Spreadsheet",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -63,18 +63,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "Read-CSV:build"
+            "browserTarget": "Read-Spreadsheet:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "Read-CSV:build:production"
+              "browserTarget": "Read-Spreadsheet:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "Read-CSV:build"
+            "browserTarget": "Read-Spreadsheet:build"
           }
         },
         "test": {
@@ -111,15 +111,15 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "Read-CSV:serve"
+            "devServerTarget": "Read-Spreadsheet:serve"
           },
           "configurations": {
             "production": {
-              "devServerTarget": "Read-CSV:serve:production"
+              "devServerTarget": "Read-Spreadsheet:serve:production"
             }
           }
         }
       }
     }},
-  "defaultProject": "Read-CSV"
+  "defaultProject": "Read-Spreadsheet"
 }
