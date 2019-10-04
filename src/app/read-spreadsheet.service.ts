@@ -1,3 +1,5 @@
+import { OnInit } from '@angular/core';
+
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -5,11 +7,15 @@ import { saveAs } from 'file-saver';
 @Injectable({
     providedIn: 'root'
 })
-export class ReadSpreadsheetService{
+export class ReadSpreadsheetService implements OnInit{
 
     errorText: string;
 
     constructor() {}
+
+    ngOnInit() {
+        this.errorText = "";
+    }
 
     // Create a string from a 2x2 array of MS/MS data
     buildMspStringFromArray(dataArray: any): string {
@@ -39,11 +45,10 @@ export class ReadSpreadsheetService{
                 });
                 mspString = mspString + "\n\n";
             } catch(err) {
-                document.getElementById("errorText").innerHTML = err.message;
+                // error
             }
         });
         return mspString;
-
     } // end buildMspStringFromArray
 
 
@@ -51,15 +56,23 @@ export class ReadSpreadsheetService{
     buildDictArray(headers: string[], data: string[][]): any[] {
         // Iterate through data and build dictionary
         // keys=headers[], values=row of data[][]
-        var i: number, j: number, dict: any = {}, arr: any = [];
+        var i: number, j: number, dict: any = {}, arr: any = [], dataError: boolean = false;
         for (i = 0; i < data.length; i++) {
             dict = {};
             for (j = 0; j < headers.length; j++) {
-                dict[headers[j]] = data[i][j];
+
+                // Make sure data exists for a given header
+                if (data[i][j]) {
+                    dict[headers[j]] = data[i][j];
+                } else {
+                    dataError = true;
+                    dict[headers[j]] = "";
+                }
             }
             // Add dictionary to the array
             arr.push(dict);
         }
+        if (dataError) this.errorText += "<p>One or more rows may be missing data</p>";
         return arr;
     } // end buildDictArray
 
@@ -120,8 +133,11 @@ export class ReadSpreadsheetService{
             var blob = new Blob([mspString], {type: "text/plain;charset=utf-8"});
             // User will be prompted to save a .msp for their data
             saveAs(blob, fileName.split(".")[0] + ".msp");
+
+            document.getElementById("errorText").innerHTML = this.errorText;
+
         } else {
-            document.getElementById("errorText").innerHTML = "Check column headers; one may be missing or misspelled";
+            document.getElementById("errorText").innerHTML = "<p>Check column headers; one may be missing or misspelled<p>";
         }
     }
 

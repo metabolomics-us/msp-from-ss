@@ -8,18 +8,34 @@
 </p>
 <div>
     Download example spreadsheets to upload 
-    <a href="../../assets/files-to-read/example_spreadsheet_large.xlsx" download="example_spreadsheet_large.xlsx">here</a> and
-    <a href="../../assets/files-to-read/example_spreadsheet_small.xlsx" download="example_spreadsheet_small.xlsx">here</a>.
+    <a id="exampleLarge" href="../../assets/files-to-read/example_spreadsheet_large.xlsx" download="example_spreadsheet_large.xlsx">here</a> and
+    <a id="exampleSmall" href="../../assets/files-to-read/example_spreadsheet_small.xlsx" download="example_spreadsheet_small.xlsx">here</a>.
 </div>
 <div>
     Download an example of the resulting .msp file 
-    <a href="../../assets/files-to-read/example.msp" download="example.msp">here</a>.
+    <a id="exampleMSP" href="../../assets/files-to-read/example.msp" download="example.msp">here</a>.
 </div>
 
 <div class="button-wrap">
-    <label class="new-button" for="fileInput">Browse...</label>
+    <label class="new-button file-button" for="fileInput">
+        <img src="../../assets/images/upload-button-32.png" width="20px" height="20px">
+        Browse
+    </label>
     <input id="fileInput" type="file" (change)="fileSelected($event)">
     <span id="fileName">{{ fileName }}</span>
 </div>
-<button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
-<p id="errorText"></p>
+<button class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
+    <img src="../../assets/images/upload-button-32.png" width="20px" height="20px">
+    Submit
+</button>
+<div id="errorText"></div>
+
+<!-- <div id="file-buttons">
+    <span class="button-wrap">
+        <label class="new-button" for="fileInput">Browse...</label>
+        <input id="fileInput" type="file" (change)="fileSelected($event)">
+    </span>
+    <button class="btn btn-primary" [disabled]="!submitValid" (click)="readFile()">Submit</button>
+    <span id="fileName">{{ fileName }}</span>
+</div> -->
+<!-- <div id="errorText"></div> -->

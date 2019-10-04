@@ -20,8 +20,12 @@ export class ReadSpreadsheetComponent implements OnInit{
     ngOnInit() {
         // Submit button disabled
         this.submitValid = false;
-        this.fileName = "";
+        this.fileName = "Select a spreadsheet to convert";
         document.getElementById("errorText").innerHTML = "";
+
+        var testStr: string = "", testArr: any[];
+        testArr = testStr.split(" ");
+        console.log(testArr, testArr.length);
     }
 
     // Called when user selects spreadsheet to be turned into a .msp
@@ -33,6 +37,7 @@ export class ReadSpreadsheetComponent implements OnInit{
         // Store selected file
         this.files = target.files;
         this.fileName = target.files[0].name;
+        document.getElementById("errorText").innerHTML = "";
     }
 
     // Called when the user submits their spreadsheet
@@ -50,7 +55,7 @@ export class ReadSpreadsheetComponent implements OnInit{
             //Disable the Submit button
             this.submitValid = false;
             this.fileName = "";
-            
+            document.getElementById("errorText").innerHTML = "";
         } else {
             document.getElementById("errorText").innerHTML = "Select file before clicking 'Submit'";
         }

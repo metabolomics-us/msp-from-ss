@@ -1,35 +1,45 @@
-.btn-primary {
-    padding: 10px 15px;
+.file-button {
+    font-size: 20px;
+    /* padding: 15px 50px; */
+    padding-top: 15px;
+    padding-bottom: 15px;
+    width: 180px;
+    text-align: center;
+    font-weight: bold;
 }
 
-.new-button {
-   display: inline-block;
-   padding: 15px 15px; 
-   cursor: pointer;
-   border-radius: 4px;
-   background-color: #337ab7;
-   font-size: 16px;
-   color: #fff;
-}
-
-input[type="file"] {
-   position: absolute;
-   z-index: -1;
-   top: 6px;
-   left: 0;
-   font-size: 15px;
-   /* color: rgb(153,153,153); */
-}
+/* .btn-primary {
+    padding: 15px 15px;
+} */
 
 .button-wrap {
     margin-top: 10px;
     position: relative;
 }
 
+.new-button {
+    display: inline-block;
+    /* padding: 15px 50px;  */
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: #337ab7;
+    color: #fff;
+ }
+
+input[type="file"] {
+   position: absolute;
+   z-index: -1;
+   /* top: 6px; */
+   /* left: 0; */
+   /* font-size: 15px; */
+   /* color: rgb(153,153,153); */
+}
+
 #fileName {
     margin-left: 10px;
     font-style: italic;
     font-weight: bold;
+    font-size: 16px;
 }
 
 #errorText {
@@ -38,4 +48,12 @@ input[type="file"] {
     font-style: italic;
     font-weight: bold;
     font-size: 130%;
+}
+
+img {
+    /* padding-bottom: 0px; */
+
+    /* works to move image */
+    position: relative;
+    bottom: 4px;
 }
