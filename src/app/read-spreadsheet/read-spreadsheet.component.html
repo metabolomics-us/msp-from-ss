@@ -18,14 +18,14 @@
 
 <div class="button-wrap">
     <label class="new-button file-button" for="fileInput">
-        <img src="../../assets/images/upload-button-32.png" width="20px" height="20px">
+        <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
         Browse
     </label>
     <input id="fileInput" type="file" (change)="fileSelected($event)">
     <span id="fileName">{{ fileName }}</span>
 </div>
 <button class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
-    <img src="../../assets/images/upload-button-32.png" width="20px" height="20px">
+    <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
     Submit
 </button>
 <div id="errorText"></div>
