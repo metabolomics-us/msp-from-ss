@@ -34,11 +34,6 @@ export class ReadSpreadsheetComponent implements OnInit {
 		this.files = target.files;
 		this.fileName = target.files[0].name;
 		document.getElementById('errorText').innerHTML = '';
-
-		console.log('fileSelected');
-		console.log(changeEvent);
-		console.log(target);
-		console.log(this.files);
 	}
 
 	// Called when the user submits their spreadsheet

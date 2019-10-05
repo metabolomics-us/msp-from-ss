@@ -52,7 +52,8 @@ export class ReadSpreadsheetService {
 	// Builds array of dictionaries
 	buildDictArray(headers: string[], data: string[][]): any[] {
 		// Iterate through data and build dictionary
-		// keys=headers[], values=row of data[][]
+        // keys=headers[], values=row of data[][]
+
 		let i: number, j: number;
 		let dict: any = {};
 		const arr: any = [];
@@ -66,7 +67,7 @@ export class ReadSpreadsheetService {
 					dict[headers[j]] = data[i][j];
 				} else {
 					dataError = true;
-					dict[headers[j]] = '';
+                    dict[headers[j]] = '';
 				}
 			}
 			// Add dictionary to the array
@@ -122,7 +123,8 @@ export class ReadSpreadsheetService {
 		if (headerPosition >= 0) {
 
 			// Split the array into headers and data
-			const headers = msmsArray[headerPosition];
+            const headers = msmsArray[headerPosition];
+
 			const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 
 			// Create an array of dictionaries
@@ -186,7 +188,7 @@ export class ReadSpreadsheetService {
 
 			// Convert spreadsheet data to JSON data
 			// Using {header:1} will generate a 2x2 array
-			const msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+            const msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
 
 			const sheetName = sheetData[0].name;
 			// Create .msp file
