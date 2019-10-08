@@ -57,3 +57,7 @@ img {
     position: relative;
     bottom: 4px;
 }
+
+a {
+    cursor: pointer;
+}

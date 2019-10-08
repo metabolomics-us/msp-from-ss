@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { ReadSpreadsheetService } from '../read-spreadsheet.service';
+import { DownloadFileService } from '../download-file.service';
+import { $ } from 'protractor';
 
 @Component({
 	selector: 'read-spreadsheet',
 	templateUrl: 'read-spreadsheet.component.html',
 	styleUrls: ['read-spreadsheet.component.css'],
-	providers: [ReadSpreadsheetService]
+	providers: [ReadSpreadsheetService, DownloadFileService]
 })
 
 export class ReadSpreadsheetComponent implements OnInit {
@@ -15,14 +17,27 @@ export class ReadSpreadsheetComponent implements OnInit {
 	files: FileList;
 	fileName: string;
 
-	constructor(private readSpreadsheetService: ReadSpreadsheetService) {}
+	constructor(
+        private readSpreadsheetService: ReadSpreadsheetService,
+        private downloadFileService: DownloadFileService) {}
 
 	ngOnInit() {
 		// Submit button disabled
-		this.submitValid = false;
+        this.submitValid = false;
+        
 		this.fileName = 'Select a spreadsheet to convert';
-  document.getElementById('errorText').innerHTML = '';
-	}
+        document.getElementById('errorText').innerHTML = '';
+    }
+    
+
+    // User downloads an example MS/MS spreadsheet or .msp file
+    downloadExample(mouseEvent: Event) {
+        // Get the DOM element, get its name, turn the name into the filename to download
+        // i.e. <a name='example-msp' ...> => example.msp
+        const target = mouseEvent.target as HTMLAnchorElement;
+        this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
+    }
+
 
 	// Called when user selects spreadsheet to be turned into a .msp
 	fileSelected(changeEvent: Event) {
@@ -33,8 +48,11 @@ export class ReadSpreadsheetComponent implements OnInit {
 		// Store selected file
 		this.files = target.files;
 		this.fileName = target.files[0].name;
-		document.getElementById('errorText').innerHTML = '';
+        document.getElementById('errorText').innerHTML = '';
+        
+        // console.log(target.value);
 	}
+
 
 	// Called when the user submits their spreadsheet
 	readFile() {
@@ -54,7 +72,7 @@ export class ReadSpreadsheetComponent implements OnInit {
 
 			// Disable the Submit button
 			this.submitValid = false;
-			this.fileName = '';
+			this.fileName = 'Select a spreadsheet to convert';
 			document.getElementById('errorText').innerHTML = '';
 		} else {
 			document.getElementById('errorText').innerHTML = 'Select file before clicking \'Submit\'';

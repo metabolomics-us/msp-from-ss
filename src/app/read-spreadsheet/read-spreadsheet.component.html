@@ -1,19 +1,22 @@
 <h2>MSP From Spreadsheet</h2>
-<p>Convert a spreadsheet of MS/MS data into a .msp file.</p>
-<p>Click 'Browse' and select an excel or csv file. Then click 'Submit' to download a converted .msp text file.</p>
-<p>
-    Your spreadsheet should include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 
-    'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', and 'MS/MS spectrum'. It may include other columns, but those will not be included
-    in the final product. Spelling is important but capitalization is not.
-</p>
-<div>
-    Download example spreadsheets to upload 
-    <a id="exampleLarge" href="../../assets/files-to-read/example_spreadsheet_large.xlsx" download="example_spreadsheet_large.xlsx">here</a> and
-    <a id="exampleSmall" href="../../assets/files-to-read/example_spreadsheet_small.xlsx" download="example_spreadsheet_small.xlsx">here</a>.
+<div id="instructions">
+    <p>Convert a spreadsheet of MS/MS data into a .msp file.</p>
+    <p>Click 'Browse' and select an excel or csv file. Then click 'Submit' to download a converted .msp text file.</p>
+    <p>
+        Your spreadsheet should include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 
+        'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', and 'MS/MS spectrum'. It may include other columns, but those will not be included
+        in the final product. Spelling is important but capitalization is not.
+    </p>
 </div>
-<div>
+<div id="examples">
+    <!-- In downloadExample(), the name attribute is acquired and the dash is replaced by a period -->
+    <!-- This allows the correct file to be downloaded i.e. example-msp => example.msp -->
+    <!-- Hence whey there are both underscores and dashes -->
+    Download example spreadsheets to upload 
+    <a name="example_spreadsheet_large-xlsx" (click)="downloadExample($event)">here</a> and
+    <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
     Download an example of the resulting .msp file 
-    <a id="exampleMSP" href="../../assets/files-to-read/example.msp" download="example.msp">here</a>.
+    <a name="example-msp" (click)="downloadExample($event)">here</a>.
 </div>
 
 <div class="button-wrap">
@@ -24,7 +27,7 @@
     <input id="fileInput" type="file" (change)="fileSelected($event)">
     <span id="fileName">{{ fileName }}</span>
 </div>
-<button class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
+<button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
     <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
     Submit
 </button>
