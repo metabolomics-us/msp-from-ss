@@ -7,7 +7,7 @@ export class DownloadFileService {
 
     constructor() { }
 
-    // Download a file from a path location
+    // Download a file from a path location and file name
     downloadFile(path: string, fileName: string) {
         // Create, click, and then remove a dummy anchor tag that will download the file
         const dummyLink = document.createElement('a');

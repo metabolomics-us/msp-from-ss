@@ -5,7 +5,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 
-fdescribe('ReadSpreadsheetComponent', () => {
+describe('ReadSpreadsheetComponent', () => {
 	let component: ReadSpreadsheetComponent;
 	let fixture: ComponentFixture<ReadSpreadsheetComponent>;
 
@@ -30,8 +30,12 @@ fdescribe('ReadSpreadsheetComponent', () => {
         const instructions = document.getElementById('instructions');
         expect(instructions).toBeTruthy();
     });
+
+    it('should have an invalid submit button on start', () => {
+        expect(component.submitValid).toBe(false);
+    });
     
-    // Tried expect(anchorElements.length).toEqual(3) one is an anchor tag added by jasmine, 
+    // Tried expect(anchorElements.length).toEqual(3), but one <a> is added by jasmine wrapper 
     it('should have 3 <a>', () => {
         const anchorNames = ['example_spreadsheet_large-xlsx','example_spreadsheet_small-xlsx','example-msp'];
         let anchorElement: HTMLAnchorElement;
@@ -74,6 +78,16 @@ fdescribe('ReadSpreadsheetComponent', () => {
         expect(component.fileSelected).toHaveBeenCalled();
     });
 
-    // this.files exists
+    // Look at:
+    // https://stackoverflow.com/questions/52078853/is-it-possible-to-update-filelist
+
+    // it('should have a valid submit button when file is selected', () => {
+    // });
+
+    // it('should call mspFromXlsx from readFile', () => {
+    //     const f1 = new File(["file 1"], "file1.xlsx", { type: 'text/html' });
+    //     const f2 = new File(["file 2"], "file2.xlsx", { type: 'text/html' });
+    //     const files = [f1, f2];
+    // });
 
 });

@@ -2,19 +2,80 @@ import { TestBed } from '@angular/core/testing';
 
 import { ReadSpreadsheetService } from './read-spreadsheet.service';
 
-describe('ReadSpreadsheetService', () => {
+fdescribe('ReadSpreadsheetService', () => {
     let service: ReadSpreadsheetService;
     
-	beforeEach(() => TestBed.configureTestingModule({}));
+	beforeEach(() => TestBed.configureTestingModule({
+        // Load the window??????
+    }));
 
 	it('should be created', () => {
-		const service: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
-		expect(service).toBeTruthy();
+		const rsService: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+		expect(rsService).toBeTruthy();
+    });
+
+    // buildMspStringFromArray
+    it('should produce formatted string from array', () => {
+
+        const service: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+
+        const msmsArray: any[] = [{'AVERAGE RT(MIN)':'6.23', 'AVERAGE MZ':'219.11317', 'METABOLITE NAME':'1-Methyltryptophan',
+        'ADDUCT TYPE':'[M+H]+', 'FORMULA':'C12H14N2O2', 'INCHIKEY':'ZADWXFSZEAPBJS-JTQLQIEISA-N', 
+        'MS1 ISOTOPIC SPECTRUM':'219.11317:1287575', 'MS/MS SPECTRUM':'35.09272:9 35.16082:7'}];
+
+        const msmsStr: string = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor Type: [M+H]+\n' + 
+        'Precursor Mz: 219.11317\nRetention Time: 6.23\nFormula: C12H14N2O2\nNum Peaks: 2\n35.09272 9\n35.16082 7';
+
+        const testStr = service.buildMspStringFromArray(msmsArray);
+        expect(testStr.trim()).toEqual(msmsStr.trim());
+    });
+    // Should throw error with improper Mz formatting (ex. , instead of : etc.)
+
+    // buildDictArray
+    // should have dataError be true when data is missing
+
+    // hasHeaderErrors
+    it('Should return false when all headers are present and spelled correctly', () => {
+        const service: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+        const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
+        'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
+        expect(service.hasHeaderErrors(headers)).toBe(false);
     });
     
-    it('should return 4 from getHeaderPosition', () => {
-        const cols = [[],[],[],[],['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
-        'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM']];
-        // expect
+    it('Should return true when one header is misspelled (AVERAGE MZ)', () => {
+        const service: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+        const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZZ', 'METABOLITE NAME', 'ADDUCT TYPE',
+        'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
+        expect(service.hasHeaderErrors(headers)).toBe(true);
     });
+    
+    it('Should return true when one header is missing (INCHIKEY)', () => {
+        const service: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+        const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZZ', 'METABOLITE NAME', 'ADDUCT TYPE',
+        'FORMULA', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
+        expect(service.hasHeaderErrors(headers)).toBe(true);
+    });
+
+    // processHeaders
+    it('Should return ["AVERAGE RT(MIN)", "AVERAGE MZ"] when ["Average Rt(min)", " Average Mz "] is sent', () => {
+        const service: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+        const incorrect = ["Average Rt(min)", " Average Mz "];
+        const correct = ["AVERAGE RT(MIN)", "AVERAGE MZ"];
+        expect(service.processHeaders(incorrect)).toEqual(correct);
+    });
+
+    // lineHasHeaders
+    // Should return true if one header is present
+    // Should return true if one header is misspelled
+
+    // getHeaderPosition
+    // Should return 4 when headers are in the 4th position
+    // Should return 0 when headers are in the 1st position
+    // Should return -1 when no headers are present
+    
+    // it('should return 4 from getHeaderPosition', () => {
+    //     const cols = [[],[],[],[],['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
+    //     'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM']];
+    //     // expect
+    // });
 });

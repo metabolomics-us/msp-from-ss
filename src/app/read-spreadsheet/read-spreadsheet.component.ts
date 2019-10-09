@@ -27,6 +27,24 @@ export class ReadSpreadsheetComponent implements OnInit {
         
 		this.fileName = 'Select a spreadsheet to convert';
         document.getElementById('errorText').innerHTML = '';
+
+        // "File chooser dialog can only be shown with a user activation"
+        // const inputB = document.getElementById('fileInput');
+        // inputB.click();
+
+        // var f = new File([""], "filename", { type: 'text/html' });
+        // var blob = new Blob([""], { type: 'text/html' });
+        // blob["lastModifiedDate"] = "";
+        // blob["name"] = "filename";
+        // var fakeF = blob;
+
+        // const f1 = new File(["file 1"], "file 1", { type: 'text/html' });
+        // const f2 = new File(["file 2"], "file 2", { type: 'text/html' });
+        // console.log(f1.name);
+        // Look at datatransfer object
+        // const flist = new FileList();
+
+        // Where does Browser store a file for you to download, hm?
     }
     
 
@@ -50,13 +68,16 @@ export class ReadSpreadsheetComponent implements OnInit {
 		this.fileName = target.files[0].name;
         document.getElementById('errorText').innerHTML = '';
         
-        // console.log(target.value);
+        console.log(typeof this.files);
+        console.log(typeof this.files[0]);
+        console.log(typeof this.submitValid);
 	}
 
 
 	// Called when the user submits their spreadsheet
 	readFile() {
-		// If the user has chosen a file, create .msp with ReadSpreadsheetService
+
+        // If the user has chosen a file, create .msp with ReadSpreadsheetService
 		// Otherwise, throw an error
 		if (this.files) {
 
