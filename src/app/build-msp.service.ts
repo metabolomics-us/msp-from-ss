@@ -1,25 +1,20 @@
-import { Injectable, Output } from '@angular/core';
-import * as XLSX from 'xlsx';
+import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 
-// Testing
-import { Observable, Observer, Subscription } from 'rxjs';
-// import { EventEmitter } from 'protractor';
-
 @Injectable({
-	providedIn: 'root'
+    providedIn: 'root'
 })
-export class ReadSpreadsheetService {
-
-    // @Output() open = new EventEmitter<any>();
-
+export class BuildMspService {
     vitalHeaders: string[];
-    // myObservables: Observable;
 
 	constructor() {
 		// Moving this here b/c Services can't use oninit
         this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
         'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
+        
+        // Testing
+        // const locations = new Observable((observer) => {
+        // });
 	}
 
 	// Create a string from a 2x2 array of MS/MS data
@@ -185,131 +180,4 @@ export class ReadSpreadsheetService {
 		}
 
 	}
-
-
-	// Create .msp text file from a .csv file
-	mspFromCsv(sheetData: FileList) {
-
-		const reader = new FileReader();
-
-		// Create callback function for when the excel file has been loaded by the FileReader()
-		reader.addEventListener('load', (loadEvent) => {
-			// Turn the spreadsheet data into a string
-			// <FileReader> - explicit type declaration so that Angular won't throw an error
-			const target: FileReader = loadEvent.target as FileReader;
-			let msmsText: string = target.result as string;
-			msmsText = msmsText.trim();
-
-			// Turn the string of data into a 2x2 array
-			const msmsArray: string[][] = msmsText.split('\n').map(line => line.split(','));
-
-			const sheetName = sheetData[0].name;
-			// Create .msp file
-            this.buildMspFile(msmsArray, sheetName);
-            
-
-		});
-
-		if (sheetData[0]) {
-			// Read the excel file and execute callback function from addEventListener
-			reader.readAsText(sheetData[0]);
-		} else {
-			document.getElementById('errorText').innerHTML = '<p>Choose valid excel or .csv file</p>';
-		}
-
-	} // end mspFromCsv
-
-
-	// Create .msp text file from an excel file
-	mspFromXlsx(sheetData: FileList) {
-
-		const reader = new FileReader();
-
-		// Create callback function for when the excel file has been loaded by the FileReader()
-		reader.addEventListener('load', (loadEvent) => {
-			// <FileReader> - explicit type declaration so that Angular won't throw an error
-			const target: FileReader = loadEvent.target as FileReader;
-			const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
-
-			// Convert spreadsheet data to JSON data
-			// Using {header:1} will generate a 2x2 array
-            const msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-
-			const sheetName = sheetData[0].name;
-			// Create .msp file
-            this.buildMspFile(msmsArray, sheetName);
-            
-            // const myObservables = Observable.create((observer: Observer<string>) => {});
-
-
-
-		});
-
-		if (sheetData[0]) {
-			// Read the excel file and execute callback function from addEventListener
-            reader.readAsBinaryString(sheetData[0]);
-		} else {
-			document.getElementById('errorText').innerHTML = '<p>Choose valid excel or .csv file</p>';
-		}
-
-    } // end mspFromXlsx
-
-
-
-
-
-
-
-
-
-
-    // // Create .msp text file from a .csv file
-	// readCsv(sheetData: FileList) {
-    //     const reader = new FileReader();
-    //     // Create callback function for when the excel file has been loaded by the FileReader()
-	// 	reader.addEventListener('load', (loadEvent) => {
-	// 		// Turn the spreadsheet data into a string
-	// 		// <FileReader> - explicit type declaration so that Angular won't throw an error
-	// 		const target: FileReader = loadEvent.target as FileReader;
-	// 		let msmsText: string = target.result as string;
-	// 		msmsText = msmsText.trim();
-	// 		// Turn the string of data into a 2x2 array
-	// 		const msmsArray: string[][] = msmsText.split('\n').map(line => line.split(','));
-	// 		const sheetName = sheetData[0].name;
-	// 		// Create .msp file
-    //         this.buildMspFile(msmsArray, sheetName);
-    //     });
-    //     if (sheetData[0]) {
-	// 		// Read the excel file and execute callback function from addEventListener
-	// 		reader.readAsText(sheetData[0]);
-	// 	} else {
-	// 		document.getElementById('errorText').innerHTML = '<p>Choose valid excel or .csv file</p>';
-	// 	}
-
-	// } // end mspFromCsv
-
-	// // Create .msp text file from an excel file
-	// readXlsx(sheetData: FileList) {
-	// 	const reader = new FileReader();
-	// 	// Create callback function for when the excel file has been loaded by the FileReader()
-	// 	reader.addEventListener('load', (loadEvent) => {
-	// 		// <FileReader> - explicit type declaration so that Angular won't throw an error
-	// 		const target: FileReader = loadEvent.target as FileReader;
-	// 		const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
-	// 		// Convert spreadsheet data to JSON data
-	// 		// Using {header:1} will generate a 2x2 array
-    //         const msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-
-	// 		const sheetName = sheetData[0].name;
-	// 		// Create .msp file
-    //         this.buildMspFile(msmsArray, sheetName);
-    //     });
-	// 	if (sheetData[0]) {
-	// 		// Read the excel file and execute callback function from addEventListener
-    //         reader.readAsBinaryString(sheetData[0]);
-	// 	} else {
-	// 		document.getElementById('errorText').innerHTML = '<p>Choose valid excel or .csv file</p>';
-	// 	}
-    // } // end mspFromXlsx
-  
 }
