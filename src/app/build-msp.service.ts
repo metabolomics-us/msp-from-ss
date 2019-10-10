@@ -11,10 +11,6 @@ export class BuildMspService {
 		// Moving this here b/c Services can't use oninit
         this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
         'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-        
-        // Testing
-        // const locations = new Observable((observer) => {
-        // });
 	}
 
 	// Create a string from a 2x2 array of MS/MS data

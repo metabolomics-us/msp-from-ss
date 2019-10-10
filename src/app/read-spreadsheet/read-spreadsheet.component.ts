@@ -3,6 +3,7 @@ import { ReadSpreadsheetService } from '../read-spreadsheet.service';
 import { DownloadFileService } from '../download-file.service';
 
 import { BuildMspService } from '../build-msp.service';
+import { Observable, Observer, Subscription } from 'rxjs';
 
 @Component({
 	selector: 'read-spreadsheet',
@@ -106,26 +107,39 @@ export class ReadSpreadsheetComponent implements OnInit {
 
 
 
-    // readFileGetArray() {
-    //     // If the user has chosen a file, create .msp with ReadSpreadsheetService
-	// 	// Otherwise, throw an error
-	// 	if (this.files) {
-	// 		// Process either excel or csv spreadsheet
-	// 		const nameElements = this.files[0].name.split('.');
-	// 		if (nameElements[1] === 'xlsx') {
-	// 			this.readSpreadsheetService.readXlsx(this.files);
-	// 		} else if (nameElements[1] === 'csv') {
-	// 			this.readSpreadsheetService.readCsv(this.files);
-	// 		} else {
-	// 			document.getElementById('errorText').innerHTML = 'Please choose an excel or .csv file';
-	// 		}
-	// 		// Disable the Submit button
-	// 		this.submitValid = false;
-	// 		this.fileName = 'Select a spreadsheet to convert';
-	// 		document.getElementById('errorText').innerHTML = '';
-	// 	} else {
-	// 		document.getElementById('errorText').innerHTML = 'Select file before clicking \'Submit\'';
-	// 	}
-    // }
+    readFileGetArray() {
+        // If the user has chosen a file, create .msp with ReadSpreadsheetService
+		// Otherwise, throw an error
+		if (this.files) {
+
+            const self = this;
+
+            const name = this.files[0].name;
+            let observable: Observable<any>;
+			if (name.split('.')[1] === 'xlsx') {
+                observable = this.readSpreadsheetService.readXlsx(this.files);
+                observable.subscribe({
+                    next(msmsArray) { self.buildMspService.buildMspFile(msmsArray, name); },
+                    error(err) { console.error('something wrong occurred: ' + err); },
+                    complete() { console.log('done'); }
+                });
+			} else if (name.split('.')[1] === 'csv') {
+				observable = this.readSpreadsheetService.readCsv(this.files);
+                observable.subscribe({
+                    next(msmsArray) { self.buildMspService.buildMspFile(msmsArray, name); },
+                    error(err) { console.error('something wrong occurred: ' + err); },
+                    complete() { console.log('done'); }
+                });
+			} else {
+				document.getElementById('errorText').innerHTML = 'Please choose an excel or .csv file';
+			}
+			// Disable the Submit button
+			this.submitValid = false;
+			this.fileName = 'Select a spreadsheet to convert';
+			document.getElementById('errorText').innerHTML = '';
+		} else {
+			document.getElementById('errorText').innerHTML = 'Select file before clicking \'Submit\'';
+		}
+    }
 
 }
