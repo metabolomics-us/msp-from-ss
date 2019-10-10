@@ -3,7 +3,7 @@ import { ReadSpreadsheetService } from '../read-spreadsheet.service';
 import { DownloadFileService } from '../download-file.service';
 
 import { BuildMspService } from '../build-msp.service';
-import { Observable, Observer, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Component({
 	selector: 'read-spreadsheet',
@@ -17,7 +17,7 @@ export class ReadSpreadsheetComponent implements OnInit {
 	submitValid: boolean;
 	// errorText: string;
 	files: FileList;
-	fileName: string;
+    fileName: string;
 
 	constructor(
         private readSpreadsheetService: ReadSpreadsheetService,
@@ -27,34 +27,14 @@ export class ReadSpreadsheetComponent implements OnInit {
 	ngOnInit() {
 		// Submit button disabled
         this.submitValid = false;
-        
-		this.fileName = 'Select a spreadsheet to convert';
-        document.getElementById('errorText').innerHTML = '';
-
-        // "File chooser dialog can only be shown with a user activation"
-        // const inputB = document.getElementById('fileInput');
-        // inputB.click();
-
-        // var f = new File([""], "filename", { type: 'text/html' });
-        // var blob = new Blob([""], { type: 'text/html' });
-        // blob["lastModifiedDate"] = "";
-        // blob["name"] = "filename";
-        // var fakeF = blob;
-
-        // const f1 = new File(["file 1"], "file 1", { type: 'text/html' });
-        // const f2 = new File(["file 2"], "file 2", { type: 'text/html' });
-        // console.log(f1.name);
-        // Look at datatransfer object
-        // const flist = new FileList();
-
-        // Where does Browser store a file for you to download, hm?
+        this.fileName = 'Select a spreadsheet to convert';
     }
     
 
     // User downloads an example MS/MS spreadsheet or .msp file
     downloadExample(mouseEvent: Event) {
         // Get the DOM element, get its name, turn the name into the filename to download
-        // i.e. <a name='example-msp' ...> => example.msp
+        //  i.e. <a name='example-msp' ...> => example.msp
         const target = mouseEvent.target as HTMLAnchorElement;
         this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
     }
@@ -74,71 +54,57 @@ export class ReadSpreadsheetComponent implements OnInit {
 
 
 	// Called when the user submits their spreadsheet
-	readFile() {
-
-        // If the user has chosen a file, create .msp with ReadSpreadsheetService
-		// Otherwise, throw an error
+	readFileBuildMsp() {
+        // If the user has chosen a file, create .msp
 		if (this.files) {
 
-			// Process either excel or csv spreadsheet
-			const nameElements = this.files[0].name.split('.');
-			if (nameElements[1] === 'xlsx') {
-				this.readSpreadsheetService.mspFromXlsx(this.files);
-			} else if (nameElements[1] === 'csv') {
-				this.readSpreadsheetService.mspFromCsv(this.files);
-			} else {
-				document.getElementById('errorText').innerHTML = 'Please choose an excel or .csv file';
-			}
-
-			// Disable the Submit button
-			this.submitValid = false;
-			this.fileName = 'Select a spreadsheet to convert';
-			document.getElementById('errorText').innerHTML = '';
-		} else {
-			document.getElementById('errorText').innerHTML = 'Select file before clicking \'Submit\'';
-		}
-    }
-    
-
-
-
-
-
-
-
-
-    readFileGetArray() {
-        // If the user has chosen a file, create .msp with ReadSpreadsheetService
-		// Otherwise, throw an error
-		if (this.files) {
-
+            // Need a reference to this so that we can access this.buildMspService
             const self = this;
 
             const name = this.files[0].name;
             let observable: Observable<any>;
+            let errorText = '';
+
+            // Call readXlsx or readCsv depending on type of file submitted
+            // Get Observable that converts spreadsheet into 2x2 array
+            // Create .msp from 2x2 array and get error descriptions
+
 			if (name.split('.')[1] === 'xlsx') {
                 observable = this.readSpreadsheetService.readXlsx(this.files);
                 observable.subscribe({
-                    next(msmsArray) { self.buildMspService.buildMspFile(msmsArray, name); },
+                    next(msmsArray) { 
+                        errorText = self.buildMspService.buildMspFile(msmsArray, name);
+                        document.getElementById('errorText').innerHTML = '<p>' + errorText + '</p>';
+                        if (errorText === '') {
+                            self.fileName = 'Success!'
+                        }
+                    },
                     error(err) { console.error('something wrong occurred: ' + err); },
                     complete() { console.log('done'); }
                 });
 			} else if (name.split('.')[1] === 'csv') {
 				observable = this.readSpreadsheetService.readCsv(this.files);
                 observable.subscribe({
-                    next(msmsArray) { self.buildMspService.buildMspFile(msmsArray, name); },
+                    next(msmsArray) { 
+                        errorText = self.buildMspService.buildMspFile(msmsArray, name);
+                        document.getElementById('errorText').innerHTML = '<p>' + errorText + '</p>';
+                        if (errorText === '') {
+                            self.fileName = 'Success!'
+                        }
+                    },
                     error(err) { console.error('something wrong occurred: ' + err); },
                     complete() { console.log('done'); }
                 });
 			} else {
-				document.getElementById('errorText').innerHTML = 'Please choose an excel or .csv file';
-			}
+				document.getElementById('errorText').innerHTML = '<p>Please choose an excel or .csv file</p>';
+            }
+            
 			// Disable the Submit button
 			this.submitValid = false;
 			this.fileName = 'Select a spreadsheet to convert';
-			document.getElementById('errorText').innerHTML = '';
+            
 		} else {
-			document.getElementById('errorText').innerHTML = 'Select file before clicking \'Submit\'';
+			document.getElementById('errorText').innerHTML = '<p>Select file before clicking \'Submit\'</p>';
 		}
     }
 

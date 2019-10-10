@@ -5,10 +5,13 @@ import { saveAs } from 'file-saver';
     providedIn: 'root'
 })
 export class BuildMspService {
+
+    errorText: string;
     vitalHeaders: string[];
 
 	constructor() {
-		// Moving this here b/c Services can't use oninit
+        // Moving this here b/c Services can't use oninit
+        this.errorText = '';
         this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
         'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
 	}
@@ -55,7 +58,7 @@ export class BuildMspService {
 			}
         });
         if (hasErrors) {
-            document.getElementById('errorText').innerHTML = '<p>Data may have one or more errors<p>';
+            this.errorText = 'Data may have one or more errors';
         }
 		return mspString;
 	} // end buildMspStringFromArray
@@ -92,17 +95,20 @@ export class BuildMspService {
     hasHeaderErrors(headers: any[]): boolean {
 
         let hasError: boolean = false;
-        let errorText: string = 'These headers may be misspelled or missing:';
+        // let headerErrors: string = 'These headers may be misspelled or missing:';
+        let headerErrors: string[] = [];
 
         this.vitalHeaders.forEach(headerName => {
             // If a vital header doesn't appear in the headers row, indexOf returns -1
             if (headers.indexOf(headerName) < 0) {
                 hasError = true;
-                errorText + ' ' + headerName;
+                // headerErrors += ' ' + headerName;
+                headerErrors.push(headerName)
             }
         });
         if (hasError) {
-            document.getElementById('errorText').innerHTML = '<p>' + errorText + '<p>';
+            // this.errorText = headerErrors;
+            this.errorText = 'These headers may be misspelled or missing: ' + headerErrors.join(', ');
         }
         return hasError;
     } // end hasHeaderErrors
@@ -148,7 +154,10 @@ export class BuildMspService {
 
 
 	// Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string) {
+	buildMspFile(msmsArray: string[][], fileName: string): string {
+
+        // Reset the error text
+        this.errorText = '';
 
 		// Get the row number where the headers are located
         const headerPosition = this.getHeaderPosition(msmsArray);
@@ -170,10 +179,10 @@ export class BuildMspService {
                 const blob = new Blob([mspString], {type: 'text/plain;charset=utf-8'});
                 // User will be prompted to save a .msp for their data
                 saveAs(blob, fileName.split('.')[0] + '.msp');
-            } 
+            }
         } else {
-			document.getElementById('errorText').innerHTML = '<p>Check column headers; one may be missing or misspelled<p>';
-		}
-
+            this.errorText = 'Check column headers; one may be missing or misspelled';
+        }
+        return this.errorText;
 	}
 }

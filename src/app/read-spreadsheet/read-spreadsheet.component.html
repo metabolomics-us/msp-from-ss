@@ -27,14 +27,10 @@
     <input id="fileInput" type="file" (change)="fileSelected($event)">
     <span id="fileName">{{ fileName }}</span>
 </div>
-<button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFileGetArray()">
+<button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFileBuildMsp()">
     <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
     Submit
 </button>
-<!-- <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
-    <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
-    Submit
-</button> -->
 <div id="errorText"></div>
 
 <!-- <div id="file-buttons">
