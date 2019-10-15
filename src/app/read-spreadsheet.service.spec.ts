@@ -31,7 +31,7 @@ describe('ReadSpreadsheetService', () => {
 		// const files = dummyInput.files;
 
 		const blob = new Blob(['text'], {type: 'text/plain;charset=utf-8'});
-		blob.name = 'filename.xlsx';
+		blob["name"] = 'filename.xlsx';
 		const file = blob as File;
 		const fileList = {
 			0: file,
@@ -45,13 +45,13 @@ describe('ReadSpreadsheetService', () => {
 	it('should call buildMspFile from subscriber', () => {
 
 		const blob = new Blob(['0', '1', '2'], {type: 'text/plain;charset=utf-8'});
-		blob.name = 'filename.xlsx';
+		blob["name"] = 'filename.xlsx';
 		const file = blob as File;
 		const fileList = {
 			0: file,
 			length: 1,
 			item: (index: number) => file
-		};
+        };
 
 		const errorText = '';
 		const bMService = TestBed.get(BuildMspService);
