@@ -31,9 +31,9 @@ export class BuildMspService {
 		// Initialize string to be returned
 		let mspString = '';
 		// A list of mass and intensity for each peak
-  let spectrum: string[];
+        let spectrum: string[];
 
-  let hasErrors = false;
+        let hasErrors = false;
 
 		// Traverse each row of dataArray and build mspString
 		//  Each row represents data for one metabolite
@@ -65,10 +65,10 @@ export class BuildMspService {
 				// Maybe check for which ones are equal to ''
 				// Maybe a scrollable text window with all of the lines w/missing data?
 			}
-		});
-  if (hasErrors) {
-			this.errorText = 'Data may have one or more errors';
-		}
+        });
+        if (hasErrors) {
+            this.errorText = 'Data may have one or more errors';
+        }
 		return mspString;
 	} // end buildMspStringFromArray
 
