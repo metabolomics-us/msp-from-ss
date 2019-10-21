@@ -6,12 +6,14 @@ import { AppComponent } from './app.component';
 
 import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.component';
 
+import { NgxSpinnerModule } from "ngx-spinner";
+
 @NgModule({
 	declarations: [
 		AppComponent, ReadSpreadsheetComponent
 	],
 	imports: [
-		BrowserModule, AppRoutingModule
+		BrowserModule, AppRoutingModule, NgxSpinnerModule
 	],
 	providers: [],
 	bootstrap: [AppComponent],
