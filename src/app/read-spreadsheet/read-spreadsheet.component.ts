@@ -15,13 +15,13 @@ import { NgxSpinnerService } from 'ngx-spinner';
 })
 
 export class ReadSpreadsheetComponent implements OnInit {
-
-	submitValid: boolean;
-	// errorText: string;
-	files: FileList;
+    
+    submitValid: boolean;
+    // errorText: string;
+    files: FileList;
     fileName: string;
-
-	constructor(
+    
+    constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
         private buildMspService: BuildMspService,
