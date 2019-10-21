@@ -5,6 +5,8 @@ import { DownloadFileService } from '../download-file.service';
 import { BuildMspService } from '../build-msp.service';
 import { Observable, of } from 'rxjs';
 
+import { NgxSpinnerService } from 'ngx-spinner';
+
 @Component({
 	selector: 'read-spreadsheet',
 	templateUrl: 'read-spreadsheet.component.html',
@@ -22,12 +24,20 @@ export class ReadSpreadsheetComponent implements OnInit {
 	constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
-		private buildMspService: BuildMspService) {}
+        private buildMspService: BuildMspService,
+        private spinner: NgxSpinnerService) {}
 
 	ngOnInit() {
 		// Submit button disabled
 		this.submitValid = false;
-		this.fileName = 'Select a spreadsheet to convert';
+        this.fileName = 'Select a spreadsheet to convert';
+        this.spinner.hide();
+        
+        // this.spinner.show();
+        // setTimeout(() => {
+        //     /** spinner ends after 5 seconds */
+        //     this.spinner.hide();
+        // }, 5000);
 	}
 
 
@@ -48,8 +58,8 @@ export class ReadSpreadsheetComponent implements OnInit {
 		this.submitValid = true;
 		// Store selected file
 		this.files = target.files;
-		this.fileName = target.files[0].name;
-  document.getElementById('errorText').innerHTML = '';
+        this.fileName = target.files[0].name;
+        document.getElementById('errorText').innerHTML = '';
 	}
 
 
@@ -58,12 +68,16 @@ export class ReadSpreadsheetComponent implements OnInit {
 		// If the user has chosen a file, create .msp
 		if (this.files) {
 
+            // Start spinner here???
+
 			// Need a reference to 'this' so that we can access it within observable.subscribe
 			const self = this;
 
 			const name = this.files[0].name;
 			let observable: Observable<any>;
-			let errorText = '';
+            let errorText = '';
+            
+            this.spinner.show();
 
 			// Call readXlsx or readCsv depending on type of file submitted
 			// Get Observable that converts spreadsheet into 2x2 array
@@ -77,26 +91,42 @@ export class ReadSpreadsheetComponent implements OnInit {
 						document.getElementById('errorText').innerHTML = '<p>' + errorText + '</p>';
 						if (errorText === '') {
 							self.fileName = 'Success!';
-						}
+                        }
+                        console.log('should hide');
+                        self.spinner.hide();
 					},
-					error(err) { console.error('something wrong occurred: ' + err); },
-					complete() { console.log('done'); }
+					error(err) { 
+                        console.error('something wrong occurred: ' + err);
+                        self.spinner.hide(); 
+                    },
+					complete() { 
+                        console.log('done');
+                        self.spinner.hide();
+                    }
 				});
 			} else if (name.split('.')[1] === 'csv') {
 				observable = this.readSpreadsheetService.readCsv(this.files);
-	   observable.subscribe({
+	            observable.subscribe({
 					next(msmsArray) {
 						errorText = self.buildMspService.buildMspFile(msmsArray, name);
 						document.getElementById('errorText').innerHTML = '<p>' + errorText + '</p>';
 						if (errorText === '') {
 							self.fileName = 'Success!';
-						}
+                        }
+                        self.spinner.hide();
 					},
-					error(err) { console.error('something wrong occurred: ' + err); },
-					complete() { console.log('done'); }
+					error(err) { 
+                        console.error('something wrong occurred: ' + err); 
+                        self.spinner.hide();
+                    },
+					complete() { 
+                        console.log('done'); 
+                        self.spinner.hide();
+                    }
 				});
 			} else {
-				document.getElementById('errorText').innerHTML = '<p>Please choose an excel or .csv file</p>';
+                document.getElementById('errorText').innerHTML = '<p>Please choose an excel or .csv file</p>';
+                this.spinner.hide();
 			}
 
 			// Disable the Submit button
