@@ -23,6 +23,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     fileNameText: string;
     observable$: Observable<any>;
     subscription: Subscription;
+    targetInput: HTMLInputElement;
     
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
@@ -35,25 +36,30 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 		this.submitValid = false;
         this.fileNameText = 'Select a spreadsheet to convert';
         this.spinner.hide();
-        
-        // Experiment with spinners
-        // this.spinner.show();
-        // setTimeout(() => {
-        //     /** spinner ends after 5 seconds */
-        //     this.spinner.hide();
-        // }, 5000);
-
-        // Experiment with workers
-        // const worker = new Worker('./app.worker', { type: 'module' });
-        // worker.onmessage = ({ data }) => {
-        //     console.log(`page got message: ${data}`);
-        // };
-        // worker.postMessage('hello');
     }
+
     
     ngOnDestroy() {
         this.subscription.unsubscribe();
     }
+
+    // For testing purposes
+    // filesExist () {
+    //     console.log(this.files);
+    //     if (this.files) {
+    //         console.log('YES');
+    //     } else {
+    //         console.log('No');
+    //     }
+    // }
+    // targetFilesExist () {
+    //     console.log(this.targetInput.files);
+    //     if (this.targetInput.files) {
+    //         console.log('YES');
+    //     } else {
+    //         console.log('No');
+    //     }
+    // }
 
 
 	// User downloads an example MS/MS spreadsheet or .msp file
@@ -67,14 +73,17 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 	// Called when user selects spreadsheet to be turned into a .msp
 	fileSelected(changeEvent: Event) {
-		const target = changeEvent.target as HTMLInputElement;
+        // console.log('file selected');
+        this.targetInput = changeEvent.target as HTMLInputElement;
 
-		// Submit button can now be clicked
-		this.submitValid = true;
-		// Store selected file
-		this.files = target.files;
-        this.fileNameText = target.files[0].name;
-        document.getElementById('error-text').innerHTML = '';
+        if (this.targetInput.files.length > 0) {
+            // Store selected file
+            this.files = this.targetInput.files;
+            this.fileNameText = this.targetInput.files[0].name;
+            // Submit button can now be clicked
+            this.submitValid = true;
+            document.getElementById('error-text').innerHTML = '';
+        } 
 	}
 
 
@@ -82,13 +91,12 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 	readFile() {
 		// If the user has chosen a file, create .msp
 		if (this.files) {
-            const name = this.files[0].name;
             this.spinner.show();
 
-			// Call readXlsx or readCsv depending on type of file submitted
-			// Get Observable that converts spreadsheet into 2x2 array
-			// Create .msp from 2x2 array and get error descriptions
-
+            const name = this.files[0].name;
+            
+            // Call readXlsx or readCsv depending on type of file submitted
+            // Get Observable that converts spreadsheet into 2x2 array
 			if (name.split('.')[1] === 'xlsx') {
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
@@ -110,18 +118,22 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         }
         // Disable the Submit button
         this.submitValid = false;
+
+        // Clear input field value so that user can consecutively upload files with the same name
+        //  Otherwise, on the next upload, no change event will register and fileSelected won't execute
+        this.targetInput.value = null;
     }
 
 
+    // Create .msp from 2x2 array and/or get error descriptions
     buildMsp(name: string) {
         // Need a reference to 'this' so that we can access it within observable$.subscribe
         const self = this;
         let errorText = '';
-        // take(1) means the observable will unsubscribe about one exacution
-        //  this is to prevent memory leaks
-        //  Times out if unable to read and parse spreadsheet in five seconds
-        //      as defined in ReadSpreadsheetService
-        this.subscription = this.observable$.pipe(take(1),timeout(5000)).subscribe({
+
+        // take(1) means the observable will unsubscribe after one execution; prevents memory leaks
+        //  Times out if unable to read and parse spreadsheet in 10 seconds
+        this.subscription = this.observable$.pipe(take(1),timeout(10000)).subscribe({
         	next(msmsArray) {
                 // Create .msp file and display any error test
         		errorText = self.buildMspService.buildMspFile(msmsArray, name);
@@ -137,10 +149,10 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 self.spinner.hide(); 
             },
         	complete() { 
-                console.log('done');
+                console.log('Process Complete');
                 self.spinner.hide();
             }
         });
-    }
+    } // end buildMsp
 
 }
