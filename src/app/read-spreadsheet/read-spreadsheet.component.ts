@@ -117,11 +117,13 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         // Need a reference to 'this' so that we can access it within observable$.subscribe
         const self = this;
         let errorText = '';
-        // .pipe(take(1)) means the observable will unsubscribe about one exacution
+        // take(1) means the observable will unsubscribe about one exacution
         //  this is to prevent memory leaks
-        this.subscription = this.observable$.pipe(take(1)).subscribe({
+        //  Times out if unable to read and parse spreadsheet in five seconds
+        //      as defined in ReadSpreadsheetService
+        this.subscription = this.observable$.pipe(take(1),timeout(5000)).subscribe({
         	next(msmsArray) {
-                // buildMspFile returns any error text; display it
+                // Create .msp file and display any error test
         		errorText = self.buildMspService.buildMspFile(msmsArray, name);
         		document.getElementById('error-text').innerHTML = '<p>' + errorText + '</p>';
         		if (errorText === '') {
@@ -130,8 +132,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 self.spinner.hide();
         	},
         	error(err) { 
-                console.error('Something wrong occurred: ' + err);
-                document.getElementById('error-text').innerHTML = '<p>' + err + '</p>';
+                // Display error in case of timeout
+                document.getElementById('error-text').innerHTML = '<p>' + err + '; Check uploaded file</p>';
                 self.spinner.hide(); 
             },
         	complete() { 
