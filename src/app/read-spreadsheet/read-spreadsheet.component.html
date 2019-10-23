@@ -1,3 +1,4 @@
+<!-- <button (click)="filesExist()">Files</button> <button (click)="targetFilesExist()">Target Files</button> -->
 <h2>MSP From Spreadsheet</h2>
 <div id="instructions">
     <p>Convert a spreadsheet of MS/MS data into a .msp file.</p>
@@ -19,7 +20,7 @@
     <a name="example-msp" (click)="downloadExample($event)">here</a>.
 </div>
 
-<div id="file-name-text">{{ fileNameText }}</div>
+<div id="error-text"></div>
 
 <div id="rs-buttons" style="text-align: center;">
     <span class="button-wrap">
@@ -34,7 +35,8 @@
         Submit
     </button>
 </div>
-<div id="error-text"></div>
+
+<div id="file-name-text">{{ fileNameText }}</div>
 
 <div class="spinner-div">
     <ngx-spinner bdColor="white" size="medium" color="rgba(51, 51, 51, 0.8)" type="ball-grid-beat" [fullScreen]="false">
