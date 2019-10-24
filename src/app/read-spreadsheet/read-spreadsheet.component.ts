@@ -32,9 +32,13 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         private spinner: NgxSpinnerService) {}
 
 	ngOnInit() {
-		// Submit button disabled
+        this.files = null;
+        document.getElementById('correct-ext').hidden = true;
+        document.getElementById('wrong-ext').hidden = true;
+        document.getElementById('error-text').hidden = true;
+        this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
+        // Submit button disabled
 		this.submitValid = false;
-        this.fileNameText = 'Select a spreadsheet to convert';
         this.spinner.hide();
     }
 
@@ -78,11 +82,25 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
         if (this.targetInput.files.length > 0) {
             // Store selected file
-            this.files = this.targetInput.files;
-            this.fileNameText = this.targetInput.files[0].name;
-            // Submit button can now be clicked
-            this.submitValid = true;
-            document.getElementById('error-text').innerHTML = '';
+            
+            let name = this.targetInput.files[0].name;
+            this.fileNameText = name;
+            if (name.split('.')[1] === 'xlsx' || name.split('.')[1] === 'csv') {
+                this.files = this.targetInput.files;
+                document.getElementById('correct-ext').hidden = false;
+                document.getElementById('wrong-ext').hidden = true;
+                // Submit button can now be clicked
+                this.submitValid = true;
+                document.getElementById('error-text').hidden = true;
+                document.getElementById('error-text').innerHTML = '';
+            } else {
+                this.files = null;
+                document.getElementById('correct-ext').hidden = true;
+                document.getElementById('wrong-ext').hidden = false;
+                this.submitValid = false;
+                document.getElementById('error-text').hidden = false;
+                document.getElementById('error-text').innerHTML = '<p>Please choose a .xlsx or .csv file</p>';
+            }
         } 
 	}
 
@@ -98,17 +116,22 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             // Call readXlsx or readCsv depending on type of file submitted
             // Get Observable that converts spreadsheet into 2x2 array
 			if (name.split('.')[1] === 'xlsx') {
+                document.getElementById('error-text').hidden = true;
+                document.getElementById('error-text').innerHTML = '';
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
                 this.buildMsp(name);
                 // observable = this.readSpreadsheetService.readXlsx(this.files).pipe(timeout(5000));
 			} else if (name.split('.')[1] === 'csv') {
+                document.getElementById('error-text').hidden = true;
+                document.getElementById('error-text').innerHTML = '';
                 // Get observable which converts .csv into array
                 this.observable$ = this.readSpreadsheetService.readCsv(this.files);
                 this.buildMsp(name);
 			} else {
-                document.getElementById('error-text').innerHTML = '<p>Please choose an excel or .csv file</p>';
-                this.fileNameText = 'Select a spreadsheet to convert';
+                document.getElementById('error-text').hidden = false;
+                document.getElementById('error-text').innerHTML = '<p>Please choose a .xlsx or .csv file</p>';
+                this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
                 this.spinner.hide();
 			}
 
@@ -137,14 +160,19 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         	next(msmsArray) {
                 // Create .msp file and display any error test
         		errorText = self.buildMspService.buildMspFile(msmsArray, name);
-        		document.getElementById('error-text').innerHTML = '<p>' + errorText + '</p>';
         		if (errorText === '') {
+                    document.getElementById('error-text').hidden = true;
+                    document.getElementById('error-text').innerHTML = '';
         			self.fileNameText = 'Success!';
+                } else {
+                    document.getElementById('error-text').hidden = false;
+                    document.getElementById('error-text').innerHTML = '<p>' + errorText + '</p>';
                 }
                 self.spinner.hide();
         	},
         	error(err) { 
                 // Display error in case of timeout
+                document.getElementById('error-text').hidden = false;
                 document.getElementById('error-text').innerHTML = '<p>' + err + '; Check uploaded file</p>';
                 self.spinner.hide(); 
             },

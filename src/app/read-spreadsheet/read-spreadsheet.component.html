@@ -25,18 +25,22 @@
 <div id="rs-buttons" style="text-align: center;">
     <span class="button-wrap">
         <label class="btn new-button file-button" for="fileInput">
-            <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
+            <i class="fas fa-search-plus btn-img"></i>
             Browse
         </label>
         <input id="fileInput" type="file" (change)="fileSelected($event)">
     </span>
     <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
-        <img src="../../assets/images/upload-button-24.png" width="20px" height="20px">
+        <i class="fas fa-check-circle btn-img"></i>
         Submit
     </button>
 </div>
 
-<div id="file-name-text">{{ fileNameText }}</div>
+<div id="file-name-text">
+    <i id="correct-ext" class="fas fa-thumbs-up"></i>
+    <i id="wrong-ext" class="fas fa-times-circle"></i>
+    {{ fileNameText }}
+</div>
 
 <div class="spinner-div">
     <ngx-spinner bdColor="white" size="medium" color="rgba(51, 51, 51, 0.8)" type="ball-grid-beat" [fullScreen]="false">
