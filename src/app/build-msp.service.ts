@@ -70,7 +70,24 @@ export class BuildMspService {
             this.errorText = 'Data may have one or more errors';
         }
 		return mspString;
-	} // end buildMspStringFromArray
+    } // end buildMspStringFromArray
+    
+
+    // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
+    removeDuplicates(dataDict: any[]): any[] {
+
+        // Turn each entry into a string for easy comparison
+        let valuesDict = dataDict.map(x => JSON.stringify(x));
+
+        // Create new JSON array and push only one entry for each name
+        let cleanedDict = [];
+        for (let i = 0; i < valuesDict.length; i++) {
+            if (valuesDict.indexOf(valuesDict[i]) === i) {
+                cleanedDict.push(dataDict[i]);
+            }
+        }
+        return cleanedDict;
+    } // end removeDuplicates
 
 
 	// Builds array of dictionaries
@@ -182,7 +199,16 @@ export class BuildMspService {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
-				const msmsDictArray = this.buildDictArray(headers, data);
+                let msmsDictArray = this.buildDictArray(headers, data);
+
+                // Get length of array
+                const msmsLength = msmsDictArray.length;
+                // Remove duplicate entries
+                msmsDictArray = this.removeDuplicates(msmsDictArray);
+                if (msmsDictArray.length < msmsLength) {
+                    this.errorText = 'Duplicate entries found and removed';
+                }
+
 				// Turn array into a string
 				const mspString = this.buildMspStringFromArray(msmsDictArray);
 				// Turn string into Blob object so that it can be written into a file
