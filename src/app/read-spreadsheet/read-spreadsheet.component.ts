@@ -1,12 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+
 import { ReadSpreadsheetService } from '../read-spreadsheet.service';
 import { DownloadFileService } from '../download-file.service';
-
 import { BuildMspService } from '../build-msp.service';
-import { Observable, of, Subscription } from 'rxjs';
-
 import { NgxSpinnerService } from 'ngx-spinner';
 
+import { Observable, Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
 @Component({
@@ -44,26 +43,10 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
     
     ngOnDestroy() {
-        this.subscription.unsubscribe();
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
     }
-
-    // For testing purposes
-    // filesExist () {
-    //     console.log(this.files);
-    //     if (this.files) {
-    //         console.log('YES');
-    //     } else {
-    //         console.log('No');
-    //     }
-    // }
-    // targetFilesExist () {
-    //     console.log(this.targetInput.files);
-    //     if (this.targetInput.files) {
-    //         console.log('YES');
-    //     } else {
-    //         console.log('No');
-    //     }
-    // }
 
 
 	// User downloads an example MS/MS spreadsheet or .msp file
@@ -83,23 +66,22 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         if (this.targetInput.files.length > 0) {
             // Store selected file
             
-            let name = this.targetInput.files[0].name;
-            this.fileNameText = name;
-            if (name.split('.')[1] === 'xlsx' || name.split('.')[1] === 'csv') {
+            this.fileNameText = this.targetInput.files[0].name;
+            const ext = this.fileNameText.split('.')[1];
+
+            if (ext === 'xlsx' || ext === 'csv') {
                 this.files = this.targetInput.files;
-                document.getElementById('correct-ext').hidden = false;
-                document.getElementById('wrong-ext').hidden = true;
                 // Submit button can now be clicked
                 this.submitValid = true;
-                document.getElementById('error-text').hidden = true;
-                document.getElementById('error-text').innerHTML = '';
+                this.updateErrorText('');
+
+                console.log(this.targetInput.value);
+                console.log(this.files);
             } else {
                 this.files = null;
-                document.getElementById('correct-ext').hidden = true;
-                document.getElementById('wrong-ext').hidden = false;
+                // Submit button greyed out
                 this.submitValid = false;
-                document.getElementById('error-text').hidden = false;
-                document.getElementById('error-text').innerHTML = '<p>Please choose a .xlsx or .csv file</p>';
+                this.updateErrorText('Please choose a .xlsx or .csv file');
             }
         } 
 	}
@@ -111,32 +93,29 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 		if (this.files) {
             this.spinner.show();
 
-            const name = this.files[0].name;
+            // const name = this.files[0].name;
+            const ext = this.fileNameText.split('.')[1];
             
             // Call readXlsx or readCsv depending on type of file submitted
             // Get Observable that converts spreadsheet into 2x2 array
-			if (name.split('.')[1] === 'xlsx') {
-                document.getElementById('error-text').hidden = true;
-                document.getElementById('error-text').innerHTML = '';
+			if (ext === 'xlsx') {
+                this.updateErrorText('');                
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
-                this.buildMsp(name);
-                // observable = this.readSpreadsheetService.readXlsx(this.files).pipe(timeout(5000));
-			} else if (name.split('.')[1] === 'csv') {
-                document.getElementById('error-text').hidden = true;
-                document.getElementById('error-text').innerHTML = '';
+                this.buildMsp(this.fileNameText);
+			} else if (ext === 'csv') {
+                this.updateErrorText('');
                 // Get observable which converts .csv into array
                 this.observable$ = this.readSpreadsheetService.readCsv(this.files);
-                this.buildMsp(name);
+                this.buildMsp(this.fileNameText);
 			} else {
-                document.getElementById('error-text').hidden = false;
-                document.getElementById('error-text').innerHTML = '<p>Please choose a .xlsx or .csv file</p>';
+                this.updateErrorText('Please choose a .xlsx or .csv file');
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
                 this.spinner.hide();
 			}
 
 		} else {
-            document.getElementById('error-text').innerHTML = '<p>Select file before clicking \'Submit\'</p>';
+            this.updateErrorText('Select file before clicking \'Submit\'');
             this.spinner.hide();
         }
         // Disable the Submit button
@@ -161,19 +140,17 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 // Create .msp file and display any error test
         		errorText = self.buildMspService.buildMspFile(msmsArray, name);
         		if (errorText === '') {
-                    document.getElementById('error-text').hidden = true;
-                    document.getElementById('error-text').innerHTML = '';
-        			self.fileNameText = 'Success!';
+                    self.updateErrorText('');
+                    self.fileNameText = '.msp created';
                 } else {
-                    document.getElementById('error-text').hidden = false;
-                    document.getElementById('error-text').innerHTML = '<p>' + errorText + '</p>';
+                    self.updateErrorText(errorText);
+                    self.fileNameText = '.msp created with some issues';
                 }
                 self.spinner.hide();
         	},
         	error(err) { 
                 // Display error in case of timeout
-                document.getElementById('error-text').hidden = false;
-                document.getElementById('error-text').innerHTML = '<p>' + err + '; Check uploaded file</p>';
+                self.updateErrorText(err + '; Check uploaded file')
                 self.spinner.hide(); 
             },
         	complete() { 
@@ -182,5 +159,20 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             }
         });
     } // end buildMsp
+
+
+    // Alert the user of any errors
+    updateErrorText(errText: string) {
+        if (errText) {
+            document.getElementById('error-text').hidden = false;
+            document.getElementById('error-text').innerHTML = '<p>' + errText + '</p>';
+            document.getElementById('correct-ext').hidden = true;
+            document.getElementById('wrong-ext').hidden = false;
+        } else {
+            document.getElementById('error-text').hidden = true;
+            document.getElementById('correct-ext').hidden = false;
+            document.getElementById('wrong-ext').hidden = true;
+        }
+    }
 
 }

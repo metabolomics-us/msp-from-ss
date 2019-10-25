@@ -74,24 +74,25 @@ export class BuildMspService {
     
 
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
-    removeDuplicates(dataDict: any[]): any[] {
+    removeDuplicates(jsonArray: any[]): any[] {
 
         // Turn each entry into a string for easy comparison
-        let valuesDict = dataDict.map(x => JSON.stringify(x));
+        let stringsArray = jsonArray.map(x => JSON.stringify(x));
+        stringsArray = this.processText(stringsArray);
 
         // Create new JSON array and push only one entry for each name
-        let cleanedDict = [];
-        for (let i = 0; i < valuesDict.length; i++) {
-            if (valuesDict.indexOf(valuesDict[i]) === i) {
-                cleanedDict.push(dataDict[i]);
+        let cleanedArray = [];
+        for (let i = 0; i < stringsArray.length; i++) {
+            if (stringsArray.indexOf(stringsArray[i]) === i) {
+                cleanedArray.push(jsonArray[i]);
             }
         }
-        return cleanedDict;
+        return cleanedArray;
     } // end removeDuplicates
 
 
 	// Builds array of dictionaries
-	buildDictArray(headers: string[], data: string[][]): any[] {
+	buildJsonArray(headers: string[], data: string[][]): any[] {
 		// Iterate through data and build dictionary
 		// keys=headers[], values=row of data[][]
 
@@ -114,11 +115,11 @@ export class BuildMspService {
 			arr.push(dict);
 		}
 		return arr;
-	} // end buildDictArray
+	} // end buildJsonArray
 
 
 	// Check for any column headers that are misspelled or missing
-	hasHeaderErrors(headers: any[]): boolean {
+	hasTextErrors(headers: any[]): boolean {
 
 		let hasError = false;
 		// let headerErrors: string = 'These headers may be misspelled or missing:';
@@ -137,11 +138,11 @@ export class BuildMspService {
 			this.errorText = 'These headers may be misspelled or missing: ' + headerErrors.join(', ');
 		}
 		return hasError;
-	} // end hasHeaderErrors
+	} // end hasTextErrors
 
 
-	// Make all headers uppercase and remove extraneous whitespace
-	processHeaders(headers: any[]): any[] {
+	// Text values in an array become uppercase and remove extraneous whitespace
+	processText(headers: any[]): any[] {
 		return headers.map(x => String(x).trim().toUpperCase());
 	}
 
@@ -151,7 +152,7 @@ export class BuildMspService {
 
 		// Format the row from the MS/MS spreadsheet to be similar to be uppercase strings, like vitalHeaders
 		//  i.e. all uppercase strings
-		const formattedHeaders = this.processHeaders(line);
+		const formattedHeaders = this.processText(line);
 
 		// Check if the line contains one of the columns and return true; false otherwise
 		let i: number;
@@ -192,26 +193,26 @@ export class BuildMspService {
 
 			// Get the headers, convert them to upper case and remove trailing white space
 			let headers = msmsArray[headerPosition];
-			headers = this.processHeaders(headers);
+			headers = this.processText(headers);
 
 			// If all important headers are available and without errors, proceed
-			if (!this.hasHeaderErrors(headers)) {
+			if (!this.hasTextErrors(headers)) {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
-                let msmsDictArray = this.buildDictArray(headers, data);
+                let msmsJsonArray = this.buildJsonArray(headers, data);
 
                 // Get length of array
-                const msmsLength = msmsDictArray.length;
+                const msmsLength = msmsJsonArray.length;
                 // Remove duplicate entries
-                msmsDictArray = this.removeDuplicates(msmsDictArray);
+                msmsJsonArray = this.removeDuplicates(msmsJsonArray);
                 // Tell the user if duplicate entries were not included
-                if (msmsDictArray.length < msmsLength) {
+                if (msmsJsonArray.length < msmsLength) {
                     this.errorText = 'Duplicate entries found and not included in .msp';
                 }
 
 				// Turn array into a string
-				const mspString = this.buildMspStringFromArray(msmsDictArray);
+				const mspString = this.buildMspStringFromArray(msmsJsonArray);
 				// Turn string into Blob object so that it can be written into a file
 				const blob = new Blob([mspString], {type: 'text/plain;charset=utf-8'});
 				// User will be prompted to save a .msp for their data
