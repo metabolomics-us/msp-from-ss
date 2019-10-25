@@ -205,8 +205,9 @@ export class BuildMspService {
                 const msmsLength = msmsDictArray.length;
                 // Remove duplicate entries
                 msmsDictArray = this.removeDuplicates(msmsDictArray);
+                // Tell the user if duplicate entries were not included
                 if (msmsDictArray.length < msmsLength) {
-                    this.errorText = 'Duplicate entries found and removed';
+                    this.errorText = 'Duplicate entries found and not included in .msp';
                 }
 
 				// Turn array into a string
