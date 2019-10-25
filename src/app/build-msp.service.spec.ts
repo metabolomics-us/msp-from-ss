@@ -19,7 +19,7 @@ describe('BuildMspService', () => {
 	it('should produce formatted string from array', () => {
 
 		const msmsArray: any[] = [{'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-		'ADDUCT TYPE': '[M+H]+', FORMULA: 'C12H14N2O2', INCHIKEY: 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+		'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
 		'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'}];
 
 		const msmsStr: string = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor Type: [M+H]+\n' +
@@ -31,56 +31,94 @@ describe('BuildMspService', () => {
 	});
 	// should throw error with improper Mz formatting (ex. , instead of : etc.)
 
-	// buildDictArray
-	// should have dataError be true when data is missing
+	// buildJsonArray
+    // should have dataError be true when data is missing
+    
+    // removeDuplicates
 
-	// hasHeaderErrors
+    it('should return array of length 1', () => {
+        const jsonArr = [
+            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'},
+            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'}
+        ];
+        expect(service.removeDuplicates(jsonArr).length).toBe(1);
+    });
+
+    it('should return array of length 2', () => {
+        const jsonArr = [
+            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'},
+            {'AVERAGE RT(MIN)': '5.874', 'AVERAGE MZ': '228.0988', 'METABOLITE NAME': '2\'-Deoxycytidine',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C9H13N3O4', 'INCHIKEY': 'CKTSBUTUHBMZGZ-SHYZEUOFSA-N',
+            'MS1 ISOTOPIC SPECTRUM': '228.0988:275396', 'MS/MS SPECTRUM': '35.25149:14 35.48236:5'}
+        ];
+        expect(service.removeDuplicates(jsonArr).length).toBe(2);
+    });
+
+    it('should return array of length 2 after minor change (AVERAGE RT(MIN))', () => {
+        const jsonArr = [
+            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'},
+            {'AVERAGE RT(MIN)': '6.25', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'}
+        ];
+        expect(service.removeDuplicates(jsonArr).length).toBe(2);
+    });
+
+	// hasTextErrors
 
 	it('should return false when all headers are present and spelled correctly', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		expect(service.hasHeaderErrors(headers)).toBe(false);
+		expect(service.hasTextErrors(headers)).toBe(false);
 	});
 
 	it('should return true when one header is misspelled (AVERAGE MZ)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ x', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		expect(service.hasHeaderErrors(headers)).toBe(true);
+		expect(service.hasTextErrors(headers)).toBe(true);
 	});
 
 	it('should return true when one header is missing (INCHIKEY)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		expect(service.hasHeaderErrors(headers)).toBe(true);
+		expect(service.hasTextErrors(headers)).toBe(true);
 	});
 
 	it('should properly set error text when headers are misspelled (FORMULA)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA x', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		service.hasHeaderErrors(headers);
+		service.hasTextErrors(headers);
 		expect(service.errorText).toEqual('These headers may be misspelled or missing: FORMULA');
 	});
 
 	it('should properly set error text when headers are misspelled (AVERAGE MZ, MS1 ISOTOPIC SPECTRUM)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ x', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM x', 'MS/MS SPECTRUM'];
-		service.hasHeaderErrors(headers);
+		service.hasTextErrors(headers);
 		expect(service.errorText).toEqual('These headers may be misspelled or missing: AVERAGE MZ, MS1 ISOTOPIC SPECTRUM');
 	});
 
 	it('should properly set error text when headers are missing (INCHIKEY)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		service.hasHeaderErrors(headers);
+		service.hasTextErrors(headers);
 		expect(service.errorText).toEqual('These headers may be misspelled or missing: INCHIKEY');
 	});
 
-	// processHeaders
+	// processText
 
 	it('should return ["AVERAGE RT(MIN)", "AVERAGE MZ"] when ["Average Rt(min)", " Average Mz "] is sent', () => {
 		const incorrect = ['Average Rt(min)', ' Average Mz '];
 		const correct = ['AVERAGE RT(MIN)', 'AVERAGE MZ'];
-		expect(service.processHeaders(incorrect)).toEqual(correct);
+		expect(service.processText(incorrect)).toEqual(correct);
 	});
 
 	// lineHasHeaders
@@ -134,7 +172,7 @@ describe('BuildMspService', () => {
 	describe('BuildMspService: buildMspFile', () => {
 		let arr: any[][];
 		let name: string;
-		let dictArr: any[];
+		let jsonArr: any[];
 		let testStr: string;
 
 		beforeAll(() => {
@@ -146,9 +184,9 @@ describe('BuildMspService', () => {
 			];
 			name = 'test.csv';
 
-			dictArr = [
+			jsonArr = [
 				{'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-				'ADDUCT TYPE': '[M+H]+', FORMULA: 'C12H14N2O2', INCHIKEY: 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+				'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
 				'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'}
 			];
 
@@ -164,18 +202,18 @@ describe('BuildMspService', () => {
 
 		it('should call functions from buildMspFile()', () => {
 			service.getHeaderPosition = jasmine.createSpy('getHeaderPosition() spy').and.returnValue(0);
-			service.processHeaders = jasmine.createSpy('processHeaders() spy').and.returnValue(arr[0]);
-			service.hasHeaderErrors = jasmine.createSpy('hasHeaderErrors() spy').and.returnValue(false);
-			service.buildDictArray = jasmine.createSpy('buildDictArray() spy').and.returnValue(dictArr);
+			service.processText = jasmine.createSpy('processText() spy').and.returnValue(arr[0]);
+			service.hasTextErrors = jasmine.createSpy('hasTextErrors() spy').and.returnValue(false);
+			service.buildJsonArray = jasmine.createSpy('buildJsonArray() spy').and.returnValue(jsonArr);
 			service.buildMspStringFromArray = jasmine.createSpy('buildMspStringFromArray() spy').and.returnValue(testStr);
 			service.saveFile = jasmine.createSpy('saveFile() spy');
 
 			service.buildMspFile(arr, name);
 
 			expect(service.getHeaderPosition).toHaveBeenCalled();
-			expect(service.processHeaders).toHaveBeenCalled();
-			expect(service.hasHeaderErrors).toHaveBeenCalled();
-			expect(service.buildDictArray).toHaveBeenCalled();
+			expect(service.processText).toHaveBeenCalled();
+			expect(service.hasTextErrors).toHaveBeenCalled();
+			expect(service.buildJsonArray).toHaveBeenCalled();
 			expect(service.buildMspStringFromArray).toHaveBeenCalled();
 			expect(service.saveFile).toHaveBeenCalled();
 		});

@@ -25,6 +25,11 @@
     color: #fff;
  }
 
+ #rs-buttons {
+     margin-top: 15px;
+     margin-bottom: 10px;
+ }
+
 input[type="file"] {
    position: absolute;
    z-index: -1;
@@ -36,7 +41,7 @@ input[type="file"] {
 
 #file-name-text {
     text-align: center;
-    margin: 10px;
+    /* margin: 10px; */
     font-style: italic;
     font-weight: bold;
     font-size: 130%;
@@ -49,6 +54,7 @@ input[type="file"] {
     text-align: center;
     padding-top: 7px;
     padding-bottom: 1px;
+    margin: 15px 5px;
     /* color: blue; */
     /* font-style: italic; */
     font-weight: bold;
