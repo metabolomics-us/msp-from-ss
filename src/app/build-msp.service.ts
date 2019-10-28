@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 
+import { MspError } from './error-enum';
+
 @Injectable({
 	providedIn: 'root'
 })
@@ -208,7 +210,7 @@ export class BuildMspService {
                 msmsJsonArray = this.removeDuplicates(msmsJsonArray);
                 // Tell the user if duplicate entries were not included
                 if (msmsJsonArray.length < msmsLength) {
-                    this.errorText = 'Duplicate entries found and not included in .msp';
+                    this.errorText = 'Duplicate entries found but not included in .msp';
                 }
 
 				// Turn array into a string

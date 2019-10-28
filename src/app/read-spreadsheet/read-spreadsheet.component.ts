@@ -8,6 +8,8 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { Observable, Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
+import { MspError } from '../error-enum';
+
 @Component({
 	selector: 'read-spreadsheet',
 	templateUrl: 'read-spreadsheet.component.html',
@@ -74,14 +76,16 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 // Submit button can now be clicked
                 this.submitValid = true;
                 this.updateErrorText('');
+                this.showCorrectImage(true,true);
 
-                console.log(this.targetInput.value);
-                console.log(this.files);
+                // console.log(this.targetInput.value);
+                // console.log(this.files);
             } else {
                 this.files = null;
                 // Submit button greyed out
                 this.submitValid = false;
                 this.updateErrorText('Please choose a .xlsx or .csv file');
+                this.showCorrectImage(true,false);
             }
         } 
 	}
@@ -110,12 +114,14 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.buildMsp(this.fileNameText);
 			} else {
                 this.updateErrorText('Please choose a .xlsx or .csv file');
+                this.showCorrectImage(true, false);
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
                 this.spinner.hide();
 			}
 
 		} else {
             this.updateErrorText('Select file before clicking \'Submit\'');
+            this.showCorrectImage(true, false);
             this.spinner.hide();
         }
         // Disable the Submit button
@@ -138,7 +144,24 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.subscription = this.observable$.pipe(take(1),timeout(10000)).subscribe({
         	next(msmsArray) {
                 // Create .msp file and display any error test
-        		errorText = self.buildMspService.buildMspFile(msmsArray, name);
+                errorText = self.buildMspService.buildMspFile(msmsArray, name);
+                
+                // if (MspError.noError) {
+                //     self.updateErrorText('');
+                //     self.fileNameText = '.msp created';
+                //     self.showCorrectImage(true, true);
+                // } else if (MspError.dataMissing) {
+                //     self.updateErrorText('Some data may be missing');
+                //     self.showCorrectImage(true, false);
+                // } else if (MspError.headersMissing) {
+                //     self.updateErrorText('Check column headers; one  or more may be missing or misspelled');
+                //     self.showCorrectImage(true, false);
+                // } else if (MspError.duplicateEntries) {
+                //     self.updateErrorText('Duplicate entries found but not included in .msp');
+                //     self.fileNameText = '.msp created with some issues';
+                //     self.showCorrectImage(true, true);
+                // }
+
         		if (errorText === '') {
                     self.updateErrorText('');
                     self.fileNameText = '.msp created';
@@ -146,11 +169,13 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                     self.updateErrorText(errorText);
                     self.fileNameText = '.msp created with some issues';
                 }
+                self.showCorrectImage(true, true);
                 self.spinner.hide();
         	},
         	error(err) { 
                 // Display error in case of timeout
                 self.updateErrorText(err + '; Check uploaded file')
+                self.showCorrectImage(true, false);
                 self.spinner.hide(); 
             },
         	complete() { 
@@ -166,12 +191,24 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         if (errText) {
             document.getElementById('error-text').hidden = false;
             document.getElementById('error-text').innerHTML = '<p>' + errText + '</p>';
-            document.getElementById('correct-ext').hidden = true;
-            document.getElementById('wrong-ext').hidden = false;
         } else {
             document.getElementById('error-text').hidden = true;
-            document.getElementById('correct-ext').hidden = false;
+        }
+    }
+
+
+    showCorrectImage(showImage: boolean, correct: boolean) {
+        if (showImage) {
+            if (correct) {
+                document.getElementById('wrong-ext').hidden = true;
+                document.getElementById('correct-ext').hidden = false;
+            } else {
+                document.getElementById('wrong-ext').hidden = false;
+                document.getElementById('correct-ext').hidden = true;
+            }
+        } else {
             document.getElementById('wrong-ext').hidden = true;
+            document.getElementById('correct-ext').hidden = true;
         }
     }
 
