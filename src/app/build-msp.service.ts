@@ -28,14 +28,12 @@ export class BuildMspService {
 
 
     saveErrorFile(name: string) {
-        let missingDataText = ''
-        let duplicatesText = '';
+        let missingDataText = 'These lines contain missing data:\n';
+        let duplicatesText = 'These lines are duplicates:\n';
         if (this.missingData.length > 0) {
-            missingDataText = 'These lines contain missing data:\n';
             missingDataText += this.missingData.map(x => String(x)).join(', ');
         }
         if (this.duplicates.length > 0) {
-            duplicatesText = 'These lines are duplicates:\n';
             duplicatesText += this.duplicates.map(x => String(x)).join(', ');
         }
         this.saveFile([missingDataText, duplicatesText].join('\n\n'), name);
@@ -240,7 +238,7 @@ export class BuildMspService {
                 // Use header position to get row number; check for missing data per each header
                 this.collectMissingData(msmsJsonArray, headerPosition + 2);
                 if (this.missingData.length > 0) {
-                    this.errorWarning = 'Warning: Some entries have missing data';
+                    this.errorWarning = 'Warning: Some entries have missing data; these attributes were left blank';
                 }
 
                 // Get length of array
@@ -259,7 +257,6 @@ export class BuildMspService {
 				const mspString = this.buildMspStringFromArray(msmsJsonArray);
 				// User will be prompted to save a .msp for their data
                 this.saveFile(mspString, fileName.split('.')[0] + '.msp');
-                this.saveErrorFile('errors.txt');
 			}
 		} else {
             this.errorWarning = 'Error: column headers not found';
