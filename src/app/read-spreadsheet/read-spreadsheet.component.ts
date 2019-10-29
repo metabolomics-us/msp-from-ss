@@ -20,7 +20,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     submitValid: boolean;
     files: FileList;
     fileNameText: string;
-    errorText: string;
     observable$: Observable<any>;
     subscription: Subscription;
     targetInput: HTMLInputElement;
@@ -140,15 +139,15 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         //  Times out if unable to read and parse spreadsheet in 10 seconds
         this.subscription = this.observable$.pipe(take(1),timeout(10000)).subscribe({
         	next(msmsArray) {
-                let errorData = [];
+                let errorData = '';
                 // Create .msp file and display any error test
                 errorData = self.buildMspService.buildMspFile(msmsArray, name);
-        		if (errorData[0] === '') {
+        		if (errorData === '') {
                     self.fileNameText = '.msp created';
                 } else {
                     self.fileNameText = '.msp created with some issues';
                 }
-                self.updateErrorText(errorData[0]);
+                self.updateErrorText(errorData);
                 self.showCorrectImage(true, true);
                 self.spinner.hide();
         	},
@@ -171,7 +170,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         if (errText) {
             // Error text is not an empty string
             document.getElementById('error-box').hidden = false;
-            this.errorText = errText;
+            document.getElementById('error-text').innerHTML = '<p>' + errText + '</p>';
         } else {
             document.getElementById('error-box').hidden = true;
         }
