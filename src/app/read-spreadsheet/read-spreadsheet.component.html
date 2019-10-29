@@ -19,7 +19,13 @@
     <a name="example-msp" (click)="downloadExample($event)">here</a>.
 </div>
 
-<div id="error-text"></div>
+<div id="error-box">
+    <span id="error-text"></span>
+    <p id="error-file">
+        Download Error Data: 
+        <button (click)="getErrorFile()">Error File</button>
+    </p>
+</div>
 
 <div id="rs-buttons" style="text-align: center;">
     <span class="button-wrap">

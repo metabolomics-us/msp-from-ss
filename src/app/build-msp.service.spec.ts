@@ -72,44 +72,44 @@ describe('BuildMspService', () => {
         expect(service.removeDuplicates(jsonArr).length).toBe(2);
     });
 
-	// hasTextErrors
+	// hasHeaderErrors
 
 	it('should return false when all headers are present and spelled correctly', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		expect(service.hasTextErrors(headers)).toBe(false);
+		expect(service.hasHeaderErrors(headers)).toBe(false);
 	});
 
 	it('should return true when one header is misspelled (AVERAGE MZ)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ x', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		expect(service.hasTextErrors(headers)).toBe(true);
+		expect(service.hasHeaderErrors(headers)).toBe(true);
 	});
 
 	it('should return true when one header is missing (INCHIKEY)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		expect(service.hasTextErrors(headers)).toBe(true);
+		expect(service.hasHeaderErrors(headers)).toBe(true);
 	});
 
 	it('should properly set error text when headers are misspelled (FORMULA)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA x', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		service.hasTextErrors(headers);
+		service.hasHeaderErrors(headers);
 		expect(service.errorText).toEqual('These headers may be misspelled or missing: FORMULA');
 	});
 
 	it('should properly set error text when headers are misspelled (AVERAGE MZ, MS1 ISOTOPIC SPECTRUM)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ x', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM x', 'MS/MS SPECTRUM'];
-		service.hasTextErrors(headers);
+		service.hasHeaderErrors(headers);
 		expect(service.errorText).toEqual('These headers may be misspelled or missing: AVERAGE MZ, MS1 ISOTOPIC SPECTRUM');
 	});
 
 	it('should properly set error text when headers are missing (INCHIKEY)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-		service.hasTextErrors(headers);
+		service.hasHeaderErrors(headers);
 		expect(service.errorText).toEqual('These headers may be misspelled or missing: INCHIKEY');
 	});
 
@@ -203,7 +203,7 @@ describe('BuildMspService', () => {
 		it('should call functions from buildMspFile()', () => {
 			service.getHeaderPosition = jasmine.createSpy('getHeaderPosition() spy').and.returnValue(0);
 			service.processText = jasmine.createSpy('processText() spy').and.returnValue(arr[0]);
-			service.hasTextErrors = jasmine.createSpy('hasTextErrors() spy').and.returnValue(false);
+			service.hasHeaderErrors = jasmine.createSpy('hasHeaderErrors() spy').and.returnValue(false);
 			service.buildJsonArray = jasmine.createSpy('buildJsonArray() spy').and.returnValue(jsonArr);
 			service.buildMspStringFromArray = jasmine.createSpy('buildMspStringFromArray() spy').and.returnValue(testStr);
 			service.saveFile = jasmine.createSpy('saveFile() spy');
@@ -212,7 +212,7 @@ describe('BuildMspService', () => {
 
 			expect(service.getHeaderPosition).toHaveBeenCalled();
 			expect(service.processText).toHaveBeenCalled();
-			expect(service.hasTextErrors).toHaveBeenCalled();
+			expect(service.hasHeaderErrors).toHaveBeenCalled();
 			expect(service.buildJsonArray).toHaveBeenCalled();
 			expect(service.buildMspStringFromArray).toHaveBeenCalled();
 			expect(service.saveFile).toHaveBeenCalled();
