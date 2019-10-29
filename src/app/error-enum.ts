@@ -1,6 +1,6 @@
-export enum MspError {
-    noError,
-    dataMissing,
-    headersMissing,
-    duplicateEntries
+export enum MspIssues {
+    NoError,
+    DataMissing,
+    HeadersMissing,
+    DuplicateEntries
 }

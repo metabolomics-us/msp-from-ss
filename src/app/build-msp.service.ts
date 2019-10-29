@@ -1,37 +1,63 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 
-import { MspError } from './error-enum';
+import { _ } from 'underscore';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class BuildMspService {
 
-	errorText: string;
-	vitalHeaders: string[];
+    errorWarning: string;
+    errorText: string;
+    vitalHeaders: string[];
 
 	constructor() {
 		// Moving this here b/c Services can't use oninit
-		this.errorText = '';
+        // this.errorWarning = '';
+        this.resetErrors();
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
-	}
+    }
+    
+
+    resetErrors() {
+        this.errorWarning = '';
+        this.errorText = '';
+    }
 
 
 	// Writes file for user download
 	//  This method was included so that I could create a spy for it during unit tests
 	//  In other words, I didn't want to actually produce a file during every test
-	saveFile(dataToWrite: Blob, name: string) {
-		saveAs(dataToWrite, name);
-	}
+	saveFile(stringToWrite: string, name: string) {
+        // Turn string into Blob object so that it can be written into a file
+        const blob = new Blob([stringToWrite], {type: 'text/plain;charset=utf-8'});
+		saveAs(blob, name);
+    }
+    
 
 
-	// Create a string from a 2x2 array of MS/MS data
+
+
+
+
+
+
+
+
+
+
+
+    // Create a string from a 2x2 array of MS/MS data
 	buildMspStringFromArray(dataArray: any[]): string {
 
+        let dataMissing = '';
+
 		// Initialize string to be returned
-		let mspString = '';
+        let mspString = '';
+        // Initialize string for one metabolite
+        let metaboliteString = '';
 		// A list of mass and intensity for each peak
         let spectrum: string[];
 
@@ -41,38 +67,108 @@ export class BuildMspService {
 		//  Each row represents data for one metabolite
 		dataArray.forEach((element: any) => {
 
-			try {
-				mspString +=
-				'Name: ' + element['METABOLITE NAME'] + '\n' +
-				'InChIKey: ' + element.INCHIKEY + '\n' +
-				'Precursor Type: ' + element['ADDUCT TYPE'] + '\n' +
-				'Precursor Mz: ' + element['AVERAGE MZ'] + '\n' +
-				'Retention Time: ' + element['AVERAGE RT(MIN)'] + '\n' +
-				'Formula: ' + element.FORMULA + '\n';
-				// Create array of mass/intensity peaks to be written into the string line by line
-				//  First check that MS/MS spectrum data exists
-				if (element['MS/MS SPECTRUM'].length > 0) {
-					spectrum = element['MS/MS SPECTRUM'].split(' ');
-					mspString += 'Num Peaks: ' + spectrum.length.toString() + '\n';
-					spectrum.forEach(massIntensity => {
-						mspString += massIntensity.replace(':', ' ') + '\n';
-					});
-				}
-				mspString = mspString + '\n\n';
-			} catch (err) {
-				hasErrors = true;
+            metaboliteString +=
+            'Name: ' + element['METABOLITE NAME'] + '\n' +
+            'InChIKey: ' + element['INCHIKEY'] + '\n' +
+            'Precursor Type: ' + element['ADDUCT TYPE'] + '\n' +
+            'Precursor Mz: ' + element['AVERAGE MZ'] + '\n' +
+            'Retention Time: ' + element['AVERAGE RT(MIN)'] + '\n' +
+            'Formula: ' + element['FORMULA'] + '\n';
+            // Create array of mass/intensity peaks to be written into the string line by line
+            //  First check that MS/MS spectrum data exists
+            if (element['MS/MS SPECTRUM'].length > 0) {
+                spectrum = element['MS/MS SPECTRUM'].split(' ');
+                metaboliteString += 'Num Peaks: ' + spectrum.length.toString() + '\n';
+                spectrum.forEach(massIntensity => {
+                    metaboliteString += massIntensity.replace(':', ' ') + '\n';
+                });
+            } else {
+                metaboliteString += 'Num Peaks: ';
+            }
+            metaboliteString += '\n\n';
 
-				// handleMspStringErrors ???
-				// Maybe build string for download of rows w/errors
-				// Maybe check for which ones are equal to ''
-				// Maybe a scrollable text window with all of the lines w/missing data?
-			}
+            mspString += metaboliteString;
+            metaboliteString = '';
         });
         if (hasErrors) {
-            this.errorText = 'Data may have one or more errors';
+            this.errorWarning = 'Data may have one or more errors';
         }
 		return mspString;
     } // end buildMspStringFromArray
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	// // Create a string from a 2x2 array of MS/MS data
+	// buildMspStringFromArray(dataArray: any[]): string {
+
+    //     let dataMissing = '';
+
+	// 	// Initialize string to be returned
+    //     let mspString = '';
+    //     // Initialize string for one metabolite
+    //     let metaboliteString = '';
+	// 	// A list of mass and intensity for each peak
+    //     let spectrum: string[];
+
+    //     let hasErrors = false;
+
+	// 	// Traverse each row of dataArray and build mspString
+	// 	//  Each row represents data for one metabolite
+	// 	dataArray.forEach((element: any) => {
+
+	// 		try {
+	// 			mspString +=
+	// 			'Name: ' + element['METABOLITE NAME'] + '\n' +
+	// 			'InChIKey: ' + element['INCHIKEY'] + '\n' +
+	// 			'Precursor Type: ' + element['ADDUCT TYPE'] + '\n' +
+	// 			'Precursor Mz: ' + element['AVERAGE MZ'] + '\n' +
+	// 			'Retention Time: ' + element['AVERAGE RT(MIN)'] + '\n' +
+	// 			'Formula: ' + element['FORMULA'] + '\n';
+	// 			// Create array of mass/intensity peaks to be written into the string line by line
+	// 			//  First check that MS/MS spectrum data exists
+	// 			if (element['MS/MS SPECTRUM'].length > 0) {
+	// 				spectrum = element['MS/MS SPECTRUM'].split(' ');
+	// 				mspString += 'Num Peaks: ' + spectrum.length.toString() + '\n';
+	// 				spectrum.forEach(massIntensity => {
+	// 					mspString += massIntensity.replace(':', ' ') + '\n';
+	// 				});
+	// 			} else {
+    //                 mspString += 'Num Peaks: ';
+    //             }
+	// 			mspString = mspString + '\n\n';
+	// 		} catch (err) {
+	// 			hasErrors = true;
+
+	// 			// handleMspStringErrors ???
+	// 			// Maybe build string for download of rows w/errors
+	// 			// Maybe check for which ones are equal to ''
+	// 			// Maybe a scrollable text window with all of the lines w/missing data?
+	// 		}
+    //     });
+    //     if (hasErrors) {
+    //         this.errorWarning = 'Data may have one or more errors';
+    //     }
+	// 	return mspString;
+    // } // end buildMspStringFromArray
+
+
+    removeAttributes(jsonArray: any[]): any[] {
+        const self = this;
+        return _.map(jsonArray, function(entry: any) { return _.pick(entry, ...self.vitalHeaders); });
+    }
     
 
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
@@ -104,14 +200,12 @@ export class BuildMspService {
 		for (i = 0; i < data.length; i++) {
 			dict = {};
 			for (j = 0; j < headers.length; j++) {
-
 				// Make sure data exists for a given header
 				if (data[i][j]) {
 					dict[headers[j]] = data[i][j];
 				} else {
 					dict[headers[j]] = '';
 				}
-
 			}
 			// Add dictionary to the array
 			arr.push(dict);
@@ -121,7 +215,7 @@ export class BuildMspService {
 
 
 	// Check for any column headers that are misspelled or missing
-	hasTextErrors(headers: any[]): boolean {
+	hasHeaderErrors(headers: any[]): boolean {
 
 		let hasError = false;
 		// let headerErrors: string = 'These headers may be misspelled or missing:';
@@ -136,11 +230,11 @@ export class BuildMspService {
 			}
 		});
 		if (hasError) {
-			// this.errorText = headerErrors;
-			this.errorText = 'These headers may be misspelled or missing: ' + headerErrors.join(', ');
+			// this.errorWarning = headerErrors;
+			this.errorWarning = 'These headers may be misspelled or missing: ' + headerErrors.join(', ');
 		}
 		return hasError;
-	} // end hasTextErrors
+	} // end hasHeaderErrors
 
 
 	// Text values in an array become uppercase and remove extraneous whitespace
@@ -182,12 +276,12 @@ export class BuildMspService {
 		return -1;
 	}
 
-
-	// Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string): string {
+    // Create .msp file from a 2x2 array of data
+	buildMspFile(msmsArray: string[][], fileName: string): string[] {
+	// buildMspFile(msmsArray: string[][], fileName: string): string {
 
 		// Reset the error text
-		this.errorText = '';
+        this.resetErrors();
 
 		// Get the row number where the headers are located
 		const headerPosition = this.getHeaderPosition(msmsArray);
@@ -198,11 +292,17 @@ export class BuildMspService {
 			headers = this.processText(headers);
 
 			// If all important headers are available and without errors, proceed
-			if (!this.hasTextErrors(headers)) {
+			if (!this.hasHeaderErrors(headers)) {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
                 let msmsJsonArray = this.buildJsonArray(headers, data);
+
+                // remove unneeded attributes
+                msmsJsonArray = this.removeAttributes(msmsJsonArray);
+
+                // Use header position to get row number; check for missing data per each header
+                // alertMissingData 
 
                 // Get length of array
                 const msmsLength = msmsJsonArray.length;
@@ -210,19 +310,21 @@ export class BuildMspService {
                 msmsJsonArray = this.removeDuplicates(msmsJsonArray);
                 // Tell the user if duplicate entries were not included
                 if (msmsJsonArray.length < msmsLength) {
-                    this.errorText = 'Duplicate entries found but not included in .msp';
+                    this.errorWarning = 'Duplicate entries found but not included in .msp';
                 }
 
 				// Turn array into a string
 				const mspString = this.buildMspStringFromArray(msmsJsonArray);
-				// Turn string into Blob object so that it can be written into a file
-				const blob = new Blob([mspString], {type: 'text/plain;charset=utf-8'});
 				// User will be prompted to save a .msp for their data
-				this.saveFile(blob, fileName.split('.')[0] + '.msp');
-			}
+                this.saveFile(mspString, fileName.split('.')[0] + '.msp');
+			} else {
+                this.errorWarning = 'Check column headers; one may be missing or misspelled';
+            }
 		} else {
-			this.errorText = 'Check column headers; one may be missing or misspelled';
-		}
-		return this.errorText;
+            this.errorWarning = 'Check column headers; one may be missing or misspelled';
+        }
+        // return this.errorWarning;
+
+        return [this.errorWarning, this.errorText];
 	}
 }
