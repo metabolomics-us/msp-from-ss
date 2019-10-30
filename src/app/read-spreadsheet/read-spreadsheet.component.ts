@@ -34,7 +34,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.files = null;
         this.updateErrorText('', false);
         this.showCorrectImage(false,true);
-        document.getElementById('error-file').hidden = true;
         this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
         // Submit button disabled
 		this.submitValid = false;
@@ -149,7 +148,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 } else if (errorData.length > 0 && (self.buildMspService.missingData.length > 0 || self.buildMspService.duplicates.length > 0)) {
                     self.fileNameText = '.msp created with some issues';
                     self.showCorrectImage(true, true);
-                    document.getElementById('error-file').hidden = false;
                     self.updateErrorText(errorData, true);
                 } else {
                     self.fileNameText = 'Fix errors, then retry upload';
@@ -173,7 +171,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 
     getErrorFile() {
-        console.log('error file');
         this.buildMspService.saveErrorFile('errors.txt');
     }
 
