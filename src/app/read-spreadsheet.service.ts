@@ -16,11 +16,23 @@ export class ReadSpreadsheetService {
 			reader.addEventListener('load', (loadEvent) => {
 				// <FileReader> - explicit type declaration so that Angular won't throw an error
 				const target: FileReader = loadEvent.target as FileReader;
-				const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
-				// Convert spreadsheet data to JSON data
-				// Using {header:1} will generate a 2x2 array
-				const msmsArray: any[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
-				subscriber.next(msmsArray);
+                const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
+                
+                // Make sure the length of the array is appropriate
+                //  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows 
+                //  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long 
+                let msmsArray: any[][];
+                const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
+                const numRows = range.e.r;
+                if (numRows < 100000) {
+                    // Convert spreadsheet data to JSON data
+                    //  Using {header:1} will generate a 2x2 array
+                    msmsArray = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                    subscriber.next(msmsArray);
+                } else {
+                    subscriber.error(`Error: file may be too large or made with an incompatible spreadsheet service like 
+                    LibreOffice; Try using Excel or converting file to .csv format instead`);
+                }
 			});
 			// Read the excel file and execute callback function from addEventListener
 			reader.readAsBinaryString(sheetData[0]);
@@ -40,9 +52,9 @@ export class ReadSpreadsheetService {
 				const target: FileReader = loadEvent.target as FileReader;
 				let msmsText: string = target.result as string;
 				msmsText = msmsText.trim();
-				// Turn the string of data into a 2x2 array
-				const msmsArray: string[][] = msmsText.split('\n').map(line => line.split(','));
-				subscriber.next(msmsArray);
+                // Turn the string of data into a 2x2 array
+                const msmsArray: string[][] = msmsText.split('\n').map(line => line.split(','));
+                subscriber.next(msmsArray);
 			});
 			// Read the csv file and execute callback function from addEventListener
 			reader.readAsText(sheetData[0]);
