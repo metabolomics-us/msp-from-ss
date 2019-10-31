@@ -16,7 +16,8 @@ export class ReadSpreadsheetService {
 			reader.addEventListener('load', (loadEvent) => {
 				// <FileReader> - explicit type declaration so that Angular won't throw an error
 				const target: FileReader = loadEvent.target as FileReader;
-				const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
+                const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
+                
                 // Make sure the length of the array is appropriate
                 //  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows 
                 //  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long 
