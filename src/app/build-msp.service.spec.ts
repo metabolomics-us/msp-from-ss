@@ -45,7 +45,7 @@ describe('BuildMspService', () => {
             'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'}
         ];
-        expect(service.removeDuplicates(jsonArr).length).toBe(1);
+        expect(service.removeDuplicates(jsonArr, 0).length).toBe(1);
     });
 
     it('should return array of length 2', () => {
@@ -57,7 +57,7 @@ describe('BuildMspService', () => {
             'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C9H13N3O4', 'INCHIKEY': 'CKTSBUTUHBMZGZ-SHYZEUOFSA-N',
             'MS1 ISOTOPIC SPECTRUM': '228.0988:275396', 'MS/MS SPECTRUM': '35.25149:14 35.48236:5'}
         ];
-        expect(service.removeDuplicates(jsonArr).length).toBe(2);
+        expect(service.removeDuplicates(jsonArr, 0).length).toBe(2);
     });
 
     it('should return array of length 2 after minor change (AVERAGE RT(MIN))', () => {
@@ -69,7 +69,7 @@ describe('BuildMspService', () => {
             'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 ISOTOPIC SPECTRUM': '219.11317:1287575', 'MS/MS SPECTRUM': '35.09272:9 35.16082:7'}
         ];
-        expect(service.removeDuplicates(jsonArr).length).toBe(2);
+        expect(service.removeDuplicates(jsonArr, 0).length).toBe(2);
     });
 
 	// hasHeaderErrors
@@ -96,21 +96,21 @@ describe('BuildMspService', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA x', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
 		service.hasHeaderErrors(headers);
-		expect(service.errorText).toEqual('These headers may be misspelled or missing: FORMULA');
+		expect(service.errorWarning).toEqual('These headers may be misspelled or missing: FORMULA');
 	});
 
 	it('should properly set error text when headers are misspelled (AVERAGE MZ, MS1 ISOTOPIC SPECTRUM)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ x', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM x', 'MS/MS SPECTRUM'];
 		service.hasHeaderErrors(headers);
-		expect(service.errorText).toEqual('These headers may be misspelled or missing: AVERAGE MZ, MS1 ISOTOPIC SPECTRUM');
+		expect(service.errorWarning).toEqual('These headers may be misspelled or missing: AVERAGE MZ, MS1 ISOTOPIC SPECTRUM');
 	});
 
 	it('should properly set error text when headers are missing (INCHIKEY)', () => {
 		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
 		service.hasHeaderErrors(headers);
-		expect(service.errorText).toEqual('These headers may be misspelled or missing: INCHIKEY');
+		expect(service.errorWarning).toEqual('These headers may be misspelled or missing: INCHIKEY');
 	});
 
 	// processText

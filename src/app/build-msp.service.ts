@@ -257,7 +257,7 @@ export class BuildMspService {
 				// Turn array into a string
 				const mspString = this.buildMspStringFromArray(msmsJsonArray);
 				// User will be prompted to save a .msp for their data
-                this.saveFile(mspString, fileName.split('.')[0] + '_msp.txt');
+                this.saveFile(mspString, fileName.split('.')[0] + '.txt');
 			}
 		} else {
             this.errorWarning = 'Error: column headers not found';
