@@ -24,6 +24,7 @@ export class ReadSpreadsheetService {
                 let msmsArray: any[][];
                 const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
                 const numRows = range.e.r;
+
                 if (numRows < 100000) {
                     // Convert spreadsheet data to JSON data
                     //  Using {header:1} will generate a 2x2 array

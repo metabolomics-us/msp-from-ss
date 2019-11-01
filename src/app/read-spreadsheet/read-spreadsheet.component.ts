@@ -83,7 +83,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.files = null;
                 // Submit button greyed out
                 this.submitValid = false;
-                this.updateErrorText('Please choose a .xlsx or .csv file', false);
+                this.updateErrorText('Please choose a .xlsx, .xls, .csv, or .ods file', false);
                 this.showCorrectImage(true,false);
             }
         } 
