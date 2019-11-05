@@ -25,14 +25,14 @@ export class ReadSpreadsheetService {
                 const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
                 const numRows = range.e.r;
 
-                if (numRows < 100000) {
+                if (numRows < 10000) {
                     // Convert spreadsheet data to JSON data
                     //  Using {header:1} will generate a 2x2 array
                     msmsArray = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
                     subscriber.next(msmsArray);
                 } else {
-                    subscriber.error(`Error: file may be too large or made with an incompatible spreadsheet service like 
-                    LibreOffice; Try using Excel or converting file to .csv format instead`);
+                    subscriber.error(`Error: file may be corrupted or too large; 
+                    Try using another spreadsheet reader or converting file to another format`);
                 }
 			});
 			// Read the excel file and execute callback function from addEventListener
@@ -40,27 +40,5 @@ export class ReadSpreadsheetService {
 		});
 
 	} // end readXlsx
-
-
-	// Return observable where .csv file is converted into 2x2 array that can be used by the subscriber
-	readCsv(sheetData: FileList): Observable<any> {
-
-		return new Observable(subscriber => {
-			const reader = new FileReader();
-			reader.addEventListener('load', (loadEvent) => {
-				// Turn the spreadsheet data into a string
-				// <FileReader> - explicit type declaration so that Angular won't throw an error
-				const target: FileReader = loadEvent.target as FileReader;
-				let msmsText: string = target.result as string;
-				msmsText = msmsText.trim();
-                // Turn the string of data into a 2x2 array
-                const msmsArray: string[][] = msmsText.split('\n').map(line => line.split(','));
-                subscriber.next(msmsArray);
-			});
-			// Read the csv file and execute callback function from addEventListener
-			reader.readAsText(sheetData[0]);
-		});
-
-	} // end readCsv
 
 }
