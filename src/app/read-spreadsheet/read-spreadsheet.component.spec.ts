@@ -18,34 +18,34 @@ describe('ReadSpreadsheetComponent', () => {
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ReadSpreadsheetComponent);
-		component = fixture.componentInstance;
+		component = fixture.debugElement.componentInstance;
 		fixture.detectChanges();
-	});
-
- it('should create', () => {
-		expect(component).toBeTruthy();
-	});
-
- it('should have instructions', () => {
+    });
+ 
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
+ 
+    it('should have instructions', () => {
 		const instructions = document.getElementById('instructions');
 		expect(instructions).toBeTruthy();
-	});
-
- it('should have an invalid submit button on start', () => {
+    });
+ 
+    it('should have an invalid submit button on start', () => {
 		expect(component.submitValid).toBe(false);
 	});
 
-	// Tried expect(anchorElements.length).toEqual(3), but one <a> is added by jasmine wrapper
- it('should have 3 <a>', () => {
+    // Tried expect(anchorElements.length).toEqual(3), but one <a> is added by jasmine wrapper
+    it('should have 3 <a>', () => {
 		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example-msp'];
 		let anchorElement: HTMLAnchorElement;
 		anchorNames.forEach(name => {
 			anchorElement = document.getElementsByName(name)[0] as HTMLAnchorElement;
 			expect(anchorElement).toBeTruthy();
 		});
-	});
-
- it('should call downloadExample when user clicks <a>', () => {
+    });
+ 
+    it('should call downloadExample when user clicks <a>', () => {
 		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example-msp'];
 		spyOn(component, 'downloadExample');
 		// let anchorElement = document.getElementsByName("example_spreadsheet_large-xlsx");
@@ -55,28 +55,35 @@ describe('ReadSpreadsheetComponent', () => {
 			anchorElement.click();
 			expect(component.downloadExample).toHaveBeenCalled();
 		});
-	});
+    });
 
- it('should call fileSelected when change event occurs', () => {
+    // Testing variable binding
+    it('should display a different test title', () => {
+        component.fileNameText = 'Test Name';
+        fixture.detectChanges();
+        expect(fixture.debugElement.nativeElement.querySelector('#file-name-text').textContent).toContain('Test Name');
+    });
+ 
+    it('should call fileSelected when change event occurs', () => {
 		spyOn(component, 'fileSelected');
 		const element = document.getElementById('fileInput');
 		const event = new Event('change');
-		element.dispatchEvent(event);
-  expect(component.fileSelected).toHaveBeenCalled();
-	});
-
- it('should have a submit button', () => {
+        element.dispatchEvent(event);
+        expect(component.fileSelected).toHaveBeenCalled();
+    });
+ 
+    it('should have a submit button', () => {
 		const submit = document.getElementById('submit') as HTMLButtonElement;
 		expect(submit).toBeTruthy();
-	});
-
- it('should call readFile when submit button is clicked', () => {
+    });
+ 
+    it('should call readFile when submit button is clicked', () => {
 		spyOn(component, 'fileSelected');
 		      const element = document.getElementById('fileInput');
 		      const event = new Event('change');
 		      element.dispatchEvent(event);
 		expect(component.fileSelected).toHaveBeenCalled();
-	});
+    });
 
 	// Look at:
 	// https://stackoverflow.com/questions/52078853/is-it-possible-to-update-filelist

@@ -68,22 +68,17 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.fileNameText = this.targetInput.files[0].name;
 
             // Check for proper file type
-            const nameElements = this.fileNameText.split('.');
-            const ext = nameElements[nameElements.length - 1];
-            if (ext === 'xlsx' || ext === 'csv' || ext === 'xls' || ext === 'ods') {
+            if (/\.(xlsx|csv|xls|ods|numbers)/g.test(this.fileNameText)) {
                 this.files = this.targetInput.files;
                 // Submit button can now be clicked
                 this.submitValid = true;
                 this.updateErrorText('', false);
                 this.showCorrectImage(true,true);
-
-                // console.log(this.targetInput.value);
-                // console.log(this.files);
             } else {
                 this.files = null;
                 // Submit button greyed out
                 this.submitValid = false;
-                this.updateErrorText('Please choose a .xlsx, .xls, .csv, or .ods file', false);
+                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
                 this.showCorrectImage(true,false);
             }
         } 
@@ -97,23 +92,15 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.spinner.show();
 
             // Check for proper file type
-            const nameElements = this.files[0].name.split('.');
-            const ext = nameElements[nameElements.length - 1];
-            
             // Call readXlsx or readCsv depending on type of file submitted
             // Get Observable that converts spreadsheet into 2x2 array
-			if (ext === 'xlsx' || ext === 'xls' || ext === 'ods') {
+			if (/\.(xlsx|csv|xls|ods|numbers)/g.test(this.fileNameText)) {
                 this.updateErrorText('', false);                
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
                 this.buildMsp(this.fileNameText);
-			} else if (ext === 'csv') {
-                this.updateErrorText('', false);
-                // Get observable which converts .csv into array
-                this.observable$ = this.readSpreadsheetService.readCsv(this.files);
-                this.buildMsp(this.fileNameText);
 			} else {
-                this.updateErrorText('Please choose a .xlsx or .csv file', false);
+                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
                 this.showCorrectImage(true, false);
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
                 this.spinner.hide();
