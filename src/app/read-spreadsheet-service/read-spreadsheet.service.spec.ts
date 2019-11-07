@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ReadSpreadsheetService } from './read-spreadsheet.service';
-import { BuildMspService } from './build-msp.service';
+import { BuildMspService } from '../build-msp-service/build-msp.service';
 
 import { Observable } from 'rxjs';
 
