@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 
-import { ReadSpreadsheetService } from '../read-spreadsheet.service';
-import { DownloadFileService } from '../download-file.service';
-import { BuildMspService } from '../build-msp.service';
+import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
+import { DownloadFileService } from '../download-file-service/download-file.service';
+import { BuildMspService } from '../build-msp-service/build-msp.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 
 import { Observable, Subscription } from 'rxjs';
@@ -68,7 +68,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.fileNameText = this.targetInput.files[0].name;
 
             // Check for proper file type
-            if (/\.(xlsx|csv|xls|ods|numbers)/g.test(this.fileNameText)) {
+            if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
                 this.files = this.targetInput.files;
                 // Submit button can now be clicked
                 this.submitValid = true;
@@ -94,7 +94,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             // Check for proper file type
             // Call readXlsx or readCsv depending on type of file submitted
             // Get Observable that converts spreadsheet into 2x2 array
-			if (/\.(xlsx|csv|xls|ods|numbers)/g.test(this.fileNameText)) {
+			if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
                 this.updateErrorText('', false);                
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
@@ -171,6 +171,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             // Error text is not an empty string
             document.getElementById('error-box').hidden = false;
             document.getElementById('error-text').innerHTML = '<p>' + errText + '</p>';
+            // Is there an error file to download?
             document.getElementById('error-file').hidden = !showErrorFile;
         } else {
             document.getElementById('error-box').hidden = true;
