@@ -23,6 +23,13 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     observable$: Observable<any>;
     subscription: Subscription;
     targetInput: HTMLInputElement;
+
+    showCorrect: boolean;
+    showWrong: boolean;
+    showErrorBox: boolean;
+    showErrorFile: boolean;
+
+    errorText: string;
     
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
@@ -33,7 +40,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 	ngOnInit() {
         this.files = null;
         this.updateErrorText('', false);
-        this.showCorrectImage(false,true);
+        this.showWrong = false;
+        this.showCorrect = false;
         this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
         // Submit button disabled
 		this.submitValid = false;
@@ -73,13 +81,13 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 // Submit button can now be clicked
                 this.submitValid = true;
                 this.updateErrorText('', false);
-                this.showCorrectImage(true,true);
+                this.showCorrectImage(true);
             } else {
                 this.files = null;
                 // Submit button greyed out
                 this.submitValid = false;
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
-                this.showCorrectImage(true,false);
+                this.showCorrectImage(false);
             }
         } 
 	}
@@ -101,14 +109,14 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.buildMsp(this.fileNameText);
 			} else {
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
-                this.showCorrectImage(true, false);
+                this.showCorrectImage(false);
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
                 this.spinner.hide();
 			}
 
 		} else {
             this.updateErrorText('Select file before clicking \'Submit\'', false);
-            this.showCorrectImage(true, false);
+            this.showCorrectImage(false);
             this.spinner.hide();
         }
         // Disable the Submit button
@@ -134,14 +142,14 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 errorData = self.buildMspService.buildMspFile(msmsArray, name);
         		if (errorData.length === 0 && self.buildMspService.missingData.length === 0 && self.buildMspService.duplicates.length === 0) {
                     self.fileNameText = '.msp created';
-                    self.showCorrectImage(true, true);
+                    self.showCorrectImage(true);
                 } else if (errorData.length > 0 && (self.buildMspService.missingData.length > 0 || self.buildMspService.duplicates.length > 0)) {
                     self.fileNameText = '.msp created with some issues';
-                    self.showCorrectImage(true, true);
+                    self.showCorrectImage(true);
                     self.updateErrorText(errorData, true);
                 } else {
                     self.fileNameText = 'Fix errors, then retry upload';
-                    self.showCorrectImage(true, false);
+                    self.showCorrectImage(false);
                     self.updateErrorText(errorData, false);
                 }
                 self.spinner.hide();
@@ -149,7 +157,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         	error(err) { 
                 // Display error in case of timeout
                 self.updateErrorText(err + '; Check uploaded file', false)
-                self.showCorrectImage(true, false);
+                self.showCorrectImage(false);
                 self.spinner.hide(); 
             },
         	complete() { 
@@ -166,36 +174,19 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 
     // Alert the user of any errors; hide error text otherwise
-    updateErrorText(errText: string, showErrorFile: boolean) {
-        if (errText) {
-            // Error text is not an empty string
-            document.getElementById('error-box').hidden = false;
-            document.getElementById('error-text').innerHTML = '<p>' + errText + '</p>';
-            // Is there an error file to download?
-            document.getElementById('error-file').hidden = !showErrorFile;
-        } else {
-            document.getElementById('error-box').hidden = true;
-        }
+    updateErrorText(errText: string, showFile: boolean) {
+        // If error text exists, tell the user
+        this.showErrorBox = (errText ? true : false);
+        this.errorText = errText;
+        // Allow user to download error file if one exists
+        this.showErrorFile = showFile;
     }
 
 
     // Show appropriate image after a user action
-    showCorrectImage(showImage: boolean, correct: boolean) {
-        if (showImage) {
-            if (correct) {
-                // Show thumbs-up image if user action produced no errors
-                document.getElementById('wrong-ext').hidden = true;
-                document.getElementById('correct-ext').hidden = false;
-            } else {
-                // Show 'X' image if user action produced an error 
-                document.getElementById('wrong-ext').hidden = false;
-                document.getElementById('correct-ext').hidden = true;
-            }
-        } else {
-            // Hide both images
-            document.getElementById('wrong-ext').hidden = true;
-            document.getElementById('correct-ext').hidden = true;
-        }
+    showCorrectImage(correct: boolean) {
+        this.showCorrect = correct;
+        this.showWrong = !correct;
     }
 
 }

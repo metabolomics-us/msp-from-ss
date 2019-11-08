@@ -24,9 +24,9 @@
     <a name="example-msp" (click)="downloadExample($event)">here</a>.
 </div>
 
-<div id="error-box">
-    <span id="error-text"></span>
-    <p id="error-file">
+<div id="error-box" [hidden]="!showErrorBox">
+    <p id="error-text">{{ errorText }}</p>
+    <p id="error-file" [hidden]="!showErrorFile">
         Download Error Data: 
         <button (click)="getErrorFile()">Error File</button>
     </p>
@@ -47,8 +47,8 @@
 </div>
 
 <div id="file-name-text">
-    <i id="correct-ext" class="fas fa-thumbs-up"></i>
-    <i id="wrong-ext" class="fas fa-times-circle"></i>
+    <i [hidden]="!showCorrect" class="fas fa-thumbs-up"></i>
+    <i [hidden]="!showWrong" class="fas fa-times-circle"></i>
     {{ fileNameText }}
 </div>
 
