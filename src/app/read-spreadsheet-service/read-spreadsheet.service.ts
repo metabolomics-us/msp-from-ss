@@ -36,7 +36,10 @@ export class ReadSpreadsheetService {
                     subscriber.error(`Error: file may be corrupted or too large; 
                     Try using another spreadsheet reader or converting file to another format`);
                 }
-			});
+            });
+            reader.addEventListener('error', () => {
+                subscriber.error('Error: file may be corrupted or may not exist');
+            });
 			// Read the excel file and execute callback function from addEventListener
 			reader.readAsBinaryString(sheetData[0]);
 		});

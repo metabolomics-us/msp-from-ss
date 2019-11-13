@@ -37,6 +37,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         private buildMspService: BuildMspService,
         private spinner: NgxSpinnerService) {}
 
+
 	ngOnInit() {
         this.files = null;
         this.updateErrorText('', false);
@@ -100,7 +101,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.spinner.show();
 
             // Check for proper file type
-            // Call readXlsx or readCsv depending on type of file submitted
             // Get Observable that converts spreadsheet into 2x2 array
 			if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
                 this.updateErrorText('', false);                
@@ -168,6 +168,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     } // end buildMsp
 
 
+    // Download a file detailing spreadsheet errors for the user to fix
     getErrorFile() {
         this.buildMspService.saveErrorFile('errors.txt');
     }
