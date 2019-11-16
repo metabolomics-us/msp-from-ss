@@ -25,6 +25,10 @@ describe('ReadSpreadsheetComponent', () => {
     it('should create', () => {
         expect(component).toBeTruthy();
     });
+
+    /////////////////
+
+    // These 3 may need to be protractor tests?
  
     it('should have instructions', () => {
 		const instructions = document.getElementById('instructions');
@@ -44,6 +48,8 @@ describe('ReadSpreadsheetComponent', () => {
 			expect(anchorElement).toBeTruthy();
 		});
     });
+
+    /////////////////
  
     it('should call downloadExample when user clicks <a>', () => {
 		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example-msp'];

@@ -1,26 +1,40 @@
 const config = require('./protractor.conf').config;
 
-// config.capabilities = {
-//   browserName: 'chrome',
-//   chromeOptions: {
-//     args: ['--headless', '--no-sandbox']
-//   }
-// };
-
-config.multiCapabilities = [
-    {
-        browserName: 'chrome',
-        chromeOptions: {
-            args: ['--headless', '--no-sandbox']
+config.capabilities = {
+  browserName: 'chrome',
+  chromeOptions: {
+    args: ['--headless', '--no-sandbox']
+    ,
+    prefs: {
+        'download': {
+            'prompt_for_download': false,
+            'default_directory': '/e2e/downloads/'
         }
     }
-    // ,
-    // {
-    //     browserName: 'firefox',
-    //     'moz:firefoxOptions': {
-    //         args: ['--headless', '--no-sandbox']
-    //     }
-    // }
-];
+  }
+};
+
+// config.multiCapabilities = [
+//     {
+//         browserName: 'chrome',
+//         chromeOptions: {
+//             args: ['--headless', '--no-sandbox']
+//             // ,
+//             // prefs: {
+//             //     'download': {
+//             //         'prompt_for_download': false,
+//             //         'default_directory': './downloads/'
+//             //     }
+//             // }
+//         }
+//     }
+//     // ,
+//     // {
+//     //     browserName: 'firefox',
+//     //     'moz:firefoxOptions': {
+//     //         args: ['--headless', '--no-sandbox']
+//     //     }
+//     // }
+// ];
 
 exports.config = config;
