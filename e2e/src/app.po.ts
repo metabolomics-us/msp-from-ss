@@ -13,6 +13,15 @@ export class AppPage {
         // return element(by.id('title')).getText() as Promise<string>;
     }
 
+    getElementById(identifier: string) {
+        return element(by.css('#' + identifier));
+    }
+
+    elementExists(identifier: string) {
+        return element(by.css('#' + identifier)).isPresent();
+        // return element(by.css('#' + identifier)).isPresent() as Promise<boolean>;
+    }
+
     uploadSpreadsheet(fileName: string) {
         const absolutePath = path.resolve(__dirname, fileName);
         element(by.css('input[type="file"]')).sendKeys(absolutePath);
@@ -30,6 +39,11 @@ export class AppPage {
     }
 
     getErrorText() {
+        // return element(by.id('error-text')).getText();
         return element(by.id('error-text')).getText() as Promise<string>;
+    }
+
+    submitFile() {
+        return element(by.id('submit')).click();
     }
 }
