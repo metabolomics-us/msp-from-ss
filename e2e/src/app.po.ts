@@ -1,5 +1,6 @@
 import { browser, by, element } from 'protractor';
 import * as path from 'path';
+import * as fs from 'fs';
 
 export class AppPage {
 	navigateTo() {
@@ -45,5 +46,9 @@ export class AppPage {
 
     submitFile() {
         return element(by.id('submit')).click();
+    }
+
+    fileExists(name: string) {
+        return fs.existsSync(name);
     }
 }

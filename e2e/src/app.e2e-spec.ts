@@ -1,5 +1,7 @@
 import { AppPage } from './app.po';
 import { browser, logging, element } from 'protractor';
+import * as fs from 'fs';
+import { async } from 'q';
 
 describe('workspace-project App', () => {
 	let page: AppPage;
@@ -42,7 +44,6 @@ describe('workspace-project App', () => {
         expect(page.getErrorText()).toEqual(text);
     });
 
-    // Failed: script timeout
     it('should show error box with small complete file', () => {
         page.navigateTo();
         // Prevents script timeout, not sure if it tests at right time though
@@ -72,8 +73,15 @@ describe('workspace-project App', () => {
         page.navigateTo();
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../../Testing-Files/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.xlsx');
-        page.submitFile();
-        expect(page.isErrorBoxHidden()).toBe('true');
+        // page.submitFile();
+        const name = './e2e/downloads/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                expect(page.isErrorBoxHidden()).toBe('true');
+            });
+        });
     });
 
     // Come back to this one, it's not written properly
