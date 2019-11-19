@@ -1,8 +1,30 @@
 import { AppPage } from './app.po';
 import { browser, logging, element } from 'protractor';
+import * as fs from 'fs';
+import { async } from 'q';
 
 describe('workspace-project App', () => {
-	let page: AppPage;
+    let page: AppPage;
+    
+    beforeAll(() => {
+        let files: string[];
+        let filePath: string;
+        const dirPath = './e2e/downloads';
+        try {
+            files = fs.readdirSync(dirPath);
+        } catch(e) {
+            return;
+        }
+        if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                filePath = dirPath + '/' + files[i];
+                if (fs.statSync(filePath).isFile()) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+        }
+        fs.rmdirSync(dirPath);
+    });
 
 	beforeEach(() => {
         page = new AppPage();
@@ -22,14 +44,14 @@ describe('workspace-project App', () => {
 
     it('should have a disabled submit button and hidden error box to start', () => {
         page.navigateTo();
-        expect(page.isSubmitValid()).toBe('true');
+        expect(page.isSubmitDisabled()).toBe('true');
         expect(page.isErrorBoxHidden()).toBe('true');
     });
 
     it('should have a hidden error box and enabled submit button after uploading a valid .xlsx spreadsheet', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../../Testing-Files/Height_0_20198281030_QTOF_small.xlsx');
-        expect(page.isSubmitValid()).toBe(null);
+        expect(page.isSubmitDisabled()).toBe(null);
         expect(page.isErrorBoxHidden()).toBe('true');
     });
 
@@ -37,43 +59,67 @@ describe('workspace-project App', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../../Testing-Files/test_spreadsheet.txt');
         const text = 'Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers';
-        expect(page.isSubmitValid()).toBe('true');
+        expect(page.isSubmitDisabled()).toBe('true');
         expect(page.isErrorBoxHidden()).toBe(null);
         expect(page.getErrorText()).toEqual(text);
     });
 
-    // Failed: script timeout
-    it('should show error box with small complete file', () => {
+    it('should NOT show error box with small complete file', () => {
         page.navigateTo();
         // Prevents script timeout, not sure if it tests at right time though
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../../Testing-Files/Height_0_20198281030_QTOF_small.xlsx');
-        page.submitFile();
-        expect(page.isErrorBoxHidden()).toBe('true');
+        const name = './e2e/downloads/Height_0_20198281030_QTOF_small.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                expect(page.isErrorBoxHidden()).toBe('true');
+            });
+        });
     });
 
     it('should show error box with small file with duplicates', () => {
         page.navigateTo();
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../../Testing-Files/Height_0_20198281030_QTOF_small_duplicates.xlsx');
-        page.submitFile();
-        expect(page.isErrorBoxHidden()).toBe(null);
+        const name = './e2e/downloads/Height_0_20198281030_QTOF_small_duplicates.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                expect(page.isErrorBoxHidden()).toBe(null);
+                expect(page.getElementById('file-name-text').getText()).toContain('.msp created with some issues')
+            });
+        });
     });
 
     it('should show error box with large file with missing data', () => {
         page.navigateTo();
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../../Testing-Files/Height_0_20197191136negCSH_columns_renamed.xlsx');
-        page.submitFile();
-        expect(page.isErrorBoxHidden()).toBe(null);
+        const name = './e2e/downloads/Height_0_20197191136negCSH_columns_renamed.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                expect(page.isErrorBoxHidden()).toBe(null);
+            });
+        });
     });
 
-    it('should not show error box with medium sized complete file', () => {
+    it('should NOT show error box with medium sized complete file', () => {
         page.navigateTo();
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../../Testing-Files/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.xlsx');
-        page.submitFile();
-        expect(page.isErrorBoxHidden()).toBe('true');
+        const name = './e2e/downloads/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                expect(page.isErrorBoxHidden()).toBe('true');
+            });
+        });
     });
 
     // Come back to this one, it's not written properly
