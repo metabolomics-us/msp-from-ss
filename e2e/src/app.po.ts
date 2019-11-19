@@ -30,7 +30,7 @@ export class AppPage {
         // element(by.id('fileInput')).click();
     }
 
-    isSubmitValid() {
+    isSubmitDisabled() {
         return element(by.id('submit')).getAttribute('disabled');
     }
 
