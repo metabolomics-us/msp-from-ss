@@ -6,7 +6,27 @@ export class AppPage {
 	navigateTo() {
 		// Navigating to the home page, I think
 		return browser.get(browser.baseUrl) as Promise<any>;
-	}
+    }
+    
+    deleteDownloads() {
+        let files: string[];
+        let filePath: string;
+        const dirPath = './e2e/downloads';
+        try {
+            files = fs.readdirSync(dirPath);
+        } catch(e) {
+            return;
+        }
+        if (files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                filePath = dirPath + '/' + files[i];
+                if (fs.statSync(filePath).isFile()) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+        }
+        fs.rmdirSync(dirPath);
+    }
 
 	getTitleText() {
         // Both of these lines work
@@ -23,6 +43,10 @@ export class AppPage {
         // return element(by.css('#' + identifier)).isPresent() as Promise<boolean>;
     }
 
+    isElementHidden(identifier: string) {
+        return element(by.id(identifier)).getAttribute('hidden');
+    }
+
     uploadSpreadsheet(fileName: string) {
         const absolutePath = path.resolve(__dirname, fileName);
         element(by.css('input[type="file"]')).sendKeys(absolutePath);
@@ -36,19 +60,6 @@ export class AppPage {
 
     submitFile() {
         return element(by.id('submit')).click();
-    }
-
-    isCorrectImageHidden() {
-        return element(by.id('correct-image')).getAttribute('hidden');
-    }
-
-    isWrongImageHidden() {
-        return element(by.id('wrong-image')).getAttribute('hidden');
-    }
-
-    isErrorBoxHidden() {
-        return element(by.id('error-box')).getAttribute('hidden');
-        // return element(by.id('error-box')).isDisplayed();
     }
 
     getErrorText() {

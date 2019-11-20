@@ -1,33 +1,17 @@
 import { AppPage } from './app.po';
 import { browser, logging, element } from 'protractor';
 import * as fs from 'fs';
-import { saveAs } from 'file-saver';
 
 describe('workspace-project App', () => {
     let page: AppPage;
     
     beforeAll(() => {
-        let files: string[];
-        let filePath: string;
-        const dirPath = './e2e/downloads';
-        try {
-            files = fs.readdirSync(dirPath);
-        } catch(e) {
-            return;
-        }
-        if (files.length > 0) {
-            for (let i = 0; i < files.length; i++) {
-                filePath = dirPath + '/' + files[i];
-                if (fs.statSync(filePath).isFile()) {
-                    fs.unlinkSync(filePath);
-                }
-            }
-        }
-        fs.rmdirSync(dirPath);
+        page = new AppPage();
+        page.deleteDownloads();
     });
 
 	beforeEach(() => {
-        page = new AppPage();
+        // page = new AppPage();
     });
 
     it('should have instruction elements', () => {
@@ -49,57 +33,63 @@ describe('workspace-project App', () => {
     it('should have correctly disabled and hidden elements to start', () => {
         page.navigateTo();
         expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isErrorBoxHidden()).toBe('true');
-        expect(page.isCorrectImageHidden()).toBe('true');
-        expect(page.isWrongImageHidden()).toBe('true');
+        expect(page.isElementHidden('error-box')).toBe('true');
+        expect(page.isElementHidden('correct-image')).toBe('true');
+        expect(page.isElementHidden('wrong-image')).toBe('true');
     });
 
     it('should have a hidden error box and enabled submit button after uploading a valid .xlsx spreadsheet', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
         expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isErrorBoxHidden()).toBe('true');
-        expect(page.isCorrectImageHidden()).toBe(null);
-        expect(page.isWrongImageHidden()).toBe('true');
+        expect(page.isElementHidden('error-box')).toBe('true');
+        expect(page.isElementHidden('correct-image')).toBe(null);
+        expect(page.isElementHidden('wrong-image')).toBe('true');
     });
 
     it('should have button and error box states change when uploading valid and then invalid files', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
         expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isErrorBoxHidden()).toBe('true');
-        expect(page.isCorrectImageHidden()).toBe(null);
-        expect(page.isWrongImageHidden()).toBe('true');
+        expect(page.isElementHidden('error-box')).toBe('true');
+        expect(page.isElementHidden('correct-image')).toBe(null);
+        expect(page.isElementHidden('wrong-image')).toBe('true');
         page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
         expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isErrorBoxHidden()).toBe(null);
-        expect(page.isCorrectImageHidden()).toBe('true');
-        expect(page.isWrongImageHidden()).toBe(null);
+        expect(page.isElementHidden('error-box')).toBe(null);
+        expect(page.isElementHidden('correct-image')).toBe('true');
+        expect(page.isElementHidden('wrong-image')).toBe(null);
     });
 
     it('should have button and error box states change when uploading invalid and then valid files', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
         expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isErrorBoxHidden()).toBe(null);
-        expect(page.isCorrectImageHidden()).toBe('true');
-        expect(page.isWrongImageHidden()).toBe(null);
+        expect(page.isElementHidden('error-box')).toBe(null);
+        expect(page.isElementHidden('correct-image')).toBe('true');
+        expect(page.isElementHidden('wrong-image')).toBe(null);
         page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
         expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isErrorBoxHidden()).toBe('true');
-        expect(page.isCorrectImageHidden()).toBe(null);
-        expect(page.isWrongImageHidden()).toBe('true');
+        expect(page.isElementHidden('error-box')).toBe('true');
+        expect(page.isElementHidden('correct-image')).toBe(null);
+        expect(page.isElementHidden('wrong-image')).toBe('true');
     });
 
-    it('should show error box; have disabled submit button; correct error text after uploading an invalid .txt spreadsheet', () => {
+    it('should have disabled submit button, correct error text with invalid .txt spreadsheet', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
         expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isErrorBoxHidden()).toBe(null);
-        expect(page.isCorrectImageHidden()).toBe('true');
-        expect(page.isWrongImageHidden()).toBe(null);
+        expect(page.isElementHidden('correct-image')).toBe('true');
+        expect(page.isElementHidden('wrong-image')).toBe(null);
         const text = 'Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers';
         expect(page.getErrorText()).toEqual(text);
+    });
+
+    it('should not show error file button when uploading wrong file type', () => {
+        page.navigateTo();
+        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        expect(page.isElementHidden('error-box')).toBe(null);
+        expect(page.isElementHidden('error-file')).toBe('true');
     });
 
     it('should download .msp with small complete file', () => {
@@ -112,9 +102,9 @@ describe('workspace-project App', () => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
             }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isErrorBoxHidden()).toBe('true');
-                expect(page.isCorrectImageHidden()).toBe(null);
-                expect(page.isWrongImageHidden()).toBe('true');
+                expect(page.isElementHidden('error-box')).toBe('true');
+                expect(page.isElementHidden('correct-image')).toBe(null);
+                expect(page.isElementHidden('wrong-image')).toBe('true');
                 expect(page.getElementById('file-name-text').getText()).toEqual('.msp created')
             });
         });
@@ -129,9 +119,9 @@ describe('workspace-project App', () => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
             }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isErrorBoxHidden()).toBe(null);
-                expect(page.isCorrectImageHidden()).toBe(null);
-                expect(page.isWrongImageHidden()).toBe('true');
+                expect(page.isElementHidden('error-box')).toBe(null);
+                expect(page.isElementHidden('correct-image')).toBe(null);
+                expect(page.isElementHidden('wrong-image')).toBe('true');
                 expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
                 const errorFile = './e2e/downloads/errors.txt';
                 page.downloadErrorFile().then(() => {
@@ -152,9 +142,9 @@ describe('workspace-project App', () => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
             }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isErrorBoxHidden()).toBe(null);
-                expect(page.isCorrectImageHidden()).toBe(null);
-                expect(page.isWrongImageHidden()).toBe('true');
+                expect(page.isElementHidden('error-box')).toBe(null);
+                expect(page.isElementHidden('correct-image')).toBe(null);
+                expect(page.isElementHidden('wrong-image')).toBe('true');
                 expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
             });
         });
@@ -178,6 +168,8 @@ describe('workspace-project App', () => {
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH_columns_renamed.xlsx');
         page.submitFile();
+        expect(page.isElementHidden('error-box')).toBe(null);
+        expect(page.isElementHidden('error-file')).toBe(null);
         const errorFile = './e2e/downloads/errors.txt';
         page.downloadErrorFile().then(() => {
             browser.driver.wait(function() {
@@ -195,30 +187,65 @@ describe('workspace-project App', () => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
             }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isErrorBoxHidden()).toBe('true');
+                expect(page.isElementHidden('error-box')).toBe('true');
             });
         });
     });
 
-    // Come back to this one, it's not written properly
-    xit('should have correct error text when file does not exist', () => {
+    it('should have correct error text when user submits file that does not exist', () => {
         page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        // Write dummy file
         const BOM = "\uFEFF";
         const testData = BOM + "test,data\ntest,data";
         fs.writeFile('./e2e/testing-files/not_a_file.csv', testData, (err) => {
             if (err) throw err;
         });
-        page.uploadSpreadsheet('../testing-files/not_a_file.csv');
-        expect(fs.existsSync('./e2e/testing-files/not_a_file.csv')).toBe(true);
-        // fs.unlinkSync('./e2e/testing-files/not_a_file.csv');
-        // expect(fs.existsSync('./e2e/testing-files/not_a_file.csv')).toBe(false);
-
-        // page.submitFile();
-        // const text = 'Error: file may be corrupted or may not exist; Check uploaded file';
-        // expect(page.getErrorText()).toEqual(text);
+        // Check that file has been written then upload it
+        browser.driver.wait(function() {
+            return fs.existsSync('./e2e/testing-files/not_a_file.csv');
+        }, 3*1000, 'Dummy file should be written').then(function() {
+            page.uploadSpreadsheet('../testing-files/not_a_file.csv');
+            // Check that file exists, then delete it
+            //  Not sure why I have to do this again, but this is the only way it works
+            browser.driver.wait(function() {
+                return fs.existsSync('./e2e/testing-files/not_a_file.csv');
+            }, 3*1000, 'File should exist before trying to delete it').then(function() {
+                fs.unlinkSync('./e2e/testing-files/not_a_file.csv');
+                // Attempt to submit a deleted file
+                page.submitFile();
+                expect(page.isElementHidden('error-box')).toBe(null);
+                const text = 'Error: file may be corrupted or may not exist; Check uploaded file';
+                expect(page.getErrorText()).toEqual(text);
+            });
+        });
     });
 
-    // Check if file was downloaded
+    it('should tell the user that headers are not found',() => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_no_headers.ods');
+        page.submitFile();
+        const text = 'Error: column headers not found';
+        expect(page.getErrorText()).toEqual(text);
+        expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
+        expect(page.isElementHidden('correct-image')).toBe('true');
+        expect(page.isElementHidden('wrong-image')).toBe(null);
+    });
+
+    it('should tell the user what headers are missing',() => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH.xlsx');
+        page.submitFile();
+        const text = 'These headers may be misspelled or missing: ADDUCT TYPE';
+        expect(page.getErrorText()).toEqual(text);
+        expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
+        expect(page.isElementHidden('correct-image')).toBe('true');
+        expect(page.isElementHidden('wrong-image')).toBe(null);
+    });
+
+    // What if file re-saved in libre office is fucking up???
 
 	afterEach(async () => {
 		// Assert that there are no errors emitted from the browser
@@ -226,5 +253,9 @@ describe('workspace-project App', () => {
 		expect(logs).not.toContain(jasmine.objectContaining({
 			level: logging.Level.SEVERE,
         } as logging.Entry));
-	});
+    });
+    
+    afterAll(() => {
+        page.deleteDownloads();
+    });
 });
