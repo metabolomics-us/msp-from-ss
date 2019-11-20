@@ -72,7 +72,7 @@ describe('ReadSpreadsheetComponent', () => {
  
     it('should call fileSelected when change event occurs', () => {
 		spyOn(component, 'fileSelected');
-		const element = document.getElementById('fileInput');
+		const element = document.getElementById('file-input');
 		const event = new Event('change');
         element.dispatchEvent(event);
         expect(component.fileSelected).toHaveBeenCalled();
@@ -85,7 +85,7 @@ describe('ReadSpreadsheetComponent', () => {
  
     it('should call readFile when submit button is clicked', () => {
 		spyOn(component, 'fileSelected');
-		      const element = document.getElementById('fileInput');
+		      const element = document.getElementById('file-input');
 		      const event = new Event('change');
 		      element.dispatchEvent(event);
 		expect(component.fileSelected).toHaveBeenCalled();

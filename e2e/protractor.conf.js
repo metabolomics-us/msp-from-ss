@@ -17,7 +17,7 @@ exports.config = {
         browserName: 'chrome'
         ,
         chromeOptions: {
-            args: ['--headless', '--no-sandbox', '--test-type=browser']
+            args: ['--headless', '--test-type=browser']
             ,
             prefs: {
                 download: {
