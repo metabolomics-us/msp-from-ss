@@ -28,17 +28,17 @@
     <p id="error-text">{{ errorText }}</p>
     <p id="error-file" [hidden]="!showErrorFile">
         Download Error Data: 
-        <button (click)="getErrorFile()">Error File</button>
+        <button id="get-error-file" (click)="getErrorFile()">Error File</button>
     </p>
 </div>
 
 <div id="rs-buttons" style="text-align: center;">
     <span class="button-wrap">
-        <label class="btn new-button file-button" for="fileInput">
+        <label class="btn new-button file-button" for="file-input">
             <i class="fas fa-search-plus btn-img"></i>
             Browse
         </label>
-        <input id="fileInput" type="file" (change)="fileSelected($event)">
+        <input id="file-input" type="file" (change)="fileSelected($event)">
     </span>
     <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
         <i class="fas fa-check-circle btn-img"></i>
@@ -47,8 +47,8 @@
 </div>
 
 <div id="file-name-text">
-    <i [hidden]="!showCorrect" class="fas fa-thumbs-up"></i>
-    <i [hidden]="!showWrong" class="fas fa-times-circle"></i>
+    <i id="correct-image" [hidden]="!showCorrect" class="fas fa-thumbs-up"></i>
+    <i id="wrong-image" [hidden]="!showWrong" class="fas fa-times-circle"></i>
     {{ fileNameText }}
 </div>
 

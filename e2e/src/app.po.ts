@@ -27,11 +27,23 @@ export class AppPage {
         const absolutePath = path.resolve(__dirname, fileName);
         element(by.css('input[type="file"]')).sendKeys(absolutePath);
         // Throws an error and is also unnecessary
-        // element(by.id('fileInput')).click();
+        // element(by.id('file-input')).click();
     }
 
     isSubmitDisabled() {
         return element(by.id('submit')).getAttribute('disabled');
+    }
+
+    submitFile() {
+        return element(by.id('submit')).click();
+    }
+
+    isCorrectImageHidden() {
+        return element(by.id('correct-image')).getAttribute('hidden');
+    }
+
+    isWrongImageHidden() {
+        return element(by.id('wrong-image')).getAttribute('hidden');
     }
 
     isErrorBoxHidden() {
@@ -44,8 +56,8 @@ export class AppPage {
         return element(by.id('error-text')).getText() as Promise<string>;
     }
 
-    submitFile() {
-        return element(by.id('submit')).click();
+    downloadErrorFile() {
+        return element(by.id('get-error-file')).click();
     }
 
     fileExists(name: string) {
