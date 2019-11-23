@@ -9,7 +9,8 @@ export class BuildMspService {
 
     errorWarning: string;
     missingData: number[];
-    duplicates: number[];    
+    duplicates: string[];
+    // duplicates: number[];    
     vitalHeaders: string[];
 
 	constructor() {
@@ -29,7 +30,7 @@ export class BuildMspService {
 
     saveErrorFile(name: string) {
         let missingDataText = 'These lines contain missing data:\n';
-        let duplicatesText = 'These lines are duplicates:\n';
+        let duplicatesText = 'These lines are most likely duplicates:\n';
         if (this.missingData.length > 0) {
             missingDataText += this.missingData.map(x => String(x)).join(', ');
         }
@@ -119,7 +120,8 @@ export class BuildMspService {
             if (stringsArray.indexOf(stringsArray[i]) === i) {
                 cleanedArray.push(jsonArray[i]);
             } else {
-                this.duplicates.push(i + correctionFactor);
+                this.duplicates.push(String(stringsArray.indexOf(stringsArray[i])+correctionFactor) + ' & ' + String(i+correctionFactor));
+                console.log(stringsArray.indexOf(stringsArray[i])+correctionFactor, i+correctionFactor);
             }
         }
         return cleanedArray;
@@ -245,6 +247,7 @@ export class BuildMspService {
                 // Get length of array
                 const msmsLength = msmsJsonArray.length;
                 // Remove duplicate entries
+                //  Need to get header position and add 2 to get accurate row locations on the spreadsheet
                 msmsJsonArray = this.removeDuplicates(msmsJsonArray, headerPosition + 2);
                 // Tell the user if duplicate entries were not included
                 if (this.duplicates.length > 0) {
