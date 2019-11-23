@@ -15,13 +15,26 @@
     <!-- In downloadExample(), the name attribute is acquired and the dash is replaced by a period -->
     <!-- This allows the correct file to be downloaded i.e. example-msp => example.msp -->
     <!-- Hence whey there are both underscores and dashes -->
-    Example files:<br>
-    See a full spreadsheet with highlighted columns
-    <a name="example_spreadsheet_large-xlsx" (click)="downloadExample($event)">here</a>.<br>
-    See a spreadsheet with only the necessary columns
-    <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
-    See a resulting .msp file 
-    <a name="example-msp" (click)="downloadExample($event)">here</a>.
+    <p>
+        Example files:<br>
+        See a full spreadsheet with highlighted columns
+        <a name="example_spreadsheet_large-xlsx" (click)="downloadExample($event)">here</a>.<br>
+        See a spreadsheet with only the necessary columns
+        <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
+        See a resulting .msp file 
+        <a name="example-msp" (click)="downloadExample($event)">here</a>.
+    </p>
+</div>
+
+<div id="more-info" [hidden]="true">
+    <p>
+        Click to write any notes or additional info to include in the .msp before submitting:
+        <button>Click</button>
+    </p>
+    <div id="added-notes" [hidden]="true">
+        <textarea rows="4">
+        </textarea>
+    </div>
 </div>
 
 <div id="error-box" [hidden]="!showErrorBox">

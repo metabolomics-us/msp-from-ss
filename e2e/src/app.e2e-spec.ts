@@ -246,6 +246,7 @@ describe('workspace-project App', () => {
     });
 
     // What if file re-saved in libre office is fucking up???
+    // Test .numbers, .ods, .csv
 
 	afterEach(async () => {
 		// Assert that there are no errors emitted from the browser
