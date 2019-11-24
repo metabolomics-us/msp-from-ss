@@ -28,6 +28,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     showWrong: boolean;
     showErrorBox: boolean;
     showErrorFile: boolean;
+    showNotes: boolean;
 
     errorText: string;
     
@@ -45,7 +46,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.showCorrect = false;
         this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
         // Submit button disabled
-		this.submitValid = false;
+        this.submitValid = false;
+        this.showNotes = false;
         this.spinner.hide();
     }
 
@@ -63,7 +65,12 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 		//  i.e. <a name='example-msp' ...> => example.msp
 		const target = mouseEvent.target as HTMLAnchorElement;
 		this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
-	}
+    }
+    
+
+    showNotesTextArea() {
+        this.showNotes = !this.showNotes;
+    }
 
 
 	// Called when user selects spreadsheet to be turned into a .msp
