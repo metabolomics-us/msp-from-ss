@@ -26,14 +26,21 @@
     </p>
 </div>
 
-<div id="more-info" [hidden]="true">
-    <p>
-        Click to write any notes or additional info to include in the .msp before submitting:
-        <button>Click</button>
-    </p>
-    <div id="added-notes" [hidden]="true">
-        <textarea rows="4">
-        </textarea>
+<br><span class="fade-effect"></span><br><br>
+
+<div class="form-group">
+    <div id="more-info" [hidden]="false">
+        <p>
+            Click to include any additional info in the .msp:
+            <button id="show-notes" (click)="showNotesTextArea()">
+                <i class="fas fa-plus show-notes-image" [hidden]="showNotes"></i>
+                <i class="fas fa-minus show-notes-image" [hidden]="!showNotes"></i>
+            </button>
+        </p>
+        <div id="added-notes" [hidden]="!showNotes">
+            <textarea id="notes-area" rows="4"></textarea>
+            <!-- <textarea id="notes-area" rows="4" class="form-control" formControlName="notesArea"></textarea> -->
+        </div>
     </div>
 </div>
 

@@ -8,6 +8,8 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { Observable, Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+
 @Component({
 	selector: 'read-spreadsheet',
 	templateUrl: 'read-spreadsheet.component.html',
@@ -28,14 +30,22 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     showWrong: boolean;
     showErrorBox: boolean;
     showErrorFile: boolean;
+    showNotes: boolean;
 
     errorText: string;
+    // form: FormGroup;
     
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
         private buildMspService: BuildMspService,
-        private spinner: NgxSpinnerService) {}
+        private spinner: NgxSpinnerService,
+        private fb: FormBuilder) {
+            // this.form = fb.group({
+            //     notesArea: ['']
+            //     // notesArea: ['', Validators.required]
+            // });
+        }
 
 
 	ngOnInit() {
@@ -45,8 +55,11 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.showCorrect = false;
         this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
         // Submit button disabled
-		this.submitValid = false;
+        this.submitValid = false;
+        this.showNotes = false;
         this.spinner.hide();
+
+        // console.log("hello, ", this.form.controls['notesArea']);
     }
 
     
@@ -63,7 +76,12 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 		//  i.e. <a name='example-msp' ...> => example.msp
 		const target = mouseEvent.target as HTMLAnchorElement;
 		this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
-	}
+    }
+    
+
+    showNotesTextArea() {
+        this.showNotes = !this.showNotes;
+    }
 
 
 	// Called when user selects spreadsheet to be turned into a .msp
