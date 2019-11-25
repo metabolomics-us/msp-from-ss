@@ -8,12 +8,15 @@ import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.co
 
 import { NgxSpinnerModule } from "ngx-spinner";
 
+import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
+
 @NgModule({
 	declarations: [
 		AppComponent, ReadSpreadsheetComponent
 	],
 	imports: [
-		BrowserModule, AppRoutingModule, NgxSpinnerModule
+		BrowserModule, AppRoutingModule, NgxSpinnerModule, FormsModule, ReactiveFormsModule
 	],
 	providers: [],
 	bootstrap: [AppComponent],

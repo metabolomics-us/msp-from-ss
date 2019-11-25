@@ -8,6 +8,8 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { Observable, Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+
 @Component({
 	selector: 'read-spreadsheet',
 	templateUrl: 'read-spreadsheet.component.html',
@@ -31,12 +33,19 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     showNotes: boolean;
 
     errorText: string;
+    // form: FormGroup;
     
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
         private buildMspService: BuildMspService,
-        private spinner: NgxSpinnerService) {}
+        private spinner: NgxSpinnerService,
+        private fb: FormBuilder) {
+            // this.form = fb.group({
+            //     notesArea: ['']
+            //     // notesArea: ['', Validators.required]
+            // });
+        }
 
 
 	ngOnInit() {
@@ -49,6 +58,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.submitValid = false;
         this.showNotes = false;
         this.spinner.hide();
+
+        // console.log("hello, ", this.form.controls['notesArea']);
     }
 
     
