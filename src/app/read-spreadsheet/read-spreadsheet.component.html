@@ -31,7 +31,7 @@
 <form>
     <div id="more-info" [hidden]="false">
         <p>
-            Click to include any additional notes in the .msp before:
+            Click to include any additional comments in the .msp before submit:
             <button id="show-notes-button" class="btn" (click)="showNotesTextArea()">
                 <i class="fas fa-plus show-notes-image" [hidden]="showNotes"></i>
                 <i class="fas fa-minus show-notes-image" [hidden]="!showNotes"></i>
@@ -39,7 +39,8 @@
         </p>
         <div id="added-notes" [hidden]="!showNotes">
             <form-group>
-                <textarea id="notes-area" rows="4" [(ngModel)]="notesText" class="form-control"  name="notes-area"></textarea>
+                <!-- <textarea id="notes-area" rows="4" [(ngModel)]="notesText" #notesText="ngModel" class="form-control" name="notes-area" (change)="getTextFromTextArea($event)"></textarea> -->
+                <textarea id="notes-area" rows="4" name="notes-area" (change)="getTextFromTextArea($event)"></textarea>
             </form-group>
             <!-- <textarea id="notes-area" rows="4" class="form-control" formControlName="notesArea"></textarea> -->
         </div>
