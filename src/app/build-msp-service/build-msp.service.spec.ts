@@ -25,7 +25,7 @@ describe('BuildMspService', () => {
 		const msmsStr: string = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor Type: [M+H]+\n' +
 		'Precursor Mz: 219.11317\nRetention Time: 6.23\nFormula: C12H14N2O2\nNum Peaks: 2\n35.09272 9\n35.16082 7\n\n\n';
 
-		const testStr = service.buildMspStringFromArray(msmsArray);
+		const testStr = service.buildMspStringFromArray(msmsArray, '');
 		expect(testStr).toEqual(msmsStr);
 
 	});
@@ -196,7 +196,7 @@ describe('BuildMspService', () => {
 
 		it('should call lineHasHeaders', () => {
 			spyOn(service, 'lineHasHeaders');
-			service.buildMspFile(arr, name);
+			service.buildMspFile(arr, name, '');
 			expect(service.lineHasHeaders).toHaveBeenCalled();
 		});
 
@@ -208,7 +208,7 @@ describe('BuildMspService', () => {
 			service.buildMspStringFromArray = jasmine.createSpy('buildMspStringFromArray() spy').and.returnValue(testStr);
 			service.saveFile = jasmine.createSpy('saveFile() spy');
 
-			service.buildMspFile(arr, name);
+			service.buildMspFile(arr, name, '');
 
 			expect(service.getHeaderPosition).toHaveBeenCalled();
 			expect(service.processText).toHaveBeenCalled();
