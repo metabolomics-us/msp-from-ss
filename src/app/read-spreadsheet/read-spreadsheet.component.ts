@@ -36,7 +36,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     // form: FormGroup;
 
     notesText: string;
-    textInputTest: string;
     
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
@@ -63,14 +62,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.spinner.hide();
 
         this.notesText = "";
-        this.textInputTest = "";
-        // console.log("hello, ", this.form.controls['notesArea']);
     }
-
-
-    // getnotesText() {
-    //     console.log("TIT: ", this.textInputTest, "TAT: ", this.notesText);
-    // }
 
     
     ngOnDestroy() {
