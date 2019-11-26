@@ -28,21 +28,26 @@
 
 <br><span class="fade-effect"></span><br><br>
 
-<div class="form-group">
+<form>
     <div id="more-info" [hidden]="false">
         <p>
-            Click to include any additional info in the .msp:
-            <button id="show-notes" (click)="showNotesTextArea()">
+            Click to include any additional notes in the .msp before:
+            <button id="show-notes-button" class="btn" (click)="showNotesTextArea()">
                 <i class="fas fa-plus show-notes-image" [hidden]="showNotes"></i>
                 <i class="fas fa-minus show-notes-image" [hidden]="!showNotes"></i>
             </button>
         </p>
         <div id="added-notes" [hidden]="!showNotes">
-            <textarea id="notes-area" rows="4"></textarea>
+            <form-group>
+                <textarea id="notes-area" rows="4" [(ngModel)]="notesText" class="form-control"  name="notes-area"></textarea>
+            </form-group>
             <!-- <textarea id="notes-area" rows="4" class="form-control" formControlName="notesArea"></textarea> -->
         </div>
     </div>
-</div>
+</form>
+
+<!-- <input type="text" id="test-input" [(ngModel)]="textInputTest">
+<button (click)="getnotesText()">getnotesText()</button> -->
 
 <div id="error-box" [hidden]="!showErrorBox">
     <p id="error-text">{{ errorText }}</p>

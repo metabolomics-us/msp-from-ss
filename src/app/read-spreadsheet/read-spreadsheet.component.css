@@ -22,18 +22,20 @@
     background: -webkit-gradient(radial, 1% 1%, 0, 50% 50%, 350, from(#F58A00), to(#fff));
 }
 
-#show-notes {
+#show-notes-button {
     background-color: #337ab7;
     color: white;
-    outline: none;
-    width: 50px;
+    /* outline: none; */
+    outline: 0;
+    width: 40px;
     height: 30px;
     border-radius: 4px;
+    padding-bottom: 24px;
 }
 
-.show-notes-image {
+/* .show-notes-image {
     margin-top: 4px;
-}
+} */
 
 textarea {
     display: block;
