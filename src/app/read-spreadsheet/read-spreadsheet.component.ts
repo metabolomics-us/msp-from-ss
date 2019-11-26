@@ -8,8 +8,6 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { Observable, Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-
 @Component({
 	selector: 'read-spreadsheet',
 	templateUrl: 'read-spreadsheet.component.html',
@@ -41,13 +39,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
         private buildMspService: BuildMspService,
-        private spinner: NgxSpinnerService,
-        private fb: FormBuilder) {
-            // this.form = fb.group({
-            //     notesArea: ['']
-            //     // notesArea: ['', Validators.required]
-            // });
-        }
+        private spinner: NgxSpinnerService) {}
 
 
 	ngOnInit() {
@@ -69,6 +61,14 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
+    }
+
+
+    getTextFromTextArea(changeEvent: Event) {
+        const textArea = changeEvent.srcElement as HTMLInputElement;
+        this.notesText = textArea.value;
+        console.log(this.notesText);
+        // this.notesText = changeEvent.returnValue.valueOf;
     }
 
 

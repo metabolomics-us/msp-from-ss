@@ -73,7 +73,7 @@ export class BuildMspService {
             'Retention Time: ' + (element['AVERAGE RT(MIN)'] || '') + '\n' +
             'Formula: ' + (element['FORMULA'] || '') + '\n';
             if (mspNotes) {
-                mspString += 'Notes: ' + mspNotes + '\n';
+                mspString += 'Comments: ' + mspNotes + '\n';
             }
             // Create array of mass/intensity peaks to be written into the string line by line
             //  First check that MS/MS spectrum data exists
