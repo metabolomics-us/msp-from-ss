@@ -52,7 +52,7 @@ export class BuildMspService {
 
 
     // Create a string from a 2x2 array of MS/MS data
-	buildMspStringFromArray(dataArray: any[]): string {
+	buildMspStringFromArray(dataArray: any[], mspNotes: string): string {
 
         let dataMissing = '';
 
@@ -72,6 +72,9 @@ export class BuildMspService {
             'Precursor Mz: ' + (element['AVERAGE MZ'] || '') + '\n' +
             'Retention Time: ' + (element['AVERAGE RT(MIN)'] || '') + '\n' +
             'Formula: ' + (element['FORMULA'] || '') + '\n';
+            if (mspNotes) {
+                mspString += 'Notes: ' + mspNotes + '\n';
+            }
             // Create array of mass/intensity peaks to be written into the string line by line
             //  First check that MS/MS spectrum data exists
             if (element['MS/MS SPECTRUM'] && element['MS/MS SPECTRUM'].length > 0) {
@@ -213,7 +216,7 @@ export class BuildMspService {
     
 
     // Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string): string {
+	buildMspFile(msmsArray: string[][], fileName: string, notes: string): string {
 
         // return "testing";
 
@@ -258,7 +261,7 @@ export class BuildMspService {
                 }
 
 				// Turn array into a string
-				const mspString = this.buildMspStringFromArray(msmsJsonArray);
+				const mspString = this.buildMspStringFromArray(msmsJsonArray, notes);
 				// User will be prompted to save a .msp for their data
                 this.saveFile(mspString, fileName.split('.')[0] + '.txt');
 			}
