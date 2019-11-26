@@ -88,6 +88,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 	// Called when user selects spreadsheet to be turned into a .msp
 	fileSelected(changeEvent: Event) {
+        console.log(this.notesText);
         // console.log('file selected');
         this.targetInput = changeEvent.target as HTMLInputElement;
 
@@ -126,7 +127,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.updateErrorText('', false);                
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
-                this.buildMsp(this.fileNameText);
+                this.buildMsp(this.fileNameText, this.notesText);
 			} else {
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
                 this.showCorrectImage(false);
@@ -149,7 +150,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 
     // Create .msp from 2x2 array and/or get error descriptions
-    buildMsp(name: string) {
+    buildMsp(name: string, notes: string) {
         // Need a reference to 'this' so that we can access it within observable$.subscribe
         const self = this;
 
@@ -159,7 +160,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         	next(msmsArray) {
                 let errorData = '';
                 // Create .msp file and display any error test
-                errorData = self.buildMspService.buildMspFile(msmsArray, name);
+                errorData = self.buildMspService.buildMspFile(msmsArray, name, notes);
         		if (errorData.length === 0 && self.buildMspService.missingData.length === 0 && self.buildMspService.duplicates.length === 0) {
                     self.fileNameText = '.msp created';
                     self.showCorrectImage(true);
