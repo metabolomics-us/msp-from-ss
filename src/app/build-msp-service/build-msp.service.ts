@@ -8,7 +8,7 @@ import { _ } from 'underscore';
 export class BuildMspService {
 
     errorWarning: string;
-    missingData: number[];
+    missingData: string[];
     duplicates: string[];
     // duplicates: number[];    
     vitalHeaders: string[];
@@ -32,10 +32,11 @@ export class BuildMspService {
         let missingDataText = 'These lines contain missing data:\n';
         let duplicatesText = 'These lines are most likely duplicates:\n';
         if (this.missingData.length > 0) {
-            missingDataText += this.missingData.map(x => String(x)).join(', ');
+            // missingDataText += this.missingData.map(x => String(x)).join(', ');
+            missingDataText += this.missingData.join('\n');
         }
         if (this.duplicates.length > 0) {
-            duplicatesText += this.duplicates.map(x => String(x)).join(', ');
+            duplicatesText += this.duplicates.join('\n');
         }
         this.saveFile([missingDataText, duplicatesText].join('\n\n'), name);
     }
@@ -94,10 +95,19 @@ export class BuildMspService {
 
     // Record all lines with missing data
     collectMissingData(jsonArray: any[], correctionFactor: number) {
+        const vhLen = this.vitalHeaders.length;
+        let keyArray: string[];
+        let missingCols: string[];
         for (let i = 0; i < jsonArray.length; i++) {
-            const vhLen = this.vitalHeaders.length;
-            if (Object.keys(jsonArray[i]).length != vhLen) {
-                this.missingData.push(i + correctionFactor);
+            keyArray = Object.keys(jsonArray[i]);
+            if (keyArray.length != vhLen) {
+                missingCols = [];
+                this.vitalHeaders.forEach(header => {
+                    if (keyArray.indexOf(header) < 0) {
+                        missingCols.push(header);
+                    }
+                });
+                this.missingData.push(String(i + correctionFactor) + ': ' + missingCols.join(', '));
             }
         }
     }
@@ -124,7 +134,6 @@ export class BuildMspService {
                 cleanedArray.push(jsonArray[i]);
             } else {
                 this.duplicates.push(String(stringsArray.indexOf(stringsArray[i])+correctionFactor) + ' & ' + String(i+correctionFactor));
-                console.log(stringsArray.indexOf(stringsArray[i])+correctionFactor, i+correctionFactor);
             }
         }
         return cleanedArray;

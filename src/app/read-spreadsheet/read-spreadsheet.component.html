@@ -31,7 +31,7 @@
 <form>
     <div id="more-info" [hidden]="false">
         <p>
-            Click to include any additional comments in the .msp before submit:
+            Click to include any additional comments for all entries before submitting:
             <button id="show-notes-button" class="btn" (click)="showNotesTextArea()">
                 <i class="fas fa-plus show-notes-image" [hidden]="showNotes"></i>
                 <i class="fas fa-minus show-notes-image" [hidden]="!showNotes"></i>
@@ -52,7 +52,7 @@
     <p id="error-text">{{ errorText }}</p>
     <p id="error-file" [hidden]="!showErrorFile">
         Download Error Data: 
-        <button id="get-error-file" (click)="getErrorFile()">Error File</button>
+        <button id="get-error-file" class="btn" (click)="getErrorFile()">Click</button>
     </p>
 </div>
 
