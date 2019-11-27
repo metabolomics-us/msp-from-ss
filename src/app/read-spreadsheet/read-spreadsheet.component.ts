@@ -19,6 +19,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     
     submitValid: boolean;
     files: FileList;
+    fileName: string;
     fileNameText: string;
     observable$: Observable<any>;
     subscription: Subscription;
@@ -55,7 +56,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.spinner.hide();
 
         this.notesText = "";
-        this.placeHolderText = "Include optional data such as: computed SMILES, column measurements, submitter name and organization, etc.";
+        this.placeHolderText = "Include optional data such as: submitter name, submitter organization, column measurements, etc.";
     }
 
     
@@ -69,14 +70,12 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     getTextFromTextArea(changeEvent: Event) {
         const textArea = changeEvent.srcElement as HTMLInputElement;
         this.notesText = textArea.value;
-        console.log(this.notesText);
-        // this.notesText = changeEvent.returnValue.valueOf;
     }
 
 
 	// User downloads an example MS/MS spreadsheet or .msp file
 	downloadExample(mouseEvent: Event) {
-		// Get the DOM element, get its name, turn the name into the filename to download
+		// Get the DOM element, get its name, turn the name into the file name to download
 		//  i.e. <a name='example-msp' ...> => example.msp
 		const target = mouseEvent.target as HTMLAnchorElement;
 		this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
@@ -90,14 +89,12 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 	// Called when user selects spreadsheet to be turned into a .msp
 	fileSelected(changeEvent: Event) {
-        console.log(this.notesText);
-        // console.log('file selected');
         this.targetInput = changeEvent.target as HTMLInputElement;
 
         if (this.targetInput.files.length > 0) {
             // Store selected file
-            
-            this.fileNameText = this.targetInput.files[0].name;
+            this.fileName = this.targetInput.files[0].name;
+            this.fileNameText = this.fileName;
 
             // Check for proper file type
             if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
@@ -193,7 +190,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
     // Download a file detailing spreadsheet errors for the user to fix
     getErrorFile() {
-        this.buildMspService.saveErrorFile('errors.txt');
+        this.buildMspService.saveErrorFile('error_file_' + this.fileName.split('.')[0] + '.txt');
     }
 
 
