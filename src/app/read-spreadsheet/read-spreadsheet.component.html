@@ -40,7 +40,8 @@
         <div id="added-notes" [hidden]="!showNotes">
             <form-group>
                 <!-- <textarea id="notes-area" rows="4" [(ngModel)]="notesText" #notesText="ngModel" class="form-control" name="notes-area" (change)="getTextFromTextArea($event)"></textarea> -->
-                <textarea id="notes-area" rows="4" name="notes-area" (change)="getTextFromTextArea($event)"></textarea>
+                <textarea id="notes-area" rows="4" name="notes-area" 
+                (change)="getTextFromTextArea($event)" [placeholder]="placeHolderText"></textarea>
             </form-group>
             <!-- <textarea id="notes-area" rows="4" class="form-control" formControlName="notesArea"></textarea> -->
         </div>

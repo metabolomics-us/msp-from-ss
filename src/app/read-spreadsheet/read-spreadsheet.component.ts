@@ -34,6 +34,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     // form: FormGroup;
 
     notesText: string;
+    placeHolderText: string;
     
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
@@ -54,6 +55,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.spinner.hide();
 
         this.notesText = "";
+        this.placeHolderText = "Include optional data such as: computed SMILES, column measurements, submitter name and organization, etc.";
     }
 
     
@@ -127,7 +129,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.updateErrorText('', false);                
                 // Get observable which converts .xlsx into array
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
-                this.buildMsp(this.fileNameText, this.notesText);
+                this.buildMsp(this.fileNameText, this.notesText.trim());
 			} else {
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
                 this.showCorrectImage(false);
