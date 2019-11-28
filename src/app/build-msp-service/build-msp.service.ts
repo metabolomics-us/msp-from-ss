@@ -10,7 +10,7 @@ export class BuildMspService {
     errorWarning: string;
     missingData: string[];
     duplicates: string[];
-    // duplicates: number[];    
+    possibleDuplicates: string[];
     vitalHeaders: string[];
 
 	constructor() {
@@ -24,6 +24,7 @@ export class BuildMspService {
     resetErrors() {
         this.missingData = [];
         this.duplicates = [];
+        this.possibleDuplicates = [];
         this.errorWarning = '';
     }
 
@@ -31,14 +32,22 @@ export class BuildMspService {
     saveErrorFile(name: string) {
         let missingDataText = 'These lines contain missing data:\n';
         let duplicatesText = 'These lines are most likely duplicates:\n';
+        let possibleDuplicatesText = 'These lines are possible duplicates based on the connectivity hash of INCHIKEY:\n';
         if (this.missingData.length > 0) {
             // missingDataText += this.missingData.map(x => String(x)).join(', ');
             missingDataText += this.missingData.join('\n');
         }
         if (this.duplicates.length > 0) {
+            // Sort in order to group duplicates together
+            this.duplicates.sort();
             duplicatesText += this.duplicates.join('\n');
         }
-        this.saveFile([missingDataText, duplicatesText].join('\n\n'), name);
+        if (this.possibleDuplicates.length > 0) {
+            // Sort in order to group likely duplicates together
+            this.possibleDuplicates.sort();
+            possibleDuplicatesText += this.possibleDuplicates.join('\n')
+        }
+        this.saveFile([missingDataText, duplicatesText, possibleDuplicatesText].join('\n\n'), name);
     }
 
 
@@ -119,22 +128,32 @@ export class BuildMspService {
         return _.map(jsonArray, function(entry: any) { return _.pick(entry, ...self.vitalHeaders); });
     }
     
-
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
     removeDuplicates(jsonArray: any[], correctionFactor: number): any[] {
 
-        // Turn each entry into a string for easy comparison
-        let stringsArray = jsonArray.map(x => JSON.stringify(x));
+        // Compare attributes that indicate duplicates may have been entered
+        //  Turn entries into strings for easy comparison
+        let stringsArray = jsonArray.map(x => JSON.stringify([x['AVERAGE RT(MIN)'], x['AVERAGE MZ'], x['MS/MS SPECTRUM']]));
         stringsArray = this.processText(stringsArray);
+        // Create array of connectivity hashes from InChiKey (i.e. first section of InChiKey)
+        //  If these are the same for two entries, they may be duplicates
+        let firstHashArray = jsonArray.map(x => x['INCHIKEY']);
+        firstHashArray = this.processText(firstHashArray);
 
         // Create new JSON array and push only one entry for each name
         let cleanedArray = [];
         for (let i = 0; i < stringsArray.length; i++) {
+            // Check for likely duplicates
             if (stringsArray.indexOf(stringsArray[i]) === i) {
                 cleanedArray.push(jsonArray[i]);
+                // Check for possible duplicates; mark them, don't remove them
+                if (firstHashArray.indexOf(firstHashArray[i]) != i) {
+                    this.possibleDuplicates.push(String(firstHashArray.indexOf(firstHashArray[i]) + correctionFactor) + ' & ' + String(i + correctionFactor))
+                }
             } else {
-                this.duplicates.push(String(stringsArray.indexOf(stringsArray[i])+correctionFactor) + ' & ' + String(i+correctionFactor));
+                this.duplicates.push(String(stringsArray.indexOf(stringsArray[i]) + correctionFactor) + ' & ' + String(i + correctionFactor));
             }
+            
         }
         return cleanedArray;
     } // end removeDuplicates
