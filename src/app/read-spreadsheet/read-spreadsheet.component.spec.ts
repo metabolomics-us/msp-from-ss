@@ -41,7 +41,7 @@ describe('ReadSpreadsheetComponent', () => {
 
     // Tried expect(anchorElements.length).toEqual(3), but one <a> is added by jasmine wrapper
     it('should have 3 <a>', () => {
-		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example-msp'];
+		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example_msp-txt'];
 		let anchorElement: HTMLAnchorElement;
 		anchorNames.forEach(name => {
 			anchorElement = document.getElementsByName(name)[0] as HTMLAnchorElement;
@@ -52,7 +52,7 @@ describe('ReadSpreadsheetComponent', () => {
     /////////////////
  
     it('should call downloadExample when user clicks <a>', () => {
-		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example-msp'];
+		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example_msp-txt'];
 		spyOn(component, 'downloadExample');
 		// let anchorElement = document.getElementsByName("example_spreadsheet_large-xlsx");
 		let anchorElement: HTMLAnchorElement;

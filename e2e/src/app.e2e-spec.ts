@@ -123,7 +123,7 @@ describe('workspace-project App', () => {
                 expect(page.isElementHidden('correct-image')).toBe(null);
                 expect(page.isElementHidden('wrong-image')).toBe('true');
                 expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
-                const errorFile = './e2e/downloads/errors.txt';
+                const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_duplicates.txt';
                 page.downloadErrorFile().then(() => {
                     browser.driver.wait(function() {
                         return fs.existsSync(errorFile);
@@ -155,7 +155,7 @@ describe('workspace-project App', () => {
         browser.waitForAngularEnabled(false);
         page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates.xlsx');
         page.submitFile();
-        const errorFile = './e2e/downloads/errors.txt';
+        const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_duplicates.txt';
         page.downloadErrorFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(errorFile);
@@ -170,7 +170,7 @@ describe('workspace-project App', () => {
         page.submitFile();
         expect(page.isElementHidden('error-box')).toBe(null);
         expect(page.isElementHidden('error-file')).toBe(null);
-        const errorFile = './e2e/downloads/errors.txt';
+        const errorFile = './e2e/downloads/error_file_Height_0_20197191136negCSH_columns_renamed.txt';
         page.downloadErrorFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(errorFile);

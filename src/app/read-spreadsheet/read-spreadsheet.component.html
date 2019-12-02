@@ -1,19 +1,19 @@
 <h2 id="title">MSP Creator</h2>
 <div id="instructions">
-    <p>Convert a spreadsheet of MS/MS data into a .msp file.</p>
+    <p>Convert a spreadsheet of MSMS data into a .msp file.</p>
     <p>
         Click 'Browse' and select a spreadsheet with one of these extensions: .xlsx, .xls, .csv, .ods, or .numbers. 
         Then click 'Submit' to download a converted .msp text file. The downloaded file will have a .txt extension
         which you can rename to .msp.</p>
     <p>
         Your spreadsheet must include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 
-        'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', and 'MS/MS spectrum'. It may include other columns, but those will not be included
+        'Formula', 'INCHIKEY', 'MS1 spectrum', and 'MSMS spectrum'. It may include other columns, but those will not be included
         in the final product. Spelling is important but capitalization is not.
     </p>
 </div>
 <div id="examples">
     <!-- In downloadExample(), the name attribute is acquired and the dash is replaced by a period -->
-    <!-- This allows the correct file to be downloaded i.e. example-msp => example.msp -->
+    <!-- This allows the correct file to be downloaded i.e. example_msp-txt => example_msp.txt -->
     <!-- Hence whey there are both underscores and dashes -->
     <p>
         Example files:<br>
@@ -22,7 +22,7 @@
         See a spreadsheet with only the necessary columns
         <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
         See a resulting .msp file 
-        <a name="example-msp" (click)="downloadExample($event)">here</a>.
+        <a name="example_msp-txt" (click)="downloadExample($event)">here</a>.
     </p>
 </div>
 
