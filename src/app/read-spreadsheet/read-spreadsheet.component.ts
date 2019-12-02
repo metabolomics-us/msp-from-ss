@@ -73,10 +73,10 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     }
 
 
-	// User downloads an example MS/MS spreadsheet or .msp file
+	// User downloads an example MSMS spreadsheet or .msp file
 	downloadExample(mouseEvent: Event) {
 		// Get the DOM element, get its name, turn the name into the file name to download
-		//  i.e. <a name='example-msp' ...> => example.msp
+		//  i.e. <a name='example_msp-txt' ...> => example_msp.txt
 		const target = mouseEvent.target as HTMLAnchorElement;
 		this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
     }

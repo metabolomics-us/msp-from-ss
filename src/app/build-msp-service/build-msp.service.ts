@@ -17,7 +17,7 @@ export class BuildMspService {
 		// Moving this here b/c Services can't use oninit
         this.resetErrors();
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
-		'FORMULA', 'INCHIKEY', 'MS1 ISOTOPIC SPECTRUM', 'MS/MS SPECTRUM'];
+		'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'];
     }
     
 
@@ -61,7 +61,7 @@ export class BuildMspService {
     }
 
 
-    // Create a string from a 2x2 array of MS/MS data
+    // Create a string from a 2x2 array of MSMS data
 	buildMspStringFromArray(dataArray: any[], mspNotes: string): string {
 
         let dataMissing = '';
@@ -86,9 +86,9 @@ export class BuildMspService {
                 mspString += 'Comments: ' + mspNotes + '\n';
             }
             // Create array of mass/intensity peaks to be written into the string line by line
-            //  First check that MS/MS spectrum data exists
-            if (element['MS/MS SPECTRUM'] && element['MS/MS SPECTRUM'].length > 0) {
-                spectrum = element['MS/MS SPECTRUM'].split(' ');
+            //  First check that MSMS spectrum data exists
+            if (element['MSMS SPECTRUM'] && element['MSMS SPECTRUM'].length > 0) {
+                spectrum = element['MSMS SPECTRUM'].split(' ');
                 mspString += 'Num Peaks: ' + spectrum.length.toString() + '\n';
                 spectrum.forEach(massIntensity => {
                     mspString += massIntensity.replace(':', ' ') + '\n';
@@ -133,7 +133,7 @@ export class BuildMspService {
 
         // Compare attributes that indicate duplicates may have been entered
         //  Turn entries into strings for easy comparison
-        let stringsArray = jsonArray.map(x => JSON.stringify([x['AVERAGE RT(MIN)'], x['AVERAGE MZ'], x['MS/MS SPECTRUM']]));
+        let stringsArray = jsonArray.map(x => JSON.stringify([x['AVERAGE RT(MIN)'], x['AVERAGE MZ'], x['MSMS SPECTRUM']]));
         stringsArray = this.processText(stringsArray);
         // Create array of connectivity hashes from InChiKey (i.e. first section of InChiKey)
         //  If these are the same for two entries, they may be duplicates
@@ -212,7 +212,7 @@ export class BuildMspService {
 	// Check if array has the vital headers
 	lineHasHeaders(line: any[]): boolean {
 
-		// Format the row from the MS/MS spreadsheet to be similar to be uppercase strings, like vitalHeaders
+		// Format the row from the MSMS spreadsheet to be similar to be uppercase strings, like vitalHeaders
 		//  i.e. all uppercase strings
 		const formattedHeaders = this.processText(line);
 
@@ -228,7 +228,7 @@ export class BuildMspService {
 	} // end lineHasHeaders
 
 
-	// Some MS/MS data spreadsheets do not have their headers as the first row
+	// Some MSMS data spreadsheets do not have their headers as the first row
 	//  Get the line in the MS data spreadsheet that contains the headers
 	getHeaderPosition(lines: string[][]): number {
 
