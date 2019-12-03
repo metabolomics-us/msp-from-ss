@@ -19,6 +19,8 @@ addons:
 # install:
 #   - npm install
 
+# See https://stackoverflow.com/questions/42521884/should-i-have-travis-cache-node-modules-or-home-npm/52387639
+
 cache:
   directories:
      - $HOME/.npm
