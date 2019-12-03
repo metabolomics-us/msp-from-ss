@@ -27,6 +27,7 @@ module.exports = function (config) {
         logLevel: config.LOG_INFO,
         autoWatch: true,
         browsers: ['Chrome', 'Firefox'],
+        // Needed for ChromeHeadlessCI to work w/Travis
         customLaunchers: {
             ChromeHeadlessCI: {
                 base: 'ChromeHeadless',
