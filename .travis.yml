@@ -12,12 +12,19 @@ addons:
     packages:
       - google-chrome-stable
 
+# cache:
+#   directories:
+#      - ./node_modules
+
+# install:
+#   - npm install
+
 cache:
   directories:
-     - ./node_modules
+     - $HOME/.npm
 
 install:
-  - npm install
+  - npm ci
 
 before_script:
   - webdriver-manager update
