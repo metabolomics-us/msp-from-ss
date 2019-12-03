@@ -3,6 +3,10 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 // import { FormsModule } from '@angular/forms';
+import { BuildMspService } from '../build-msp-service/build-msp.service';
+import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
+import * as path from 'path';
+import { Observable } from 'rxjs';
 
 describe('ReadSpreadsheetComponent', () => {
 	let component: ReadSpreadsheetComponent;
@@ -85,22 +89,13 @@ describe('ReadSpreadsheetComponent', () => {
  
     it('should call readFile when submit button is clicked', () => {
 		spyOn(component, 'fileSelected');
-		      const element = document.getElementById('file-input');
-		      const event = new Event('change');
-		      element.dispatchEvent(event);
+        const element = document.getElementById('file-input');
+        const event = new Event('change');
+        element.dispatchEvent(event);
 		expect(component.fileSelected).toHaveBeenCalled();
     });
 
 	// Look at:
 	// https://stackoverflow.com/questions/52078853/is-it-possible-to-update-filelist
-
-	// it('should have a valid submit button when file is selected', () => {
-	// });
-
-	// it('should call mspFromXlsx from readFile', () => {
-	//     const f1 = new File(["file 1"], "file1.xlsx", { type: 'text/html' });
-	//     const f2 = new File(["file 2"], "file2.xlsx", { type: 'text/html' });
-	//     const files = [f1, f2];
-	// });
 
 });
