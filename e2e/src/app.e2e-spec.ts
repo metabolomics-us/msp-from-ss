@@ -101,7 +101,7 @@ describe('workspace-project App', () => {
         page.submitFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
-            }, 10*10000, 'File with correct name should be downloaded').then(function() {
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
                 expect(page.isElementHidden('error-box')).toBe('true');
                 expect(page.isElementHidden('correct-image')).toBe(null);
                 expect(page.isElementHidden('wrong-image')).toBe('true');
@@ -118,7 +118,7 @@ describe('workspace-project App', () => {
         page.submitFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
-            }, 10*10000, 'File with correct name should be downloaded').then(function() {
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
                 expect(page.isElementHidden('error-box')).toBe(null);
                 expect(page.isElementHidden('correct-image')).toBe(null);
                 expect(page.isElementHidden('wrong-image')).toBe('true');
@@ -127,7 +127,7 @@ describe('workspace-project App', () => {
                 page.downloadErrorFile().then(() => {
                     browser.driver.wait(function() {
                         return fs.existsSync(errorFile);
-                    }, 5*10000, 'Error file should be downloaded');
+                    }, 5*1000, 'Error file should be downloaded');
                 });
             });
         });
@@ -141,7 +141,7 @@ describe('workspace-project App', () => {
         page.submitFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
-            }, 10*10000, 'File with correct name should be downloaded').then(function() {
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
                 expect(page.isElementHidden('error-box')).toBe(null);
                 expect(page.isElementHidden('correct-image')).toBe(null);
                 expect(page.isElementHidden('wrong-image')).toBe('true');
@@ -159,7 +159,7 @@ describe('workspace-project App', () => {
         page.downloadErrorFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(errorFile);
-            }, 5*10000, 'Error file should be downloaded');
+            }, 5*1000, 'Error file should be downloaded');
         });
     });
 
@@ -174,7 +174,7 @@ describe('workspace-project App', () => {
         page.downloadErrorFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(errorFile);
-            }, 5*10000, 'Error file should be downloaded');
+            }, 5*1000, 'Error file should be downloaded');
         });
     });
 
@@ -186,7 +186,7 @@ describe('workspace-project App', () => {
         page.submitFile().then(() => {
             browser.driver.wait(function() {
                 return fs.existsSync(name);
-            }, 10*10000, 'File with correct name should be downloaded').then(function() {
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
                 expect(page.isElementHidden('error-box')).toBe('true');
             });
         });
@@ -204,13 +204,13 @@ describe('workspace-project App', () => {
         // Check that file has been written then upload it
         browser.driver.wait(function() {
             return fs.existsSync('./e2e/testing-files/not_a_file.csv');
-        }, 3*10000, 'Dummy file should be written').then(function() {
+        }, 3*1000, 'Dummy file should be written').then(function() {
             page.uploadSpreadsheet('../testing-files/not_a_file.csv');
             // Check that file exists, then delete it
             //  Not sure why I have to do this again, but this is the only way it works
             browser.driver.wait(function() {
                 return fs.existsSync('./e2e/testing-files/not_a_file.csv');
-            }, 3*10000, 'File should exist before trying to delete it').then(function() {
+            }, 3*1000, 'File should exist before trying to delete it').then(function() {
                 fs.unlinkSync('./e2e/testing-files/not_a_file.csv');
                 // Attempt to submit a deleted file
                 page.submitFile();
