@@ -9,10 +9,11 @@ import { Observable, Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
 @Component({
-	selector: 'read-spreadsheet',
-	templateUrl: 'read-spreadsheet.component.html',
-	styleUrls: ['read-spreadsheet.component.css'],
-	providers: [ReadSpreadsheetService, DownloadFileService, BuildMspService]
+    selector: 'read-spreadsheet',
+    templateUrl: 'read-spreadsheet.component.html',
+    styleUrls: ['read-spreadsheet.component.css'],
+    providers: [ReadSpreadsheetService, DownloadFileService, BuildMspService],
+    standalone: false
 })
 
 export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
