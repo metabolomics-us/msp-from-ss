@@ -9,11 +9,11 @@ describe('ReadSpreadsheetService', () => {
 
 	beforeEach(() => {
 		TestBed.configureTestingModule({ providers: [ReadSpreadsheetService, BuildMspService] });
-		service = TestBed.get(ReadSpreadsheetService);
+		service = TestBed.inject(ReadSpreadsheetService);
 	});
 
 	   it('should be created', () => {
-		const rsService: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+		const rsService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
 		expect(rsService).toBeTruthy();
 	});
 
@@ -54,13 +54,13 @@ describe('ReadSpreadsheetService', () => {
         };
 
 		const errorText = '';
-		const bMService = TestBed.get(BuildMspService);
+		const bMService = TestBed.inject(BuildMspService);
 		bMService.buildMspFile = jasmine.createSpy('bMF spy');
 
 		const observable = service.readXlsx(fileList);
 		observable.subscribe({
 			next(arr) {
-				bMService.buildMspFile(arr, name);
+				bMService.buildMspFile(arr, file.name, '');
 				expect(bMService.buildMspFile).toHaveBeenCalled();
 			},
 			error(err) { console.error('something wrong occurred: ' + err); },

@@ -7,11 +7,11 @@ describe('DownloadFileService', () => {
 
 	beforeEach(() => {
 		TestBed.configureTestingModule({ providers: [DownloadFileService] });
-		service = TestBed.get(DownloadFileService);
+		service = TestBed.inject(DownloadFileService);
 	});
 
 	it('should be created', () => {
-		const dFService: DownloadFileService = TestBed.get(DownloadFileService);
+		const dFService: DownloadFileService = TestBed.inject(DownloadFileService);
 		expect(dFService).toBeTruthy();
 	});
 

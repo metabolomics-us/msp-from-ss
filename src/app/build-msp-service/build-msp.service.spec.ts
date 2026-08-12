@@ -6,11 +6,11 @@ describe('BuildMspService', () => {
 
 	beforeEach(() => {
 		TestBed.configureTestingModule({ providers: [BuildMspService] });
-		service = TestBed.get(BuildMspService);
+		service = TestBed.inject(BuildMspService);
 	});
 
 	it('should be created', () => {
-		const bMService: BuildMspService = TestBed.get(BuildMspService);
+		const bMService: BuildMspService = TestBed.inject(BuildMspService);
 		expect(bMService).toBeTruthy();
 	});
 
