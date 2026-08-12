@@ -99,7 +99,6 @@
 	transform:rotate(359deg);
 }
 
-;
 }
 
 @keyframes fa-spin {
@@ -113,7 +112,6 @@
 	transform:rotate(359deg);
 }
 
-;
 }
 
 .fa-rotate-90 {
@@ -3343,7 +3341,6 @@ svg.nvd3-svg {
 	fill-opacity:1;
 }
 
-;
 }
 
 .nvd3.nv-ohlcBar .nv-ticks .nv-tick {
