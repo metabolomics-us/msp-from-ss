@@ -67,18 +67,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "Read-Spreadsheet:build"
+            "buildTarget": "Read-Spreadsheet:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "Read-Spreadsheet:build:production"
+              "buildTarget": "Read-Spreadsheet:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "Read-Spreadsheet:build"
+            "buildTarget": "Read-Spreadsheet:build"
           }
         },
         "test": {
