@@ -3,27 +3,33 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
 import { BuildMspService, MspSourceFormat } from '../build-msp-service/build-msp.service';
+import { HeaderMapping } from '../header-mapping-service/header-mapping.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 
-import { Observable, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
 @Component({
     selector: 'read-spreadsheet',
     templateUrl: 'read-spreadsheet.component.html',
     styleUrls: ['read-spreadsheet.component.css'],
-    providers: [ReadSpreadsheetService, DownloadFileService, BuildMspService],
+    // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
+    // this component and its tests (TestBed.inject) share the same singleton instance
+    providers: [DownloadFileService, BuildMspService],
     standalone: false
 })
 
 export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     
     submitValid: boolean;
+    parsing: boolean;
     files: FileList;
     fileName: string;
     fileNameText: string;
-    observable$: Observable<any>;
-    subscription: Subscription;
+    parseSubscription: Subscription;
+    cachedMsmsArray: string[][] | null;
+    headerMappings: HeaderMapping[];
+    currentFormat: MspSourceFormat;
     targetInput: HTMLInputElement;
 
     showCorrect: boolean;
@@ -31,6 +37,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     showErrorBox: boolean;
     showErrorFile: boolean;
     showNotes: boolean;
+    showMappingPanel: boolean;
+    mspKeys: string[];
 
     errorText: string;
     // form: FormGroup;
@@ -41,7 +49,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
-        private buildMspService: BuildMspService,
+        public buildMspService: BuildMspService,
         private spinner: NgxSpinnerService) {}
 
 
@@ -53,17 +61,22 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
         // Submit button disabled
         this.submitValid = false;
+        this.parsing = false;
         this.showNotes = false;
+        this.showMappingPanel = false;
+        this.mspKeys = this.buildMspService.vitalHeaders;
         this.spinner.hide();
 
         this.notesText = "";
         this.placeHolderText = "Include optional data such as: submitter name, submitter organization, column measurements, etc.";
+        this.cachedMsmsArray = null;
+        this.headerMappings = [];
     }
 
-    
+
     ngOnDestroy() {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
+        if (this.parseSubscription) {
+            this.parseSubscription.unsubscribe();
         }
     }
 
@@ -88,6 +101,31 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     }
 
 
+    showMappingPanelToggle() {
+        this.showMappingPanel = !this.showMappingPanel;
+    }
+
+
+    get visibleHeaderMappings(): HeaderMapping[] {
+        return this.headerMappings.filter(mapping => !mapping.isSample);
+    }
+
+
+    updateMapping(mapping: HeaderMapping, event: Event) {
+        const value = (event.target as HTMLSelectElement).value;
+        if (value === 'ignore') {
+            mapping.action = 'ignore';
+            mapping.targetKey = null;
+        } else if (value === 'comment') {
+            mapping.action = 'comment';
+            mapping.targetKey = null;
+        } else {
+            mapping.action = 'map';
+            mapping.targetKey = value;
+        }
+    }
+
+
 	// Called when user selects spreadsheet to be turned into a .msp
 	fileSelected(changeEvent: Event) {
         this.targetInput = changeEvent.target as HTMLInputElement;
@@ -104,91 +142,95 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.submitValid = true;
                 this.updateErrorText('', false);
                 this.showCorrectImage(true);
+                this.parseSelectedFile();
             } else {
                 this.files = null;
                 // Submit button greyed out
                 this.submitValid = false;
+                this.cachedMsmsArray = null;
+                this.headerMappings = [];
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt', false);
                 this.showCorrectImage(false);
             }
-        } 
+        }
 	}
+
+
+	// Eagerly parse the selected file so the mapping panel has real headers before Submit
+	parseSelectedFile() {
+        // Cancel any still-in-flight parse from a previous file selection so its (now-stale)
+        // result can never land after this selection's result and overwrite it (I1).
+        if (this.parseSubscription) {
+            this.parseSubscription.unsubscribe();
+        }
+
+        this.parsing = true;
+        this.spinner.show();
+
+        this.currentFormat = /\.txt$/g.test(this.fileNameText) ? 'msdial' : 'spreadsheet';
+        const readObservable = this.currentFormat === 'msdial'
+            ? this.readSpreadsheetService.readAlignmentResultTxt(this.files)
+            : this.readSpreadsheetService.readXlsx(this.files);
+
+        this.parseSubscription = readObservable.pipe(take(1), timeout(10000)).subscribe({
+            next: (msmsArray: string[][]) => {
+                this.cachedMsmsArray = msmsArray;
+                const headerPosition = this.buildMspService.getHeaderPosition(msmsArray);
+                if (headerPosition >= 0) {
+                    const headers = this.buildMspService.normalizeHeaderRow(msmsArray[headerPosition], this.currentFormat);
+                    this.headerMappings = this.buildMspService.classifyHeaders(headers);
+                } else {
+                    this.headerMappings = [];
+                }
+                this.parsing = false;
+                this.spinner.hide();
+            },
+            error: () => {
+                // Submit's existing error path (via buildMsp) surfaces the real error to the user
+                this.cachedMsmsArray = null;
+                this.headerMappings = [];
+                this.parsing = false;
+                this.spinner.hide();
+            }
+        });
+    }
 
 
 	// Called when the user submits their spreadsheet
 	readFile() {
-		// If the user has chosen a file, create .msp
 		if (this.files) {
-            this.spinner.show();
-
-            // Check for proper file type
-            // Get Observable that converts the file into a 2x2 array
-			if (/\.txt$/g.test(this.fileNameText)) {
+            if (this.cachedMsmsArray) {
                 this.updateErrorText('', false);
-                this.observable$ = this.readSpreadsheetService.readAlignmentResultTxt(this.files);
-                this.buildMsp(this.fileNameText, this.notesText.trim(), 'msdial');
-			} else if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
-                this.updateErrorText('', false);
-                this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
-                this.buildMsp(this.fileNameText, this.notesText.trim(), 'spreadsheet');
-			} else {
-                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt', false);
+                this.buildMsp(this.fileNameText, this.notesText.trim(), this.currentFormat);
+            } else {
+                this.updateErrorText('Error: file may be corrupted or may not exist', false);
                 this.showCorrectImage(false);
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
-                this.spinner.hide();
-			}
-
+            }
 		} else {
             this.updateErrorText('Select file before clicking \'Submit\'', false);
             this.showCorrectImage(false);
-            this.spinner.hide();
         }
-        // Disable the Submit button
         this.submitValid = false;
-
-        // Clear input field value so that user can consecutively upload files with the same name
-        //  Otherwise, on the next upload, no change event will register and fileSelected won't execute
         this.targetInput.value = null;
     }
 
 
-    // Create .msp from 2x2 array and/or get error descriptions
+    // Create .msp from the cached 2x2 array and/or get error descriptions
     buildMsp(name: string, notes: string, format: MspSourceFormat) {
-        // Need a reference to 'this' so that we can access it within observable$.subscribe
-        const self = this;
-
-        // take(1) means the observable will unsubscribe after one execution; prevents memory leaks
-        //  Times out if unable to read and parse spreadsheet in 10 seconds
-        this.subscription = this.observable$.pipe(take(1),timeout(10000)).subscribe({
-        	next(msmsArray) {
-                let errorData = '';
-                // Create .msp file and display any error test
-                errorData = self.buildMspService.buildMspFile(msmsArray, name, notes, format);
-        		if (errorData.length === 0 && self.buildMspService.missingData.length === 0 && self.buildMspService.duplicates.length === 0) {
-                    self.fileNameText = '.msp created';
-                    self.showCorrectImage(true);
-                } else if (errorData.length > 0 && (self.buildMspService.missingData.length > 0 || self.buildMspService.duplicates.length > 0)) {
-                    self.fileNameText = '.msp created with some issues';
-                    self.showCorrectImage(true);
-                    self.updateErrorText(errorData, true);
-                } else {
-                    self.fileNameText = 'Fix errors, then retry upload';
-                    self.showCorrectImage(false);
-                    self.updateErrorText(errorData, false);
-                }
-                self.spinner.hide();
-        	},
-        	error(err) { 
-                // Display error in case of timeout
-                self.updateErrorText(err + '; Check uploaded file', false)
-                self.showCorrectImage(false);
-                self.spinner.hide(); 
-            },
-        	complete() { 
-                console.log('Process Complete');
-                self.spinner.hide();
-            }
-        });
+        const errorData = this.buildMspService.buildMspFile(this.cachedMsmsArray, name, notes, format, this.headerMappings);
+        if (errorData.length === 0 && this.buildMspService.missingData.length === 0 && this.buildMspService.duplicates.length === 0) {
+            this.fileNameText = '.msp created';
+            this.showCorrectImage(true);
+        } else if (errorData.length > 0 && (this.buildMspService.missingData.length > 0 || this.buildMspService.duplicates.length > 0)) {
+            this.fileNameText = '.msp created with some issues';
+            this.showCorrectImage(true);
+            this.updateErrorText(errorData, true);
+        } else {
+            this.fileNameText = 'Fix errors, then retry upload';
+            this.showCorrectImage(false);
+            this.updateErrorText(errorData, false);
+        }
     } // end buildMsp
 
 

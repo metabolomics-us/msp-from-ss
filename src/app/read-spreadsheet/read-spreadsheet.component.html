@@ -15,8 +15,7 @@
         </p>
         <p>
             Your spreadsheet must include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type',
-            'Formula', 'INCHIKEY', 'MS1 spectrum', and 'MSMS spectrum'. It may include other columns, but those will not be included
-            in the final product. Spelling is important but capitalization is not.
+            'Formula', 'INCHIKEY', 'MS1 spectrum', and 'MSMS spectrum'.
         </p>
     </div>
 
@@ -60,6 +59,33 @@
                     </form-group>
                 </div>
             </div>
+
+            <div id="mapping-info" [hidden]="headerMappings.length === 0">
+                <p>
+                    Review how this file's columns are mapped to MSP fields:
+                    <button id="show-mapping-button" class="btn" (click)="showMappingPanelToggle()">
+                        <i class="fa fa-plus show-notes-image" [hidden]="showMappingPanel"></i>
+                        <i class="fa fa-minus show-notes-image" [hidden]="!showMappingPanel"></i>
+                    </button>
+                </p>
+                <table id="mapping-table" [hidden]="!showMappingPanel">
+                    <thead>
+                        <tr><th>File Column</th><th>Maps to MSP Tag</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let mapping of visibleHeaderMappings; let i = index" [attr.data-header]="mapping.header">
+                            <td>{{ mapping.header }}</td>
+                            <td>
+                                <select [attr.id]="'mapping-select-' + i" (change)="updateMapping(mapping, $event)">
+                                    <option value="ignore" [selected]="mapping.action === 'ignore'">Ignore</option>
+                                    <option value="comment" [selected]="mapping.action === 'comment'">Add as comment</option>
+                                    <option *ngFor="let key of mspKeys" [value]="key" [selected]="mapping.action === 'map' && mapping.targetKey === key">{{ key }}</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </form>
 
         <div id="rs-buttons" style="text-align: center;">
@@ -70,7 +96,7 @@
                 </label>
                 <input id="file-input" type="file" (change)="fileSelected($event)">
             </span>
-            <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
+            <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid || parsing" (click)="readFile()">
                 <i class="fa fa-check-circle btn-img"></i>
                 Submit
             </button>

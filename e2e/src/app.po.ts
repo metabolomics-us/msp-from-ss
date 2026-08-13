@@ -74,4 +74,21 @@ export class AppPage {
     fileExists(name: string) {
         return fs.existsSync(name);
     }
+
+    toggleMappingPanel() {
+        return element(by.id('show-mapping-button')).click();
+    }
+
+    isMappingPanelHidden() {
+        return element(by.id('mapping-table')).getAttribute('hidden');
+    }
+
+    isMappingRowPresent(header: string) {
+        return element(by.css(`tr[data-header="${header}"]`)).isPresent();
+    }
+
+    selectMappingOption(header: string, optionText: string) {
+        const select = element(by.css(`tr[data-header="${header}"] select`));
+        return select.element(by.cssContainingText('option', optionText)).click();
+    }
 }

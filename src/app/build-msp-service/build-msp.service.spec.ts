@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { BuildMspService } from './build-msp.service';
+import { HeaderMappingService } from '../header-mapping-service/header-mapping.service';
 
 describe('BuildMspService', () => {
 	let service: BuildMspService;
 
 	beforeEach(() => {
-		TestBed.configureTestingModule({ providers: [BuildMspService] });
+		TestBed.configureTestingModule({ providers: [BuildMspService, HeaderMappingService] });
 		service = TestBed.inject(BuildMspService);
 	});
 
@@ -246,6 +247,34 @@ describe('BuildMspService', () => {
 		expect(service.lineHasHeaders(headers)).toBe(false);
 	});
 
+	it('should return true when a header only matches via a synonym (RETENTION TIME -> AVERAGE RT(MIN))', () => {
+		const headers = ['RETENTION TIME', 'BATCH ID'];
+		expect(service.lineHasHeaders(headers)).toBe(true);
+	});
+
+	// normalizeHeaderRow
+
+	it('should uppercase/trim headers and apply the msdial MS/MS alias when format is msdial', () => {
+		const headers = [' Average Rt(min) ', 'MS/MS spectrum'];
+		expect(service.normalizeHeaderRow(headers, 'msdial')).toEqual(['AVERAGE RT(MIN)', 'MSMS SPECTRUM']);
+	});
+
+	it('should uppercase/trim headers without the msdial alias when format is spreadsheet', () => {
+		const headers = [' Average Rt(min) ', 'MS/MS SPECTRUM'];
+		expect(service.normalizeHeaderRow(headers, 'spreadsheet')).toEqual(['AVERAGE RT(MIN)', 'MS/MS SPECTRUM']);
+	});
+
+	// classifyHeaders
+
+	it('should classify headers against the full vitalHeaders list', () => {
+		const result = service.classifyHeaders(['RETENTION TIME', 'SAMPLE 1', 'BATCH ID']);
+		expect(result).toEqual([
+			{ header: 'RETENTION TIME', action: 'map', targetKey: 'AVERAGE RT(MIN)', isSample: false },
+			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+		]);
+	});
+
 	// getHeaderPosition
 
 	it('should return 4 when header row is in the 4th position', () => {
@@ -416,6 +445,86 @@ describe('BuildMspService', () => {
 			expect(mspString).not.toContain('ShouldBeFiltered');
 		});
 
+	});
+
+	// applyHeaderMappings
+
+	it('should rename a header to its targetKey when action is "map"', () => {
+		const headers = ['RETENTION TIME', 'BATCH ID'];
+		const mappings = [
+			{ header: 'RETENTION TIME', action: 'map' as const, targetKey: 'AVERAGE RT(MIN)', isSample: false },
+			{ header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false }
+		];
+		expect(service.applyHeaderMappings(headers, mappings)).toEqual(['AVERAGE RT(MIN)', 'BATCH ID']);
+	});
+
+	// buildMspFile: mapping renames a header before required-header validation runs
+
+	it('should accept a file whose headers only match via user-supplied mapping, with no header errors', () => {
+		spyOn(service, 'saveFile');
+		const arr = [
+			['Retention Time', 'Average Mz', 'Metabolite name', 'Adduct type', 'Formula', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7']
+		];
+		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
+		expect(errorWarning).not.toContain('column headers not found');
+		expect(errorWarning).not.toContain('may be misspelled or missing');
+		const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+		expect(mspString).toContain('Name: 1-Methyltryptophan');
+	});
+
+	// applyCommentMappings
+
+	it('should collect a comment-marked header\'s value into _extraComments', () => {
+		const jsonArray = [{ 'METABOLITE NAME': 'X', 'NOTES': 'Interesting peak' }];
+		const mappings = [{ header: 'NOTES', action: 'comment' as const, targetKey: null, isSample: false }];
+		expect(service.applyCommentMappings(jsonArray, mappings)).toEqual([
+			{ 'METABOLITE NAME': 'X', 'NOTES': 'Interesting peak', '_extraComments': [{ header: 'NOTES', value: 'Interesting peak' }] }
+		]);
+	});
+
+	it('should leave rows unchanged when there are no comment mappings', () => {
+		const jsonArray = [{ 'METABOLITE NAME': 'X' }];
+		expect(service.applyCommentMappings(jsonArray, [])).toEqual([{ 'METABOLITE NAME': 'X' }]);
+	});
+
+	// buildMspStringFromArray: Comments line merge
+
+	it('should write only the global note on the Comments line when there are no extra comments', () => {
+		const msmsArray: any[] = [{ 'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1' }];
+		const result = service.buildMspStringFromArray(msmsArray, 'global note');
+		expect(result).toContain('Comments: global note\n');
+	});
+
+	it('should write only extra comments on the Comments line when there is no global note', () => {
+		const msmsArray: any[] = [{ 'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1', '_extraComments': [{ header: 'NOTES', value: 'peak' }] }];
+		const result = service.buildMspStringFromArray(msmsArray, '');
+		expect(result).toContain('Comments: NOTES: peak\n');
+	});
+
+	it('should write the global note followed by extra comments, semicolon-separated', () => {
+		const msmsArray: any[] = [{
+			'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1',
+			'_extraComments': [{ header: 'NOTES', value: 'peak' }, { header: 'BATCH', value: '3' }]
+		}];
+		const result = service.buildMspStringFromArray(msmsArray, 'global note');
+		expect(result).toContain('Comments: global note; NOTES: peak; BATCH: 3\n');
+	});
+
+	// buildMspFile end-to-end: an unmatched column marked "comment" survives into the .msp output
+
+	it('should include a comment-mapped column\'s per-row value in the .msp Comments line', () => {
+		spyOn(service, 'saveFile');
+		const arr = [
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM', 'NOTES'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7', 'Interesting peak']
+		];
+		const headerMappings = [
+			{ header: 'NOTES', action: 'comment' as const, targetKey: null, isSample: false }
+		];
+		service.buildMspFile(arr, 'test.csv', '', 'spreadsheet', headerMappings);
+		const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+		expect(mspString).toContain('Comments: NOTES: Interesting peak\n');
 	});
 
 });

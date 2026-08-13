@@ -1,5 +1,5 @@
 import { AppPage } from './app.po';
-import { browser, logging, element } from 'protractor';
+import { browser, logging } from 'protractor';
 import * as fs from 'fs';
 
 describe('workspace-project App', () => {
@@ -300,6 +300,55 @@ describe('workspace-project App', () => {
             browser.driver.wait(function() {
                 return fs.existsSync(errorFile);
             }, 5*1000, 'Error file should be downloaded');
+        });
+    });
+
+    it('should show a hidden-by-default mapping panel after uploading a file with unmatched columns', () => {
+        page.navigateTo();
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        expect(page.elementExists('show-mapping-button')).toBe(true);
+        expect(page.isMappingPanelHidden()).toBe('true');
+    });
+
+    it('should exclude a Sample N style column from the mapping panel', () => {
+        page.navigateTo();
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        page.toggleMappingPanel();
+        expect(page.isMappingRowPresent('SAMPLE 1')).toBe(false);
+        expect(page.isMappingRowPresent('NOTES')).toBe(true);
+    });
+
+    it('should include a user-added MSP Comment from an unmatched column after a mapping override', () => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        page.toggleMappingPanel();
+        page.selectMappingOption('NOTES', 'Add as comment');
+        const name = './e2e/downloads/msdial_alignment_result_with_extra_column.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                const mspContent = fs.readFileSync(name, 'utf8');
+                expect(mspContent).toContain('Comments: NOTES: Interesting peak');
+            });
+        });
+    });
+
+    it('should still download an unmodified .msp when the mapping panel is left untouched', () => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        const name = './e2e/downloads/msdial_alignment_result_with_extra_column.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                const mspContent = fs.readFileSync(name, 'utf8');
+                expect(mspContent).toContain('Name: 1-Methyltryptophan');
+                expect(mspContent).not.toContain('Comments:');
+                expect(mspContent).not.toContain('Interesting peak');
+            });
         });
     });
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 import { _ } from 'underscore';
+import { HeaderMappingService, HeaderMapping } from '../header-mapping-service/header-mapping.service';
 
 export type MspSourceFormat = 'spreadsheet' | 'msdial';
 
@@ -15,7 +16,7 @@ export class BuildMspService {
     possibleDuplicates: string[];
     vitalHeaders: string[];
 
-	constructor() {
+	constructor(private headerMappingService: HeaderMappingService) {
 		// Moving this here b/c Services can't use oninit
         this.resetErrors();
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
@@ -36,6 +37,48 @@ export class BuildMspService {
 	// MS-DIAL uses 'MS/MS spectrum' where this app's own headers use 'MSMS SPECTRUM'
 	applyMsdialHeaderAliases(headers: string[]): string[] {
 		return headers.map(header => header === 'MS/MS SPECTRUM' ? 'MSMS SPECTRUM' : header);
+	}
+
+
+	// Normalize a raw header row: trim/uppercase, then apply the msdial-specific alias
+	normalizeHeaderRow(headers: string[], format: MspSourceFormat): string[] {
+		let normalized = this.processText(headers);
+		if (format === 'msdial') {
+			normalized = this.applyMsdialHeaderAliases(normalized);
+		}
+		return normalized;
+	}
+
+	// Classify already-normalized headers against the full known-key list
+	classifyHeaders(headers: string[]): HeaderMapping[] {
+		return this.headerMappingService.classify(headers, this.vitalHeaders);
+	}
+
+
+	// Rename headers with action "map" to their canonical targetKey; leave comment/ignore headers as-is
+	applyHeaderMappings(headers: string[], mappings: HeaderMapping[]): string[] {
+		return headers.map(header => {
+			const mapping = mappings.find(m => m.header === header);
+			return (mapping && mapping.action === 'map' && mapping.targetKey) ? mapping.targetKey : header;
+		});
+	}
+
+
+	// Collect each comment-mapped header's per-row value into a row's _extraComments array
+	applyCommentMappings(jsonArray: any[], mappings: HeaderMapping[]): any[] {
+		const commentMappings = mappings.filter(m => m.action === 'comment');
+		if (commentMappings.length === 0) {
+			return jsonArray;
+		}
+		return jsonArray.map(entry => {
+			const extraComments: { header: string, value: string }[] = [];
+			commentMappings.forEach(mapping => {
+				if (entry[mapping.header]) {
+					extraComments.push({ header: mapping.header, value: entry[mapping.header] });
+				}
+			});
+			return extraComments.length > 0 ? { ...entry, '_extraComments': extraComments } : entry;
+		});
 	}
 
 
@@ -112,8 +155,18 @@ export class BuildMspService {
             'Precursor Mz: ' + (element['AVERAGE MZ'] || '') + '\n' +
             'Retention Time: ' + (element['AVERAGE RT(MIN)'] || '') + '\n' +
             'Formula: ' + (element['FORMULA'] || '') + '\n';
+
+            const commentParts: string[] = [];
             if (mspNotes) {
-                mspString += 'Comments: ' + mspNotes + '\n';
+                commentParts.push(mspNotes);
+            }
+            if (element['_extraComments']) {
+                element['_extraComments'].forEach((comment: { header: string, value: string }) => {
+                    commentParts.push(comment.header + ': ' + comment.value);
+                });
+            }
+            if (commentParts.length > 0) {
+                mspString += 'Comments: ' + commentParts.join('; ') + '\n';
             }
             // Create array of mass/intensity peaks to be written into the string line by line
             //  First check that MSMS spectrum data exists
@@ -244,22 +297,10 @@ export class BuildMspService {
 	}
 
 
-	// Check if array has the vital headers
+	// Check if array has the vital headers, via exact match or a known synonym
 	lineHasHeaders(line: any[]): boolean {
-
-		// Format the row from the MSMS spreadsheet to be similar to be uppercase strings, like vitalHeaders
-		//  i.e. all uppercase strings
 		const formattedHeaders = this.processText(line);
-
-		// Check if the line contains one of the columns and return true; false otherwise
-		let i: number;
-		for (i = 0; i < this.vitalHeaders.length; i ++) {
-			// if (formattedHeaders.includes(this.vitalHeaders[i])) {
-			if (formattedHeaders.indexOf(this.vitalHeaders[i]) >= 0) {
-				return true;
-			}
-		}
-		return false;
+		return formattedHeaders.some(header => this.headerMappingService.suggestKey(header, this.vitalHeaders) !== null);
 	} // end lineHasHeaders
 
 
@@ -279,7 +320,7 @@ export class BuildMspService {
     
 
     // Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet'): string {
+	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet', headerMappings?: HeaderMapping[]): string {
 
 		// Reset the error text
         this.resetErrors();
@@ -291,21 +332,22 @@ export class BuildMspService {
 		if (headerPosition >= 0) {
 
 			// Get the headers, convert them to upper case and remove trailing white space
-			let headers = msmsArray[headerPosition];
-			headers = this.processText(headers);
-			if (format === 'msdial') {
-				headers = this.applyMsdialHeaderAliases(headers);
-			}
+			const headers = this.normalizeHeaderRow(msmsArray[headerPosition], format);
+			const mappings = headerMappings || this.classifyHeaders(headers);
+			const mappedHeaders = this.applyHeaderMappings(headers, mappings);
 
 			// If all required headers are available and without errors, proceed
-			if (!this.hasHeaderErrors(headers, requiredHeaders)) {
+			if (!this.hasHeaderErrors(mappedHeaders, requiredHeaders)) {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
-                let msmsJsonArray = this.buildJsonArray(headers, data);
+                let msmsJsonArray = this.buildJsonArray(mappedHeaders, data);
 
-                // remove unneeded attributes
-                msmsJsonArray = this.removeAttributes(msmsJsonArray, requiredHeaders);
+                // Collect comment-mapped columns' values before removeAttributes strips the originals
+                msmsJsonArray = this.applyCommentMappings(msmsJsonArray, mappings);
+
+                // remove unneeded attributes (keep _extraComments alongside the required headers)
+                msmsJsonArray = this.removeAttributes(msmsJsonArray, [...requiredHeaders, '_extraComments']);
 
                 // Use header position to get row number; check for missing data per each header
                 //  (a spectrum-less row is filtered below, not reported as missing data, for either format)
