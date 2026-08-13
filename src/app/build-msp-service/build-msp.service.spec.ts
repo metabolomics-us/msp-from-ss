@@ -149,6 +149,20 @@ describe('BuildMspService', () => {
 		expect(service.hasHeaderErrors(headers)).toBe(true);
 	});
 
+	// buildJsonArray
+
+	it('should treat literal "null" string values as missing when building the JSON array', () => {
+		const headers = ['METABOLITE NAME', 'FORMULA', 'INCHIKEY'];
+		const data = [['Unknown', 'null', 'null']];
+		expect(service.buildJsonArray(headers, data)).toEqual([{'METABOLITE NAME': 'Unknown'}]);
+	});
+
+	it('should still include a real (non-"null") value for the same header', () => {
+		const headers = ['METABOLITE NAME', 'FORMULA'];
+		const data = [['1-Methyltryptophan', 'C12H14N2O2']];
+		expect(service.buildJsonArray(headers, data)).toEqual([{'METABOLITE NAME': '1-Methyltryptophan', 'FORMULA': 'C12H14N2O2'}]);
+	});
+
 	// removeAttributes with an explicit requiredHeaders param
 
 	it('should keep only the given requiredHeaders when picking attributes', () => {

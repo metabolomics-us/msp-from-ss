@@ -180,7 +180,8 @@ export class BuildMspService {
 		for (i = 0; i < data.length; i++) {
 			dict = {};
 			for (j = 0; j < headers.length; j++) {
-                if (data[i][j]) {
+				// MS-DIAL writes the literal string "null" for missing values instead of an empty cell
+				if (data[i][j] && data[i][j] !== 'null') {
 					dict[headers[j]] = data[i][j];
 				}
 			}
