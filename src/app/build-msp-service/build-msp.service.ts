@@ -45,12 +45,10 @@ export class BuildMspService {
 	}
 
 
-	// For msdial, a missing spectrum is handled by removeRowsWithoutSpectrum, not reported as missing data
+	// A missing spectrum is handled by removeRowsWithoutSpectrum for both formats, not reported as missing data
+	//  (format is kept in the signature for call-site consistency and in case a future format needs different behavior)
 	getMissingDataCheckHeaders(format: MspSourceFormat, requiredHeaders: string[]): string[] {
-		if (format === 'msdial') {
-			return requiredHeaders.filter(header => header !== 'MSMS SPECTRUM');
-		}
-		return requiredHeaders;
+		return requiredHeaders.filter(header => header !== 'MSMS SPECTRUM');
 	}
 
     resetErrors() {
@@ -165,20 +163,33 @@ export class BuildMspService {
         let firstHashArray = jsonArray.map(x => x['INCHIKEY']);
         firstHashArray = this.processText(firstHashArray);
 
+        // Track the first index at which each string/hash was seen, for O(1) lookups instead of O(n) indexOf
+        const firstSeenString = new Map<string, number>();
+        const firstSeenHash = new Map<string, number>();
         // Create new JSON array and push only one entry for each name
         let cleanedArray = [];
         for (let i = 0; i < stringsArray.length; i++) {
+            const key = stringsArray[i];
             // Check for likely duplicates
-            if (stringsArray.indexOf(stringsArray[i]) === i) {
+            if (!firstSeenString.has(key)) {
+                firstSeenString.set(key, i);
                 cleanedArray.push(jsonArray[i]);
-                // Check for possible duplicates; mark them, don't remove them
-                if (firstHashArray.indexOf(firstHashArray[i]) != i) {
-                    this.possibleDuplicates.push(String(firstHashArray.indexOf(firstHashArray[i]) + correctionFactor) + ' & ' + String(i + correctionFactor))
+                const hash = firstHashArray[i];
+                // Skip the connectivity-hash comparison when INCHIKEY is missing (processText
+                // turns a missing value into the literal string 'UNDEFINED') — otherwise every
+                // row lacking an INCHIKEY collapses into one meaningless "possible duplicate" bucket
+                if (hash !== 'UNDEFINED') {
+                    // Check for possible duplicates; mark them, don't remove them
+                    if (firstSeenHash.has(hash)) {
+                        this.possibleDuplicates.push(String(firstSeenHash.get(hash) + correctionFactor) + ' & ' + String(i + correctionFactor))
+                    } else {
+                        firstSeenHash.set(hash, i);
+                    }
                 }
             } else {
-                this.duplicates.push(String(stringsArray.indexOf(stringsArray[i]) + correctionFactor) + ' & ' + String(i + correctionFactor));
+                this.duplicates.push(String(firstSeenString.get(key) + correctionFactor) + ' & ' + String(i + correctionFactor));
             }
-            
+
         }
         return cleanedArray;
     } // end removeDuplicates
@@ -297,7 +308,7 @@ export class BuildMspService {
                 msmsJsonArray = this.removeAttributes(msmsJsonArray, requiredHeaders);
 
                 // Use header position to get row number; check for missing data per each header
-                //  (a spectrum-less row is filtered below, not reported as missing data, for msdial)
+                //  (a spectrum-less row is filtered below, not reported as missing data, for either format)
                 const missingDataCheckHeaders = this.getMissingDataCheckHeaders(format, requiredHeaders);
                 this.collectMissingData(msmsJsonArray, headerPosition + 2, missingDataCheckHeaders);
                 if (this.missingData.length > 0) {

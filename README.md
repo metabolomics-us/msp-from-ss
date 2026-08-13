@@ -13,7 +13,9 @@ Build .msp files from spreadsheets of mass spectrometry data, or from a MS-DIAL 
 - MS1 spectrum
 - MSMS spectrum
 
-**MS-DIAL AlignmentResult upload** (.txt): MS-DIAL's own column names are used directly (`MS/MS spectrum`, etc.); `MS1 isotopic spectrum` isn't used. Rows with no MS/MS spectrum are skipped; rows with an unidentified ("Unknown") metabolite name are kept as long as they have a spectrum.
+Rows with no MS/MS spectrum are skipped for both upload types — they're silently dropped, not written out with a blank `Num Peaks:` line.
+
+**MS-DIAL AlignmentResult upload** (.txt): MS-DIAL's own column names are used directly (`MS/MS spectrum`, etc.); `MS1 isotopic spectrum` isn't used. Rows with an unidentified ("Unknown") metabolite name are kept as long as they have a spectrum.
 
 ## MSP format reference
 
