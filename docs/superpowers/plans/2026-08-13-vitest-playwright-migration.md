@@ -37,7 +37,7 @@
 - Modify: `src/app/header-mapping-service/header-mapping.service.spec.ts`
 
 **Interfaces:**
-- Produces: a working `npm test` (→ `ng test`) command running on Vitest, with these 2 spec files passing, proving the builder swap itself is correct before the remaining 4 (larger) spec files are translated in later tasks.
+- Produces: a working `npm test` (→ `ng test`) command running on Vitest, with these 2 spec files passing (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts` — confirmed by running both under the current Karma runner before this migration), proving the builder swap itself is correct before the remaining 4 (larger) spec files are translated in later tasks.
 
 - [ ] **Step 1: Update `package.json`**
 
@@ -168,7 +168,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 - [ ] **Step 7: Run the two translated spec files**
 
 Run: `npx ng test --watch=false --include='**/app.component.spec.ts' --include='**/header-mapping.service.spec.ts'`
-Expected: both suites pass (10 tests total: 1 from `app.component.spec.ts`, 9 from `header-mapping.service.spec.ts`). If the builder itself has a configuration problem, it will surface here as a build/config error rather than a test failure — resolve that before proceeding to any other task.
+Expected: both suites pass (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts`). If the builder itself has a configuration problem, it will surface here as a build/config error rather than a test failure — resolve that before proceeding to any other task.
 
 - [ ] **Step 8: Commit**
 
@@ -377,7 +377,7 @@ describe('ReadSpreadsheetService', () => {
 - [ ] **Step 3: Run both translated files**
 
 Run: `npx ng test --watch=false --include='**/download-file.service.spec.ts' --include='**/read-spreadsheet.service.spec.ts'`
-Expected: `download-file.service.spec.ts` — 2/2 passing. `read-spreadsheet.service.spec.ts` — 5 passing, 1 skipped (the `it.skip`'d test, matching today's `xit`-skipped behavior).
+Expected: `download-file.service.spec.ts` — 2/2 passing. `read-spreadsheet.service.spec.ts` — 6 passing, 1 skipped (the `it.skip`'d test, matching today's `xit`-skipped behavior). Combined: 9 total, 8 passing, 1 skipped.
 
 - [ ] **Step 4: Commit**
 
@@ -479,7 +479,7 @@ Replace with:
 - [ ] **Step 6: Run the translated file**
 
 Run: `npx ng test --watch=false --include='**/build-msp.service.spec.ts'`
-Expected: 45/45 passing (same count as before this translation — no test bodies changed, only the spy-creation API).
+Expected: 51/51 passing (same count as before this translation — no test bodies changed, only the spy-creation API).
 
 - [ ] **Step 7: Commit**
 
@@ -672,7 +672,7 @@ Replace with:
 - [ ] **Step 7: Run the translated file**
 
 Run: `npx ng test --watch=false --include='**/read-spreadsheet.component.spec.ts'`
-Expected: 27/27 passing (same count as before this translation).
+Expected: 29/29 passing (same count as before this translation).
 
 - [ ] **Step 8: Run the full unit suite**
 
