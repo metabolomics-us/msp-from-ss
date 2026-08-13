@@ -10,3 +10,6 @@ so I am importing a CSS file from fonts/ not styles/
 
 @import url("./assets/styles/theme.css");
 @import url("./assets/styles/main.css");
+
+/* Design mockup: navy/gold dashboard styling, loaded last so it wins over the vendored styles above */
+@import url("./assets/styles/dashboard-theme.css");
