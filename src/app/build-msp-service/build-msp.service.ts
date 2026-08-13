@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 import { _ } from 'underscore';
+import { HeaderMappingService, HeaderMapping } from '../header-mapping-service/header-mapping.service';
 
 export type MspSourceFormat = 'spreadsheet' | 'msdial';
 
@@ -15,7 +16,7 @@ export class BuildMspService {
     possibleDuplicates: string[];
     vitalHeaders: string[];
 
-	constructor() {
+	constructor(private headerMappingService: HeaderMappingService) {
 		// Moving this here b/c Services can't use oninit
         this.resetErrors();
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
@@ -36,6 +37,21 @@ export class BuildMspService {
 	// MS-DIAL uses 'MS/MS spectrum' where this app's own headers use 'MSMS SPECTRUM'
 	applyMsdialHeaderAliases(headers: string[]): string[] {
 		return headers.map(header => header === 'MS/MS SPECTRUM' ? 'MSMS SPECTRUM' : header);
+	}
+
+
+	// Normalize a raw header row: trim/uppercase, then apply the msdial-specific alias
+	normalizeHeaderRow(headers: string[], format: MspSourceFormat): string[] {
+		let normalized = this.processText(headers);
+		if (format === 'msdial') {
+			normalized = this.applyMsdialHeaderAliases(normalized);
+		}
+		return normalized;
+	}
+
+	// Classify already-normalized headers against the full known-key list
+	classifyHeaders(headers: string[]): HeaderMapping[] {
+		return this.headerMappingService.classify(headers, this.vitalHeaders);
 	}
 
 
@@ -244,22 +260,10 @@ export class BuildMspService {
 	}
 
 
-	// Check if array has the vital headers
+	// Check if array has the vital headers, via exact match or a known synonym
 	lineHasHeaders(line: any[]): boolean {
-
-		// Format the row from the MSMS spreadsheet to be similar to be uppercase strings, like vitalHeaders
-		//  i.e. all uppercase strings
 		const formattedHeaders = this.processText(line);
-
-		// Check if the line contains one of the columns and return true; false otherwise
-		let i: number;
-		for (i = 0; i < this.vitalHeaders.length; i ++) {
-			// if (formattedHeaders.includes(this.vitalHeaders[i])) {
-			if (formattedHeaders.indexOf(this.vitalHeaders[i]) >= 0) {
-				return true;
-			}
-		}
-		return false;
+		return formattedHeaders.some(header => this.headerMappingService.suggestKey(header, this.vitalHeaders) !== null);
 	} // end lineHasHeaders
 
 

@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { BuildMspService } from './build-msp.service';
+import { HeaderMappingService } from '../header-mapping-service/header-mapping.service';
 
 describe('BuildMspService', () => {
 	let service: BuildMspService;
 
 	beforeEach(() => {
-		TestBed.configureTestingModule({ providers: [BuildMspService] });
+		TestBed.configureTestingModule({ providers: [BuildMspService, HeaderMappingService] });
 		service = TestBed.inject(BuildMspService);
 	});
 
@@ -244,6 +245,34 @@ describe('BuildMspService', () => {
 		const headers = ['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
 		'219.11317:1287575', '35.09272:9 35.16082:7'];
 		expect(service.lineHasHeaders(headers)).toBe(false);
+	});
+
+	it('should return true when a header only matches via a synonym (RETENTION TIME -> AVERAGE RT(MIN))', () => {
+		const headers = ['RETENTION TIME', 'BATCH ID'];
+		expect(service.lineHasHeaders(headers)).toBe(true);
+	});
+
+	// normalizeHeaderRow
+
+	it('should uppercase/trim headers and apply the msdial MS/MS alias when format is msdial', () => {
+		const headers = [' Average Rt(min) ', 'MS/MS spectrum'];
+		expect(service.normalizeHeaderRow(headers, 'msdial')).toEqual(['AVERAGE RT(MIN)', 'MSMS SPECTRUM']);
+	});
+
+	it('should uppercase/trim headers without the msdial alias when format is spreadsheet', () => {
+		const headers = [' Average Rt(min) ', 'MS/MS SPECTRUM'];
+		expect(service.normalizeHeaderRow(headers, 'spreadsheet')).toEqual(['AVERAGE RT(MIN)', 'MS/MS SPECTRUM']);
+	});
+
+	// classifyHeaders
+
+	it('should classify headers against the full vitalHeaders list', () => {
+		const result = service.classifyHeaders(['RETENTION TIME', 'SAMPLE 1', 'BATCH ID']);
+		expect(result).toEqual([
+			{ header: 'RETENTION TIME', action: 'map', targetKey: 'AVERAGE RT(MIN)', isSample: false },
+			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+		]);
 	});
 
 	// getHeaderPosition
