@@ -9,11 +9,11 @@ describe('ReadSpreadsheetService', () => {
 
 	beforeEach(() => {
 		TestBed.configureTestingModule({ providers: [ReadSpreadsheetService, BuildMspService] });
-		service = TestBed.get(ReadSpreadsheetService);
-    });
-    
-    it('should be created', () => {
-		const rsService: ReadSpreadsheetService = TestBed.get(ReadSpreadsheetService);
+		service = TestBed.inject(ReadSpreadsheetService);
+	});
+
+	   it('should be created', () => {
+		const rsService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
 		expect(rsService).toBeTruthy();
 	});
 
@@ -37,40 +37,38 @@ describe('ReadSpreadsheetService', () => {
 			0: file,
 			length: 1,
 			item: (index: number) => file
-		};
+		} as unknown as FileList;
 
 		expect(service.readXlsx(fileList) instanceof Observable).toBe(true);
 	});
 
-    // I think this is a Protractor test, but leaving this here in case I change my mind
-	// xit('should call buildMspFile from subscriber', () => {
+	xit('should call buildMspFile from subscriber', () => {
 
-    //  const name = 'filename.xlsx';
-	// 	const blob = new Blob(['0', '1', '2'], {type: 'text/plain;charset=utf-8'});
-	// 	blob["name"] = name;
-	// 	const file = blob as File;
-	// 	const fileList = {
-	// 		0: file,
-	// 		length: 1,
-	// 		item: (index: number) => file
-    //     };
+		const blob = new Blob(['0', '1', '2'], {type: 'text/plain;charset=utf-8'});
+		blob["name"] = 'filename.xlsx';
+		const file = blob as File;
+		const fileList = {
+			0: file,
+			length: 1,
+			item: (index: number) => file
+        } as unknown as FileList;
 
-    //     const comments = '';
-	// 	const bMService = TestBed.get(BuildMspService);
-	// 	bMService.buildMspFile = jasmine.createSpy('bMF spy');
+		const errorText = '';
+		const bMService = TestBed.inject(BuildMspService);
+		bMService.buildMspFile = jasmine.createSpy('bMF spy');
 
-	// 	const observable = service.readXlsx(fileList);
-	// 	observable.subscribe({
-	// 		next(arr) {
-	// 			bMService.buildMspFile(arr, name, comments);
-	// 			expect(bMService.buildMspFile).toHaveBeenCalled();
-	// 		},
-	// 		error(err) { console.error('something wrong occurred: ' + err); },
-	// 		complete() {
-	// 			expect(bMService.buildMspFile).toHaveBeenCalled();
-	// 			console.log('Done');
-	// 		}
-	// 	});
-	// });
+		const observable = service.readXlsx(fileList);
+		observable.subscribe({
+			next(arr) {
+				bMService.buildMspFile(arr, file.name, '');
+				expect(bMService.buildMspFile).toHaveBeenCalled();
+			},
+			error(err) { console.error('something wrong occurred: ' + err); },
+			complete() {
+				// expect(bMService.buildMspFile).toHaveBeenCalled();
+				console.log('Done');
+			}
+		});
+	});
 
 });
