@@ -64,6 +64,24 @@ export class BuildMspService {
 	}
 
 
+	// Collect each comment-mapped header's per-row value into a row's _extraComments array
+	applyCommentMappings(jsonArray: any[], mappings: HeaderMapping[]): any[] {
+		const commentMappings = mappings.filter(m => m.action === 'comment');
+		if (commentMappings.length === 0) {
+			return jsonArray;
+		}
+		return jsonArray.map(entry => {
+			const extraComments: { header: string, value: string }[] = [];
+			commentMappings.forEach(mapping => {
+				if (entry[mapping.header]) {
+					extraComments.push({ header: mapping.header, value: entry[mapping.header] });
+				}
+			});
+			return extraComments.length > 0 ? { ...entry, '_extraComments': extraComments } : entry;
+		});
+	}
+
+
 	// A spectrum-less entry isn't useful in a spectral library, regardless of source format
 	removeRowsWithoutSpectrum(jsonArray: any[]): any[] {
 		return jsonArray.filter(entry => !!entry['MSMS SPECTRUM']);
@@ -137,8 +155,18 @@ export class BuildMspService {
             'Precursor Mz: ' + (element['AVERAGE MZ'] || '') + '\n' +
             'Retention Time: ' + (element['AVERAGE RT(MIN)'] || '') + '\n' +
             'Formula: ' + (element['FORMULA'] || '') + '\n';
+
+            const commentParts: string[] = [];
             if (mspNotes) {
-                mspString += 'Comments: ' + mspNotes + '\n';
+                commentParts.push(mspNotes);
+            }
+            if (element['_extraComments']) {
+                element['_extraComments'].forEach((comment: { header: string, value: string }) => {
+                    commentParts.push(comment.header + ': ' + comment.value);
+                });
+            }
+            if (commentParts.length > 0) {
+                mspString += 'Comments: ' + commentParts.join('; ') + '\n';
             }
             // Create array of mass/intensity peaks to be written into the string line by line
             //  First check that MSMS spectrum data exists
@@ -315,8 +343,11 @@ export class BuildMspService {
 				// Create an array of dictionaries
                 let msmsJsonArray = this.buildJsonArray(mappedHeaders, data);
 
-                // remove unneeded attributes
-                msmsJsonArray = this.removeAttributes(msmsJsonArray, requiredHeaders);
+                // Collect comment-mapped columns' values before removeAttributes strips the originals
+                msmsJsonArray = this.applyCommentMappings(msmsJsonArray, mappings);
+
+                // remove unneeded attributes (keep _extraComments alongside the required headers)
+                msmsJsonArray = this.removeAttributes(msmsJsonArray, [...requiredHeaders, '_extraComments']);
 
                 // Use header position to get row number; check for missing data per each header
                 //  (a spectrum-less row is filtered below, not reported as missing data, for either format)
