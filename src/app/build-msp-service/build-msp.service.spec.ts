@@ -447,4 +447,30 @@ describe('BuildMspService', () => {
 
 	});
 
+	// applyHeaderMappings
+
+	it('should rename a header to its targetKey when action is "map"', () => {
+		const headers = ['RETENTION TIME', 'BATCH ID'];
+		const mappings = [
+			{ header: 'RETENTION TIME', action: 'map' as const, targetKey: 'AVERAGE RT(MIN)', isSample: false },
+			{ header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false }
+		];
+		expect(service.applyHeaderMappings(headers, mappings)).toEqual(['AVERAGE RT(MIN)', 'BATCH ID']);
+	});
+
+	// buildMspFile: mapping renames a header before required-header validation runs
+
+	it('should accept a file whose headers only match via user-supplied mapping, with no header errors', () => {
+		spyOn(service, 'saveFile');
+		const arr = [
+			['Retention Time', 'Average Mz', 'Metabolite name', 'Adduct type', 'Formula', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7']
+		];
+		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
+		expect(errorWarning).not.toContain('column headers not found');
+		expect(errorWarning).not.toContain('may be misspelled or missing');
+		const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+		expect(mspString).toContain('Name: 1-Methyltryptophan');
+	});
+
 });

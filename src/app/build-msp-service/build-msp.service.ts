@@ -55,6 +55,15 @@ export class BuildMspService {
 	}
 
 
+	// Rename headers with action "map" to their canonical targetKey; leave comment/ignore headers as-is
+	applyHeaderMappings(headers: string[], mappings: HeaderMapping[]): string[] {
+		return headers.map(header => {
+			const mapping = mappings.find(m => m.header === header);
+			return (mapping && mapping.action === 'map' && mapping.targetKey) ? mapping.targetKey : header;
+		});
+	}
+
+
 	// A spectrum-less entry isn't useful in a spectral library, regardless of source format
 	removeRowsWithoutSpectrum(jsonArray: any[]): any[] {
 		return jsonArray.filter(entry => !!entry['MSMS SPECTRUM']);
@@ -283,7 +292,7 @@ export class BuildMspService {
     
 
     // Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet'): string {
+	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet', headerMappings?: HeaderMapping[]): string {
 
 		// Reset the error text
         this.resetErrors();
@@ -295,18 +304,16 @@ export class BuildMspService {
 		if (headerPosition >= 0) {
 
 			// Get the headers, convert them to upper case and remove trailing white space
-			let headers = msmsArray[headerPosition];
-			headers = this.processText(headers);
-			if (format === 'msdial') {
-				headers = this.applyMsdialHeaderAliases(headers);
-			}
+			const headers = this.normalizeHeaderRow(msmsArray[headerPosition], format);
+			const mappings = headerMappings || this.classifyHeaders(headers);
+			const mappedHeaders = this.applyHeaderMappings(headers, mappings);
 
 			// If all required headers are available and without errors, proceed
-			if (!this.hasHeaderErrors(headers, requiredHeaders)) {
+			if (!this.hasHeaderErrors(mappedHeaders, requiredHeaders)) {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
-                let msmsJsonArray = this.buildJsonArray(headers, data);
+                let msmsJsonArray = this.buildJsonArray(mappedHeaders, data);
 
                 // remove unneeded attributes
                 msmsJsonArray = this.removeAttributes(msmsJsonArray, requiredHeaders);
