@@ -1,9 +1,12 @@
 /*
   Design mockup for msp-from-ss, matching the visual identity of the lab's
-  other internal tools (navy/gold navbar, white cards). Scoped under
-  .app-navbar and .rs-page so nothing here can bleed into or be overridden
-  by the pre-existing vendored Bootstrap 3 / FontAwesome 4 styles
-  (mona-vendor.css, mona-main.css).
+  other internal tools (navy/gold navbar, white cards). Every rule here is
+  scoped under .app-navbar or .rs-page so it can't bleed into or be
+  overridden by the pre-existing vendored Bootstrap 3 / FontAwesome 4
+  styles (mona-vendor.css, mona-main.css) -- with one deliberate exception:
+  the page-wide `body { background }` override below, which intentionally
+  replaces theme.css's body background globally and is loaded last in
+  styles.css specifically to win that cascade tie.
 */
 
 :root {
@@ -63,6 +66,7 @@ body {
   font-weight: 700;
   font-size: 1.75rem;
   letter-spacing: 0.01em;
+  margin: 0;
 }
 
 .app-navbar__badge {
