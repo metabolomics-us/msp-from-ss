@@ -304,9 +304,6 @@ export class BuildMspService {
                     this.errorWarning = 'Warning: Some entries have missing data; these attributes were left blank';
                 }
 
-                // Drop rows with no MS/MS spectrum: not useful in a spectral library, regardless of source
-                msmsJsonArray = this.removeRowsWithoutSpectrum(msmsJsonArray);
-
                 // Remove duplicate entries
                 //  Need to get header position and add 2 to get accurate row locations on the spreadsheet
                 msmsJsonArray = this.removeDuplicates(msmsJsonArray, headerPosition + 2);
@@ -317,6 +314,9 @@ export class BuildMspService {
                     }
                     this.errorWarning += 'Warning: duplicate entries found but not included in .msp';
                 }
+
+                // Drop rows with no MS/MS spectrum: not useful in a spectral library, regardless of source
+                msmsJsonArray = this.removeRowsWithoutSpectrum(msmsJsonArray);
 
 				// Turn array into a string
 				const mspString = this.buildMspStringFromArray(msmsJsonArray, notes);

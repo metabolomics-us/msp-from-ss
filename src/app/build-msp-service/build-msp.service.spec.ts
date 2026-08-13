@@ -289,6 +289,10 @@ describe('BuildMspService', () => {
 			service.processText = jasmine.createSpy('processText() spy').and.returnValue(arr[0]);
 			service.hasHeaderErrors = jasmine.createSpy('hasHeaderErrors() spy').and.returnValue(false);
 			service.buildJsonArray = jasmine.createSpy('buildJsonArray() spy').and.returnValue(jsonArr);
+			service.removeAttributes = jasmine.createSpy('removeAttributes() spy').and.returnValue(jsonArr);
+			service.collectMissingData = jasmine.createSpy('collectMissingData() spy');
+			service.removeDuplicates = jasmine.createSpy('removeDuplicates() spy').and.returnValue(jsonArr);
+			service.removeRowsWithoutSpectrum = jasmine.createSpy('removeRowsWithoutSpectrum() spy').and.returnValue(jsonArr);
 			service.buildMspStringFromArray = jasmine.createSpy('buildMspStringFromArray() spy').and.returnValue(testStr);
 			service.saveFile = jasmine.createSpy('saveFile() spy');
 
