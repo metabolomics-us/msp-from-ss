@@ -5,9 +5,13 @@
             <h2 class="rs-card__title">How it works</h2>
         </div>
         <p>
-            Click 'Browse' and select a spreadsheet with one of these extensions: .xlsx, .xls, .csv, .ods, or .numbers.
-            Then click 'Submit' to download a converted .msp text file. The downloaded file will have a .txt extension
-            which you can rename to .msp.</p>
+            Click 'Browse' and select a spreadsheet with one of these extensions: .xlsx, .xls, .csv, .ods, or .numbers,
+            or a MS-DIAL "Alignment result" export (.txt). Then click 'Submit' to download a converted .msp text file.
+            The downloaded file will have a .txt extension which you can rename to .msp.</p>
+        <p>
+            For a MS-DIAL AlignmentResult.txt file: rows with no MS/MS spectrum are skipped, and rows with an
+            unidentified ("Unknown") metabolite name are kept as long as they have a spectrum.
+        </p>
         <p>
             Your spreadsheet must include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type',
             'Formula', 'INCHIKEY', 'MS1 spectrum', and 'MSMS spectrum'. It may include other columns, but those will not be included
