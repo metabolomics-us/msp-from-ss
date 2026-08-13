@@ -66,6 +66,7 @@ describe('ReadSpreadsheetComponent', () => {
     // Testing variable binding
     it('should display a different test title', () => {
         component.fileNameText = 'Test Name';
+        fixture.componentRef.changeDetectorRef.markForCheck();
         fixture.detectChanges();
         expect(fixture.debugElement.nativeElement.querySelector('#file-name-text').textContent).toContain('Test Name');
     });
