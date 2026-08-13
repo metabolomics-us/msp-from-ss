@@ -75,7 +75,7 @@ describe('workspace-project App', () => {
         expect(page.isElementHidden('wrong-image')).toBe('true');
     });
 
-    it('should have disabled submit button, correct error text with invalid .txt spreadsheet', () => {
+    it('should have disabled submit button, correct error text with an unsupported file extension', () => {
         page.navigateTo();
         page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
         expect(page.isSubmitDisabled()).toBe('true');

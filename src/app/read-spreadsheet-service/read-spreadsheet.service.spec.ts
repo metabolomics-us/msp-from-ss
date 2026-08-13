@@ -92,6 +92,27 @@ describe('ReadSpreadsheetService', () => {
 		});
 	});
 
+	it('should not produce an extra row for a whitespace-only line between real data lines', (done) => {
+		const content = 'Alignment ID\tAverage Rt(min)\n1\t6.23\n\t\t\n2\t9.543\n';
+		const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+		blob["name"] = 'filename.txt';
+		const file = blob as File;
+		const fileList = {
+			0: file,
+			length: 1,
+			item: (index: number) => file
+		} as unknown as FileList;
+
+		service.readAlignmentResultTxt(fileList).subscribe(msmsArray => {
+			expect(msmsArray).toEqual([
+				['Alignment ID', 'Average Rt(min)'],
+				['1', '6.23'],
+				['2', '9.543']
+			]);
+			done();
+		});
+	});
+
 	xit('should call buildMspFile from subscriber', () => {
 
 		const blob = new Blob(['0', '1', '2'], {type: 'text/plain;charset=utf-8'});
