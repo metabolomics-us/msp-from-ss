@@ -11,7 +11,7 @@ if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     exit 0
 fi
 
-nohup npx ng serve --port "$PORT" > "$LOG_FILE" 2>&1 &
+nohup setsid npx ng serve --port "$PORT" > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 echo "Dev server starting (PID $(cat "$PID_FILE")), logging to $LOG_FILE"
 echo "http://localhost:${PORT}/"

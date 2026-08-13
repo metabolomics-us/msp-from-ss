@@ -11,7 +11,10 @@ fi
 
 PID="$(cat "$PID_FILE")"
 if kill -0 "$PID" 2>/dev/null; then
-    kill "$PID"
+    # PID is the setsid-created process group leader (dev-start.sh runs the server via
+    # `setsid npx ng serve ...`), so kill the whole group to take down the actual ng serve
+    # child too, not just the leader/wrapper process.
+    kill -- "-$PID"
     echo "Stopped dev server (PID $PID)"
 else
     echo "Dev server PID $PID not running"
