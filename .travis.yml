@@ -12,13 +12,25 @@ addons:
     packages:
       - google-chrome-stable
 
+# cache:
+#   directories:
+#      - ./node_modules
+
+# install:
+#   - npm install
+
+# See https://stackoverflow.com/questions/42521884/should-i-have-travis-cache-node-modules-or-home-npm/52387639
+
 cache:
   directories:
-     - ./node_modules
+     - $HOME/.npm
 
 install:
-  - npm install
+  - npm ci
+
+before_script:
+  - webdriver-manager update
 
 script:
-  - npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI
   - npm run e2e -- --protractor-config=e2e/protractor-ci.conf.js
+  - npm run test -- --no-watch --no-progress --browsers=ChromeHeadlessCI

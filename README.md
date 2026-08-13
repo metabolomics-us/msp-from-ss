@@ -8,8 +8,8 @@ Build .msp files from spreadsheets of mass spectrometry data. Users will upload 
 - Adduct type
 - Formula
 - INCHIKEY
-- MS1 isotopic spectrum
-- MS/MS spectrum
+- MS1 spectrum
+- MSMS spectrum
 
 The user will then be prompted to download a .msp text file with their data.
 
