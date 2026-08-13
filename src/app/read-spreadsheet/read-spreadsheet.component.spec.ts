@@ -6,7 +6,7 @@ import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { BuildMspService } from '../build-msp-service/build-msp.service';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import * as path from 'path';
-import { Observable } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 
 describe('ReadSpreadsheetComponent', () => {
 	let component: ReadSpreadsheetComponent;
@@ -98,5 +98,45 @@ describe('ReadSpreadsheetComponent', () => {
 
 	// Look at:
 	// https://stackoverflow.com/questions/52078853/is-it-possible-to-update-filelist
+
+	it('should eagerly parse the file and populate headerMappings on a valid file selection', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(of([
+			['AVERAGE RT(MIN)', 'BATCH ID'],
+			['6.23', '3']
+		]));
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.cachedMsmsArray).toEqual([['AVERAGE RT(MIN)', 'BATCH ID'], ['6.23', '3']]);
+		expect(component.headerMappings).toEqual([
+			{ header: 'AVERAGE RT(MIN)', action: 'map', targetKey: 'AVERAGE RT(MIN)', isSample: false },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+		]);
+	});
+
+	it('should pass the cached array and headerMappings to buildMspFile on submit, without re-reading the file', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		const readSpy = spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(of([
+			['METABOLITE NAME'], ['Test Compound']
+		]));
+		spyOn(component.buildMspService, 'buildMspFile').and.returnValue('');
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+		component.readFile();
+
+		expect(readSpy).toHaveBeenCalledTimes(1);
+		expect(component.buildMspService.buildMspFile).toHaveBeenCalledWith(
+			[['METABOLITE NAME'], ['Test Compound']],
+			jasmine.any(String),
+			jasmine.any(String),
+			'spreadsheet',
+			component.headerMappings
+		);
+	});
 
 });
