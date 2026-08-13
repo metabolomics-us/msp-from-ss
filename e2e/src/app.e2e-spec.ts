@@ -54,7 +54,7 @@ describe('workspace-project App', () => {
         expect(page.isElementHidden('error-box')).toBe('true');
         expect(page.isElementHidden('correct-image')).toBe(null);
         expect(page.isElementHidden('wrong-image')).toBe('true');
-        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
         expect(page.isSubmitDisabled()).toBe('true');
         expect(page.isElementHidden('error-box')).toBe(null);
         expect(page.isElementHidden('correct-image')).toBe('true');
@@ -63,7 +63,7 @@ describe('workspace-project App', () => {
 
     it('should have button and error box states change when uploading invalid and then valid files', () => {
         page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
         expect(page.isSubmitDisabled()).toBe('true');
         expect(page.isElementHidden('error-box')).toBe(null);
         expect(page.isElementHidden('correct-image')).toBe('true');
@@ -75,19 +75,19 @@ describe('workspace-project App', () => {
         expect(page.isElementHidden('wrong-image')).toBe('true');
     });
 
-    it('should have disabled submit button, correct error text with invalid .txt spreadsheet', () => {
+    it('should have disabled submit button, correct error text with an unsupported file extension', () => {
         page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
         expect(page.isSubmitDisabled()).toBe('true');
         expect(page.isElementHidden('correct-image')).toBe('true');
         expect(page.isElementHidden('wrong-image')).toBe(null);
-        const text = 'Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers';
+        const text = 'Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt';
         expect(page.getErrorText()).toEqual(text);
     });
 
     it('should not show error file button when uploading wrong file type', () => {
         page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
         expect(page.isElementHidden('error-box')).toBe(null);
         expect(page.isElementHidden('error-file')).toBe('true');
     });
@@ -243,6 +243,64 @@ describe('workspace-project App', () => {
         expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
         expect(page.isElementHidden('correct-image')).toBe('true');
         expect(page.isElementHidden('wrong-image')).toBe(null);
+    });
+
+    it('should tell the user headers are not found when uploading a comma-delimited .txt file', () => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        // Extension is now accepted, so the submit button is enabled...
+        expect(page.isSubmitDisabled()).toBe(null);
+        page.submitFile();
+        // ...but the file has no tab characters, so no header row can be found
+        const text = 'Error: column headers not found';
+        expect(page.getErrorText()).toEqual(text);
+        expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
+    });
+
+    it('should have a hidden error box and enabled submit button after uploading a valid MS-DIAL AlignmentResult .txt file', () => {
+        page.navigateTo();
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+        expect(page.isSubmitDisabled()).toBe(null);
+        expect(page.isElementHidden('error-box')).toBe('true');
+        expect(page.isElementHidden('correct-image')).toBe(null);
+        expect(page.isElementHidden('wrong-image')).toBe('true');
+    });
+
+    it('should download .msp from a MS-DIAL AlignmentResult .txt file, keeping the Unknown-but-spectrum row and dropping the no-spectrum row', () => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+        const name = './e2e/downloads/msdial_alignment_result_small.txt';
+        page.submitFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(name);
+            }, 10*1000, 'File with correct name should be downloaded').then(function() {
+                expect(page.isElementHidden('error-box')).toBe(null);
+                expect(page.isElementHidden('correct-image')).toBe(null);
+                expect(page.isElementHidden('wrong-image')).toBe('true');
+                expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
+                const text = 'Warning: Some entries have missing data; these attributes were left blank';
+                expect(page.getErrorText()).toEqual(text);
+                const mspContent = fs.readFileSync(name, 'utf8');
+                expect(mspContent).toContain('Name: 1-Methyltryptophan');
+                expect(mspContent).toContain('Name: Unknown');
+                expect(mspContent).not.toContain('ShouldBeFiltered');
+            });
+        });
+    });
+
+    it('should download an error file listing the msdial row with missing data', () => {
+        page.navigateTo();
+        browser.waitForAngularEnabled(false);
+        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+        page.submitFile();
+        const errorFile = './e2e/downloads/error_file_msdial_alignment_result_small.txt';
+        page.downloadErrorFile().then(() => {
+            browser.driver.wait(function() {
+                return fs.existsSync(errorFile);
+            }, 5*1000, 'Error file should be downloaded');
+        });
     });
 
     // What if file re-saved in libre office is fucking up???

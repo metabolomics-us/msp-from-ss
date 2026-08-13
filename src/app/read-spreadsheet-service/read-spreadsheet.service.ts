@@ -46,4 +46,26 @@ export class ReadSpreadsheetService {
 
 	} // end readXlsx
 
+	// Return observable where a MS-DIAL AlignmentResult .txt file is converted into a 2x2 array
+	//  Same array shape as readXlsx() produces, so the rest of the pipeline is shared
+	readAlignmentResultTxt(sheetData: FileList): Observable<string[][]> {
+
+		return new Observable<string[][]>(subscriber => {
+			const reader = new FileReader();
+			reader.addEventListener('load', (loadEvent) => {
+				const target: FileReader = loadEvent.target as FileReader;
+				const text = (target.result as string).replace(/\r\n/g, '\n');
+				const msmsArray = text.split('\n')
+					.filter(line => line.trim().length > 0)
+					.map(line => line.split('\t'));
+				subscriber.next(msmsArray);
+			});
+			reader.addEventListener('error', () => {
+				subscriber.error('Error: file may be corrupted or may not exist');
+			});
+			reader.readAsText(sheetData[0]);
+		});
+
+	} // end readAlignmentResultTxt
+
 }

@@ -45,3 +45,10 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Superpowers subagent-driven-development scratch workspace
+/.superpowers
+
+# Dev server pid/log (dev-start.sh / dev-stop.sh)
+/.dev.pid
+/.dev.log

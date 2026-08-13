@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
-import { BuildMspService } from '../build-msp-service/build-msp.service';
+import { BuildMspService, MspSourceFormat } from '../build-msp-service/build-msp.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 
 import { Observable, Subscription } from 'rxjs';
@@ -98,7 +98,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.fileNameText = this.fileName;
 
             // Check for proper file type
-            if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
+            if (/\.(xlsx|csv|xls|ods|numbers|txt)$/g.test(this.fileNameText)) {
                 this.files = this.targetInput.files;
                 // Submit button can now be clicked
                 this.submitValid = true;
@@ -108,7 +108,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.files = null;
                 // Submit button greyed out
                 this.submitValid = false;
-                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
+                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt', false);
                 this.showCorrectImage(false);
             }
         } 
@@ -122,14 +122,17 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.spinner.show();
 
             // Check for proper file type
-            // Get Observable that converts spreadsheet into 2x2 array
-			if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
-                this.updateErrorText('', false);                
-                // Get observable which converts .xlsx into array
+            // Get Observable that converts the file into a 2x2 array
+			if (/\.txt$/g.test(this.fileNameText)) {
+                this.updateErrorText('', false);
+                this.observable$ = this.readSpreadsheetService.readAlignmentResultTxt(this.files);
+                this.buildMsp(this.fileNameText, this.notesText.trim(), 'msdial');
+			} else if (/\.(xlsx|csv|xls|ods|numbers)$/g.test(this.fileNameText)) {
+                this.updateErrorText('', false);
                 this.observable$ = this.readSpreadsheetService.readXlsx(this.files);
-                this.buildMsp(this.fileNameText, this.notesText.trim());
+                this.buildMsp(this.fileNameText, this.notesText.trim(), 'spreadsheet');
 			} else {
-                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers', false);
+                this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt', false);
                 this.showCorrectImage(false);
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
                 this.spinner.hide();
@@ -150,7 +153,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 
     // Create .msp from 2x2 array and/or get error descriptions
-    buildMsp(name: string, notes: string) {
+    buildMsp(name: string, notes: string, format: MspSourceFormat) {
         // Need a reference to 'this' so that we can access it within observable$.subscribe
         const self = this;
 
@@ -160,7 +163,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         	next(msmsArray) {
                 let errorData = '';
                 // Create .msp file and display any error test
-                errorData = self.buildMspService.buildMspFile(msmsArray, name, notes);
+                errorData = self.buildMspService.buildMspFile(msmsArray, name, notes, format);
         		if (errorData.length === 0 && self.buildMspService.missingData.length === 0 && self.buildMspService.duplicates.length === 0) {
                     self.fileNameText = '.msp created';
                     self.showCorrectImage(true);

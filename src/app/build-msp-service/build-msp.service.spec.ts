@@ -72,6 +72,22 @@ describe('BuildMspService', () => {
         expect(service.removeDuplicates(jsonArr, 0).length).toBe(2);
     });
 
+    it('should not flag rows as possible duplicates when INCHIKEY is missing on all of them', () => {
+        // 3 otherwise-distinct entries (different RT/MZ/spectrum), none with an INCHIKEY.
+        //  The old indexOf-based code turned the missing INCHIKEY into the literal string 'UNDEFINED'
+        //  via processText, so every row after the first would be flagged as a possible duplicate of it.
+        const jsonArr = [
+            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': 'A',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'},
+            {'AVERAGE RT(MIN)': '5.874', 'AVERAGE MZ': '228.0988', 'METABOLITE NAME': 'B',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C9H13N3O4', 'MSMS SPECTRUM': '35.25149:14 35.48236:5'},
+            {'AVERAGE RT(MIN)': '3.33', 'AVERAGE MZ': '200.0', 'METABOLITE NAME': 'C',
+            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C1H1', 'MSMS SPECTRUM': '50.7019:2412 77.88785:2832'}
+        ];
+        expect(service.removeDuplicates(jsonArr, 0).length).toBe(3);
+        expect(service.possibleDuplicates.length).toBe(0);
+    });
+
 	// hasHeaderErrors
 
 	it('should return false when all headers are present and spelled correctly', () => {
@@ -111,6 +127,90 @@ describe('BuildMspService', () => {
 		'FORMULA', 'MS1 SPECTRUM', 'MSMS SPECTRUM'];
 		service.hasHeaderErrors(headers);
 		expect(service.errorWarning).toEqual('These headers may be misspelled or missing: INCHIKEY');
+	});
+
+	// getRequiredHeaders
+
+	it('should return vitalHeaders unchanged for spreadsheet format', () => {
+		expect(service.getRequiredHeaders('spreadsheet')).toEqual(service.vitalHeaders);
+	});
+
+	it('should exclude MS1 SPECTRUM for msdial format', () => {
+		expect(service.getRequiredHeaders('msdial')).toEqual(
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM']
+		);
+	});
+
+	// applyMsdialHeaderAliases
+
+	it('should alias MS/MS SPECTRUM to MSMS SPECTRUM', () => {
+		const headers = ['AVERAGE RT(MIN)', 'MS/MS SPECTRUM'];
+		expect(service.applyMsdialHeaderAliases(headers)).toEqual(['AVERAGE RT(MIN)', 'MSMS SPECTRUM']);
+	});
+
+	it('should leave headers with no MS-DIAL alias unchanged', () => {
+		const headers = ['AVERAGE RT(MIN)', 'MSMS SPECTRUM', 'MS1 ISOTOPIC SPECTRUM'];
+		expect(service.applyMsdialHeaderAliases(headers)).toEqual(headers);
+	});
+
+	// hasHeaderErrors with an explicit requiredHeaders param
+
+	it('should return false for msdial headers missing MS1 SPECTRUM when checked against msdial required headers', () => {
+		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM'];
+		expect(service.hasHeaderErrors(headers, service.getRequiredHeaders('msdial'))).toBe(false);
+	});
+
+	it('should still return true when MS1 SPECTRUM is missing and no requiredHeaders param is given (spreadsheet default)', () => {
+		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM'];
+		expect(service.hasHeaderErrors(headers)).toBe(true);
+	});
+
+	// buildJsonArray
+
+	it('should treat literal "null" string values as missing when building the JSON array', () => {
+		const headers = ['METABOLITE NAME', 'FORMULA', 'INCHIKEY'];
+		const data = [['Unknown', 'null', 'null']];
+		expect(service.buildJsonArray(headers, data)).toEqual([{'METABOLITE NAME': 'Unknown'}]);
+	});
+
+	it('should still include a real (non-"null") value for the same header', () => {
+		const headers = ['METABOLITE NAME', 'FORMULA'];
+		const data = [['1-Methyltryptophan', 'C12H14N2O2']];
+		expect(service.buildJsonArray(headers, data)).toEqual([{'METABOLITE NAME': '1-Methyltryptophan', 'FORMULA': 'C12H14N2O2'}]);
+	});
+
+	// removeAttributes with an explicit requiredHeaders param
+
+	it('should keep only the given requiredHeaders when picking attributes', () => {
+		const entry = {'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X', 'MS1 SPECTRUM': 'ignored', 'EXTRA': 'drop me'};
+		const requiredHeaders = ['AVERAGE RT(MIN)', 'METABOLITE NAME'];
+		expect(service.removeAttributes([entry], requiredHeaders)).toEqual([{'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X'}]);
+	});
+
+	it('should default to vitalHeaders when no requiredHeaders param is given', () => {
+		const entry = {'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept', 'EXTRA': 'drop me'};
+		expect(service.removeAttributes([entry])).toEqual([{'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept'}]);
+	});
+
+	// collectMissingData with an explicit requiredHeaders param
+
+	it('should not flag a row as missing when its dict has extra keys the requiredHeaders list does not check', () => {
+		// Simulates a dict built against a wider header list than the one collectMissingData checks against
+		const jsonArray = [
+			{'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.1', 'METABOLITE NAME': 'X', 'ADDUCT TYPE': '[M+H]+',
+			 'FORMULA': 'C1', 'INCHIKEY': 'ABC', 'MSMS SPECTRUM': '1:1'}
+		];
+		const narrowerHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY'];
+		service.collectMissingData(jsonArray, 2, narrowerHeaders);
+		expect(service.missingData.length).toBe(0);
+	});
+
+	it('should still flag a row missing a header the requiredHeaders list does check', () => {
+		const jsonArray = [
+			{'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X'}
+		];
+		service.collectMissingData(jsonArray, 2, ['AVERAGE RT(MIN)', 'METABOLITE NAME', 'FORMULA']);
+		expect(service.missingData).toEqual(['2: FORMULA']);
 	});
 
 	// processText
@@ -205,6 +305,10 @@ describe('BuildMspService', () => {
 			service.processText = jasmine.createSpy('processText() spy').and.returnValue(arr[0]);
 			service.hasHeaderErrors = jasmine.createSpy('hasHeaderErrors() spy').and.returnValue(false);
 			service.buildJsonArray = jasmine.createSpy('buildJsonArray() spy').and.returnValue(jsonArr);
+			service.removeAttributes = jasmine.createSpy('removeAttributes() spy').and.returnValue(jsonArr);
+			service.collectMissingData = jasmine.createSpy('collectMissingData() spy');
+			service.removeDuplicates = jasmine.createSpy('removeDuplicates() spy').and.returnValue(jsonArr);
+			service.removeRowsWithoutSpectrum = jasmine.createSpy('removeRowsWithoutSpectrum() spy').and.returnValue(jsonArr);
 			service.buildMspStringFromArray = jasmine.createSpy('buildMspStringFromArray() spy').and.returnValue(testStr);
 			service.saveFile = jasmine.createSpy('saveFile() spy');
 
@@ -216,6 +320,100 @@ describe('BuildMspService', () => {
 			expect(service.buildJsonArray).toHaveBeenCalled();
 			expect(service.buildMspStringFromArray).toHaveBeenCalled();
 			expect(service.saveFile).toHaveBeenCalled();
+		});
+
+	});
+
+	// removeRowsWithoutSpectrum
+
+	it('should drop rows without an MSMS SPECTRUM value', () => {
+		const jsonArray = [
+			{'METABOLITE NAME': 'A', 'MSMS SPECTRUM': '1:1'},
+			{'METABOLITE NAME': 'B'}
+		];
+		expect(service.removeRowsWithoutSpectrum(jsonArray)).toEqual([{'METABOLITE NAME': 'A', 'MSMS SPECTRUM': '1:1'}]);
+	});
+
+	// getMissingDataCheckHeaders
+
+	it('should exclude MSMS SPECTRUM from the missing-data check for msdial format', () => {
+		const requiredHeaders = service.getRequiredHeaders('msdial');
+		expect(service.getMissingDataCheckHeaders('msdial', requiredHeaders)).toEqual(
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY']
+		);
+	});
+
+	it('should also exclude MSMS SPECTRUM from the missing-data check for spreadsheet format', () => {
+		// A missing spectrum is filtered out by removeRowsWithoutSpectrum for both formats, so it
+		//  shouldn't be reported as "missing data" (which implies the row survives with a blank field).
+		const requiredHeaders = service.getRequiredHeaders('spreadsheet');
+		expect(service.getMissingDataCheckHeaders('spreadsheet', requiredHeaders)).toEqual(
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM']
+		);
+	});
+
+	// buildMspFile with msdial format, end to end
+
+	describe('BuildMspService: buildMspFile with msdial format', () => {
+
+		it('should build the .msp string applying msdial-specific rules: MS1 not required, MS/MS SPECTRUM alias, null-to-blank, no-spectrum row dropped, no-spectrum row not reported as missing data', () => {
+			spyOn(service, 'saveFile');
+
+			const arr = [
+				['Alignment ID', 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', 'MS/MS spectrum'],
+				['1', '6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.1:100', '35.09272:9 35.16082:7'],
+				['2', '9.543', '80.04929', 'Unknown', '[M+H]+', 'null', 'null', '228.1:50', '50.7019:2412 77.88785:2832'],
+				['3', '3.33', '200.0', 'ShouldBeFiltered', '[M+H]+', 'C1H1', 'XXXXXXXXXX-UHFFFAOYSA-N', '', '']
+			];
+
+			const errorWarning = service.buildMspFile(arr, 'test.txt', '', 'msdial');
+
+			// MS1 SPECTRUM is not required for msdial: no header error even though there's no matching column
+			expect(errorWarning).toContain('Warning: Some entries have missing data');
+			expect(errorWarning).not.toContain('column headers not found');
+
+			// Row 2 (Unknown, null Formula/INCHIKEY) is reported as missing data.
+			//  Row number is 3: headerPosition is 0 (no metadata rows precede the header in this fixture),
+			//  so correctionFactor = 0 + 2 = 2, and row 2 is at data-array index 1 (2 + 1 = 3).
+			expect(service.missingData).toEqual(['3: FORMULA, INCHIKEY']);
+
+			// Row 3 has no spectrum: filtered out, and NOT reported as missing data (would be row 4: 2 + 2)
+			expect(service.missingData.some(entry => entry.startsWith('4:'))).toBe(false);
+
+			const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+			expect(mspString).toContain('Name: 1-Methyltryptophan');
+			expect(mspString).toContain('Name: Unknown');
+			expect(mspString).toContain('Formula: \n'); // Unknown row's null Formula normalized to blank
+			expect(mspString).not.toContain('ShouldBeFiltered');
+		});
+
+	});
+
+	// buildMspFile with spreadsheet format, end to end: no-spectrum row dropped and not reported as missing data
+
+	describe('BuildMspService: buildMspFile with spreadsheet format, no-spectrum row', () => {
+
+		it('should drop a row missing only its spectrum, without reporting it as missing data', () => {
+			spyOn(service, 'saveFile');
+
+			const arr = [
+				['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
+				'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
+				['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2',
+				'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7'],
+				['3.33', '200.0', 'ShouldBeFiltered', '[M+H]+', 'C1H1',
+				'XXXXXXXXXX-UHFFFAOYSA-N', '200.0:100', '']
+			];
+
+			const errorWarning = service.buildMspFile(arr, 'test.csv', '', 'spreadsheet');
+
+			// Row 3 (ShouldBeFiltered) is missing only its spectrum: not reported as missing data
+			expect(service.missingData.length).toBe(0);
+			expect(errorWarning).not.toContain('Warning: Some entries have missing data');
+
+			const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+			expect(mspString).toContain('Name: 1-Methyltryptophan');
+			expect(mspString).not.toContain('ShouldBeFiltered');
 		});
 
 	});

@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 import { _ } from 'underscore';
 
+export type MspSourceFormat = 'spreadsheet' | 'msdial';
+
 @Injectable({
 	providedIn: 'root'
 })
@@ -19,7 +21,35 @@ export class BuildMspService {
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'];
     }
-    
+
+
+	// Vital headers required for a given source format
+	//  MS-DIAL uploads don't require MS1 SPECTRUM: it's validated but never written into the .msp output
+	getRequiredHeaders(format: MspSourceFormat): string[] {
+		if (format === 'msdial') {
+			return this.vitalHeaders.filter(header => header !== 'MS1 SPECTRUM');
+		}
+		return this.vitalHeaders;
+	}
+
+
+	// MS-DIAL uses 'MS/MS spectrum' where this app's own headers use 'MSMS SPECTRUM'
+	applyMsdialHeaderAliases(headers: string[]): string[] {
+		return headers.map(header => header === 'MS/MS SPECTRUM' ? 'MSMS SPECTRUM' : header);
+	}
+
+
+	// A spectrum-less entry isn't useful in a spectral library, regardless of source format
+	removeRowsWithoutSpectrum(jsonArray: any[]): any[] {
+		return jsonArray.filter(entry => !!entry['MSMS SPECTRUM']);
+	}
+
+
+	// A missing spectrum is handled by removeRowsWithoutSpectrum for both formats, not reported as missing data
+	//  (format is kept in the signature for call-site consistency and in case a future format needs different behavior)
+	getMissingDataCheckHeaders(format: MspSourceFormat, requiredHeaders: string[]): string[] {
+		return requiredHeaders.filter(header => header !== 'MSMS SPECTRUM');
+	}
 
     resetErrors() {
         this.missingData = [];
@@ -103,29 +133,22 @@ export class BuildMspService {
 
 
     // Record all lines with missing data
-    collectMissingData(jsonArray: any[], correctionFactor: number) {
-        const vhLen = this.vitalHeaders.length;
+    collectMissingData(jsonArray: any[], correctionFactor: number, requiredHeaders: string[] = this.vitalHeaders) {
         let keyArray: string[];
         let missingCols: string[];
         for (let i = 0; i < jsonArray.length; i++) {
             keyArray = Object.keys(jsonArray[i]);
-            if (keyArray.length != vhLen) {
-                missingCols = [];
-                this.vitalHeaders.forEach(header => {
-                    if (keyArray.indexOf(header) < 0) {
-                        missingCols.push(header);
-                    }
-                });
+            missingCols = requiredHeaders.filter(header => keyArray.indexOf(header) < 0);
+            if (missingCols.length > 0) {
                 this.missingData.push(String(i + correctionFactor) + ': ' + missingCols.join(', '));
             }
         }
     }
 
 
-    // Remove unneeded attributes so that only the 'vital headers' remain
-    removeAttributes(jsonArray: any[]): any[] {
-        const self = this;
-        return _.map(jsonArray, function(entry: any) { return _.pick(entry, ...self.vitalHeaders); });
+    // Remove unneeded attributes so that only the required headers remain
+    removeAttributes(jsonArray: any[], requiredHeaders: string[] = this.vitalHeaders): any[] {
+        return _.map(jsonArray, (entry: any) => _.pick(entry, ...requiredHeaders));
     }
     
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
@@ -140,20 +163,33 @@ export class BuildMspService {
         let firstHashArray = jsonArray.map(x => x['INCHIKEY']);
         firstHashArray = this.processText(firstHashArray);
 
+        // Track the first index at which each string/hash was seen, for O(1) lookups instead of O(n) indexOf
+        const firstSeenString = new Map<string, number>();
+        const firstSeenHash = new Map<string, number>();
         // Create new JSON array and push only one entry for each name
         let cleanedArray = [];
         for (let i = 0; i < stringsArray.length; i++) {
+            const key = stringsArray[i];
             // Check for likely duplicates
-            if (stringsArray.indexOf(stringsArray[i]) === i) {
+            if (!firstSeenString.has(key)) {
+                firstSeenString.set(key, i);
                 cleanedArray.push(jsonArray[i]);
-                // Check for possible duplicates; mark them, don't remove them
-                if (firstHashArray.indexOf(firstHashArray[i]) != i) {
-                    this.possibleDuplicates.push(String(firstHashArray.indexOf(firstHashArray[i]) + correctionFactor) + ' & ' + String(i + correctionFactor))
+                const hash = firstHashArray[i];
+                // Skip the connectivity-hash comparison when INCHIKEY is missing (processText
+                // turns a missing value into the literal string 'UNDEFINED') — otherwise every
+                // row lacking an INCHIKEY collapses into one meaningless "possible duplicate" bucket
+                if (hash !== 'UNDEFINED') {
+                    // Check for possible duplicates; mark them, don't remove them
+                    if (firstSeenHash.has(hash)) {
+                        this.possibleDuplicates.push(String(firstSeenHash.get(hash) + correctionFactor) + ' & ' + String(i + correctionFactor))
+                    } else {
+                        firstSeenHash.set(hash, i);
+                    }
                 }
             } else {
-                this.duplicates.push(String(stringsArray.indexOf(stringsArray[i]) + correctionFactor) + ' & ' + String(i + correctionFactor));
+                this.duplicates.push(String(firstSeenString.get(key) + correctionFactor) + ' & ' + String(i + correctionFactor));
             }
-            
+
         }
         return cleanedArray;
     } // end removeDuplicates
@@ -170,7 +206,8 @@ export class BuildMspService {
 		for (i = 0; i < data.length; i++) {
 			dict = {};
 			for (j = 0; j < headers.length; j++) {
-                if (data[i][j]) {
+				// MS-DIAL writes the literal string "null" for missing values instead of an empty cell
+				if (data[i][j] && data[i][j] !== 'null') {
 					dict[headers[j]] = data[i][j];
 				}
 			}
@@ -182,17 +219,15 @@ export class BuildMspService {
 
 
 	// Check for any column headers that are misspelled or missing
-	hasHeaderErrors(headers: any[]): boolean {
+	hasHeaderErrors(headers: any[], requiredHeaders: string[] = this.vitalHeaders): boolean {
 
 		let hasError = false;
-		// let headerErrors: string = 'These headers may be misspelled or missing:';
 		const headerErrors: string[] = [];
 
-		this.vitalHeaders.forEach(headerName => {
+		requiredHeaders.forEach(headerName => {
 			// If a vital header doesn't appear in the headers row, indexOf returns -1
 			if (headers.indexOf(headerName) < 0) {
 				hasError = true;
-				// headerErrors += ' ' + headerName;
 				headerErrors.push(headerName);
 			}
 		});
@@ -244,12 +279,12 @@ export class BuildMspService {
     
 
     // Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string, notes: string): string {
-
-        // return "testing";
+	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet'): string {
 
 		// Reset the error text
         this.resetErrors();
+
+        const requiredHeaders = this.getRequiredHeaders(format);
 
 		// Get the row number where the headers are located
 		const headerPosition = this.getHeaderPosition(msmsArray);
@@ -258,25 +293,28 @@ export class BuildMspService {
 			// Get the headers, convert them to upper case and remove trailing white space
 			let headers = msmsArray[headerPosition];
 			headers = this.processText(headers);
+			if (format === 'msdial') {
+				headers = this.applyMsdialHeaderAliases(headers);
+			}
 
-			// If all important headers are available and without errors, proceed
-			if (!this.hasHeaderErrors(headers)) {
+			// If all required headers are available and without errors, proceed
+			if (!this.hasHeaderErrors(headers, requiredHeaders)) {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
                 let msmsJsonArray = this.buildJsonArray(headers, data);
 
                 // remove unneeded attributes
-                msmsJsonArray = this.removeAttributes(msmsJsonArray);
+                msmsJsonArray = this.removeAttributes(msmsJsonArray, requiredHeaders);
 
                 // Use header position to get row number; check for missing data per each header
-                this.collectMissingData(msmsJsonArray, headerPosition + 2);
+                //  (a spectrum-less row is filtered below, not reported as missing data, for either format)
+                const missingDataCheckHeaders = this.getMissingDataCheckHeaders(format, requiredHeaders);
+                this.collectMissingData(msmsJsonArray, headerPosition + 2, missingDataCheckHeaders);
                 if (this.missingData.length > 0) {
                     this.errorWarning = 'Warning: Some entries have missing data; these attributes were left blank';
                 }
 
-                // Get length of array
-                const msmsLength = msmsJsonArray.length;
                 // Remove duplicate entries
                 //  Need to get header position and add 2 to get accurate row locations on the spreadsheet
                 msmsJsonArray = this.removeDuplicates(msmsJsonArray, headerPosition + 2);
@@ -284,9 +322,12 @@ export class BuildMspService {
                 if (this.duplicates.length > 0) {
                     if (this.errorWarning.length > 0) {
                         this.errorWarning += '<br>';
-                    } 
+                    }
                     this.errorWarning += 'Warning: duplicate entries found but not included in .msp';
                 }
+
+                // Drop rows with no MS/MS spectrum: not useful in a spectral library, regardless of source
+                msmsJsonArray = this.removeRowsWithoutSpectrum(msmsJsonArray);
 
 				// Turn array into a string
 				const mspString = this.buildMspStringFromArray(msmsJsonArray, notes);
