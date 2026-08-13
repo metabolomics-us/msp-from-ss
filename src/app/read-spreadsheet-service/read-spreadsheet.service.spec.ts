@@ -42,6 +42,56 @@ describe('ReadSpreadsheetService', () => {
 		expect(service.readXlsx(fileList) instanceof Observable).toBe(true);
 	});
 
+	it('should return observable from readAlignmentResultTxt', () => {
+		const blob = new Blob(['text'], {type: 'text/plain;charset=utf-8'});
+		blob["name"] = 'filename.txt';
+		const file = blob as File;
+		const fileList = {
+			0: file,
+			length: 1,
+			item: (index: number) => file
+		} as unknown as FileList;
+
+		expect(service.readAlignmentResultTxt(fileList) instanceof Observable).toBe(true);
+	});
+
+	it('should parse tab-delimited text into a 2D array of strings', (done) => {
+		const content = 'Alignment ID\tAverage Rt(min)\tMetabolite name\n1\t6.23\t1-Methyltryptophan\n';
+		const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+		blob["name"] = 'filename.txt';
+		const file = blob as File;
+		const fileList = {
+			0: file,
+			length: 1,
+			item: (index: number) => file
+		} as unknown as FileList;
+
+		service.readAlignmentResultTxt(fileList).subscribe(msmsArray => {
+			expect(msmsArray).toEqual([
+				['Alignment ID', 'Average Rt(min)', 'Metabolite name'],
+				['1', '6.23', '1-Methyltryptophan']
+			]);
+			done();
+		});
+	});
+
+	it('should not produce a trailing empty row for a file ending in a newline', (done) => {
+		const content = 'Alignment ID\tAverage Rt(min)\n1\t6.23\n';
+		const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+		blob["name"] = 'filename.txt';
+		const file = blob as File;
+		const fileList = {
+			0: file,
+			length: 1,
+			item: (index: number) => file
+		} as unknown as FileList;
+
+		service.readAlignmentResultTxt(fileList).subscribe(msmsArray => {
+			expect(msmsArray.length).toBe(2);
+			done();
+		});
+	});
+
 	xit('should call buildMspFile from subscriber', () => {
 
 		const blob = new Blob(['0', '1', '2'], {type: 'text/plain;charset=utf-8'});
