@@ -304,4 +304,65 @@ describe('BuildMspService', () => {
 
 	});
 
+	// removeRowsWithoutSpectrum
+
+	it('should drop rows without an MSMS SPECTRUM value', () => {
+		const jsonArray = [
+			{'METABOLITE NAME': 'A', 'MSMS SPECTRUM': '1:1'},
+			{'METABOLITE NAME': 'B'}
+		];
+		expect(service.removeRowsWithoutSpectrum(jsonArray)).toEqual([{'METABOLITE NAME': 'A', 'MSMS SPECTRUM': '1:1'}]);
+	});
+
+	// getMissingDataCheckHeaders
+
+	it('should exclude MSMS SPECTRUM from the missing-data check for msdial format', () => {
+		const requiredHeaders = service.getRequiredHeaders('msdial');
+		expect(service.getMissingDataCheckHeaders('msdial', requiredHeaders)).toEqual(
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY']
+		);
+	});
+
+	it('should return requiredHeaders unchanged for spreadsheet format', () => {
+		const requiredHeaders = service.getRequiredHeaders('spreadsheet');
+		expect(service.getMissingDataCheckHeaders('spreadsheet', requiredHeaders)).toEqual(requiredHeaders);
+	});
+
+	// buildMspFile with msdial format, end to end
+
+	describe('BuildMspService: buildMspFile with msdial format', () => {
+
+		it('should build the .msp string applying msdial-specific rules: MS1 not required, MS/MS SPECTRUM alias, null-to-blank, no-spectrum row dropped, no-spectrum row not reported as missing data', () => {
+			spyOn(service, 'saveFile');
+
+			const arr = [
+				['Alignment ID', 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', 'MS/MS spectrum'],
+				['1', '6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.1:100', '35.09272:9 35.16082:7'],
+				['2', '9.543', '80.04929', 'Unknown', '[M+H]+', 'null', 'null', '228.1:50', '50.7019:2412 77.88785:2832'],
+				['3', '3.33', '200.0', 'ShouldBeFiltered', '[M+H]+', 'C1H1', 'XXXXXXXXXX-UHFFFAOYSA-N', '', '']
+			];
+
+			const errorWarning = service.buildMspFile(arr, 'test.txt', '', 'msdial');
+
+			// MS1 SPECTRUM is not required for msdial: no header error even though there's no matching column
+			expect(errorWarning).toContain('Warning: Some entries have missing data');
+			expect(errorWarning).not.toContain('column headers not found');
+
+			// Row 2 (Unknown, null Formula/INCHIKEY) is reported as missing data.
+			//  Row number is 3: headerPosition is 0 (no metadata rows precede the header in this fixture),
+			//  so correctionFactor = 0 + 2 = 2, and row 2 is at data-array index 1 (2 + 1 = 3).
+			expect(service.missingData).toEqual(['3: FORMULA, INCHIKEY']);
+
+			// Row 3 has no spectrum: filtered out, and NOT reported as missing data (would be row 4: 2 + 2)
+			expect(service.missingData.some(entry => entry.startsWith('4:'))).toBe(false);
+
+			const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+			expect(mspString).toContain('Name: 1-Methyltryptophan');
+			expect(mspString).toContain('Name: Unknown');
+			expect(mspString).toContain('Formula: \n'); // Unknown row's null Formula normalized to blank
+			expect(mspString).not.toContain('ShouldBeFiltered');
+		});
+
+	});
+
 });

@@ -38,6 +38,21 @@ export class BuildMspService {
 		return headers.map(header => header === 'MS/MS SPECTRUM' ? 'MSMS SPECTRUM' : header);
 	}
 
+
+	// A spectrum-less entry isn't useful in a spectral library, regardless of source format
+	removeRowsWithoutSpectrum(jsonArray: any[]): any[] {
+		return jsonArray.filter(entry => !!entry['MSMS SPECTRUM']);
+	}
+
+
+	// For msdial, a missing spectrum is handled by removeRowsWithoutSpectrum, not reported as missing data
+	getMissingDataCheckHeaders(format: MspSourceFormat, requiredHeaders: string[]): string[] {
+		if (format === 'msdial') {
+			return requiredHeaders.filter(header => header !== 'MSMS SPECTRUM');
+		}
+		return requiredHeaders;
+	}
+
     resetErrors() {
         this.missingData = [];
         this.duplicates = [];
@@ -253,12 +268,12 @@ export class BuildMspService {
     
 
     // Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string, notes: string): string {
-
-        // return "testing";
+	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet'): string {
 
 		// Reset the error text
         this.resetErrors();
+
+        const requiredHeaders = this.getRequiredHeaders(format);
 
 		// Get the row number where the headers are located
 		const headerPosition = this.getHeaderPosition(msmsArray);
@@ -267,25 +282,31 @@ export class BuildMspService {
 			// Get the headers, convert them to upper case and remove trailing white space
 			let headers = msmsArray[headerPosition];
 			headers = this.processText(headers);
+			if (format === 'msdial') {
+				headers = this.applyMsdialHeaderAliases(headers);
+			}
 
-			// If all important headers are available and without errors, proceed
-			if (!this.hasHeaderErrors(headers)) {
+			// If all required headers are available and without errors, proceed
+			if (!this.hasHeaderErrors(headers, requiredHeaders)) {
 
 				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
 				// Create an array of dictionaries
                 let msmsJsonArray = this.buildJsonArray(headers, data);
 
                 // remove unneeded attributes
-                msmsJsonArray = this.removeAttributes(msmsJsonArray);
+                msmsJsonArray = this.removeAttributes(msmsJsonArray, requiredHeaders);
 
                 // Use header position to get row number; check for missing data per each header
-                this.collectMissingData(msmsJsonArray, headerPosition + 2);
+                //  (a spectrum-less row is filtered below, not reported as missing data, for msdial)
+                const missingDataCheckHeaders = this.getMissingDataCheckHeaders(format, requiredHeaders);
+                this.collectMissingData(msmsJsonArray, headerPosition + 2, missingDataCheckHeaders);
                 if (this.missingData.length > 0) {
                     this.errorWarning = 'Warning: Some entries have missing data; these attributes were left blank';
                 }
 
-                // Get length of array
-                const msmsLength = msmsJsonArray.length;
+                // Drop rows with no MS/MS spectrum: not useful in a spectral library, regardless of source
+                msmsJsonArray = this.removeRowsWithoutSpectrum(msmsJsonArray);
+
                 // Remove duplicate entries
                 //  Need to get header position and add 2 to get accurate row locations on the spreadsheet
                 msmsJsonArray = this.removeDuplicates(msmsJsonArray, headerPosition + 2);
@@ -293,7 +314,7 @@ export class BuildMspService {
                 if (this.duplicates.length > 0) {
                     if (this.errorWarning.length > 0) {
                         this.errorWarning += '<br>';
-                    } 
+                    }
                     this.errorWarning += 'Warning: duplicate entries found but not included in .msp';
                 }
 
