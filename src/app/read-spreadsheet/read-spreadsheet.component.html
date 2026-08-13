@@ -60,6 +60,33 @@
                     </form-group>
                 </div>
             </div>
+
+            <div id="mapping-info" [hidden]="headerMappings.length === 0">
+                <p>
+                    Review how this file's columns are mapped to MSP fields:
+                    <button id="show-mapping-button" class="btn" (click)="showMappingPanelToggle()">
+                        <i class="fa fa-plus show-notes-image" [hidden]="showMappingPanel"></i>
+                        <i class="fa fa-minus show-notes-image" [hidden]="!showMappingPanel"></i>
+                    </button>
+                </p>
+                <table id="mapping-table" [hidden]="!showMappingPanel">
+                    <thead>
+                        <tr><th>Column</th><th>Maps to</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let mapping of visibleHeaderMappings; let i = index" [attr.data-header]="mapping.header">
+                            <td>{{ mapping.header }}</td>
+                            <td>
+                                <select [attr.id]="'mapping-select-' + i" (change)="updateMapping(mapping, $event)">
+                                    <option value="ignore" [selected]="mapping.action === 'ignore'">Ignore</option>
+                                    <option value="comment" [selected]="mapping.action === 'comment'">Add as comment</option>
+                                    <option *ngFor="let key of mspKeys" [value]="key" [selected]="mapping.action === 'map' && mapping.targetKey === key">{{ key }}</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </form>
 
         <div id="rs-buttons" style="text-align: center;">

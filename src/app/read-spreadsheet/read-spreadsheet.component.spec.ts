@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 // Doesn't seem to fix problem of Template parse errors
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
-// import { FormsModule } from '@angular/forms';
 import { BuildMspService } from '../build-msp-service/build-msp.service';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import * as path from 'path';
@@ -15,7 +16,7 @@ describe('ReadSpreadsheetComponent', () => {
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
         declarations: [ ReadSpreadsheetComponent ],
-        // imports: [FormsModule],
+        imports: [CommonModule, FormsModule],
 		schemas: [CUSTOM_ELEMENTS_SCHEMA]
 	})
 	.compileComponents(); }));
@@ -137,6 +138,47 @@ describe('ReadSpreadsheetComponent', () => {
 			'spreadsheet',
 			component.headerMappings
 		);
+	});
+
+	it('should toggle showMappingPanel', () => {
+		expect(component.showMappingPanel).toBe(false);
+		component.showMappingPanelToggle();
+		expect(component.showMappingPanel).toBe(true);
+		component.showMappingPanelToggle();
+		expect(component.showMappingPanel).toBe(false);
+	});
+
+	it('should exclude sample-flagged headers from visibleHeaderMappings', () => {
+		component.headerMappings = [
+			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+		];
+		expect(component.visibleHeaderMappings).toEqual([
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+		]);
+	});
+
+	it('should update a mapping to "comment" when updateMapping is called with value "comment"', () => {
+		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
+		component.headerMappings = [mapping];
+		const select = document.createElement('select');
+		// A bare <select> with no matching <option> silently ignores a .value assignment
+		// (the browser resets it to ''), so add the option the real template would render.
+		select.appendChild(new Option('Add as comment', 'comment'));
+		select.value = 'comment';
+		component.updateMapping(mapping, { target: select } as unknown as Event);
+		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'comment', targetKey: null, isSample: false });
+	});
+
+	it('should update a mapping to "map" with the chosen key when updateMapping is called with a key value', () => {
+		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
+		component.headerMappings = [mapping];
+		const select = document.createElement('select');
+		// See note above: a matching <option> is required for the .value assignment to take effect.
+		select.appendChild(new Option('FORMULA', 'FORMULA'));
+		select.value = 'FORMULA';
+		component.updateMapping(mapping, { target: select } as unknown as Event);
+		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'map', targetKey: 'FORMULA', isSample: false });
 	});
 
 });

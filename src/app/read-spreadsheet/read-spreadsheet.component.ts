@@ -36,6 +36,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     showErrorBox: boolean;
     showErrorFile: boolean;
     showNotes: boolean;
+    showMappingPanel: boolean;
+    mspKeys: string[];
 
     errorText: string;
     // form: FormGroup;
@@ -59,6 +61,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         // Submit button disabled
         this.submitValid = false;
         this.showNotes = false;
+        this.showMappingPanel = false;
+        this.mspKeys = this.buildMspService.vitalHeaders;
         this.spinner.hide();
 
         this.notesText = "";
@@ -92,6 +96,31 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
     showNotesTextArea() {
         this.showNotes = !this.showNotes;
+    }
+
+
+    showMappingPanelToggle() {
+        this.showMappingPanel = !this.showMappingPanel;
+    }
+
+
+    get visibleHeaderMappings(): HeaderMapping[] {
+        return this.headerMappings.filter(mapping => !mapping.isSample);
+    }
+
+
+    updateMapping(mapping: HeaderMapping, event: Event) {
+        const value = (event.target as HTMLSelectElement).value;
+        if (value === 'ignore') {
+            mapping.action = 'ignore';
+            mapping.targetKey = null;
+        } else if (value === 'comment') {
+            mapping.action = 'comment';
+            mapping.targetKey = null;
+        } else {
+            mapping.action = 'map';
+            mapping.targetKey = value;
+        }
     }
 
 
