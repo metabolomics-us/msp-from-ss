@@ -87,7 +87,7 @@ Add to `src/app/build-msp-service/build-msp.service.spec.ts` (after the existing
 
 	it('should default to vitalHeaders when no requiredHeaders param is given', () => {
 		const entry = {'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept', 'EXTRA': 'drop me'};
-		expect(service.removeAttributes([entry])).toEqual({'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept'} as any);
+		expect(service.removeAttributes([entry])).toEqual([{'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept'}]);
 	});
 
 	// collectMissingData with an explicit requiredHeaders param
@@ -368,11 +368,13 @@ Add to `build-msp.service.spec.ts`:
 			expect(errorWarning).toContain('Warning: Some entries have missing data');
 			expect(errorWarning).not.toContain('column headers not found');
 
-			// Row 2 (Unknown, null Formula/INCHIKEY) is reported as missing data
-			expect(service.missingData).toEqual(['7: FORMULA, INCHIKEY']);
+			// Row 2 (Unknown, null Formula/INCHIKEY) is reported as missing data.
+			//  Row number is 3: headerPosition is 0 (no metadata rows precede the header in this fixture),
+			//  so correctionFactor = 0 + 2 = 2, and row 2 is at data-array index 1 (2 + 1 = 3).
+			expect(service.missingData).toEqual(['3: FORMULA, INCHIKEY']);
 
-			// Row 3 has no spectrum: filtered out, and NOT reported as missing data
-			expect(service.missingData.some(entry => entry.startsWith('8:'))).toBe(false);
+			// Row 3 has no spectrum: filtered out, and NOT reported as missing data (would be row 4: 2 + 2)
+			expect(service.missingData.some(entry => entry.startsWith('4:'))).toBe(false);
 
 			const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
 			expect(mspString).toContain('Name: 1-Methyltryptophan');
