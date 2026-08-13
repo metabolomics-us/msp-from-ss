@@ -113,6 +113,76 @@ describe('BuildMspService', () => {
 		expect(service.errorWarning).toEqual('These headers may be misspelled or missing: INCHIKEY');
 	});
 
+	// getRequiredHeaders
+
+	it('should return vitalHeaders unchanged for spreadsheet format', () => {
+		expect(service.getRequiredHeaders('spreadsheet')).toEqual(service.vitalHeaders);
+	});
+
+	it('should exclude MS1 SPECTRUM for msdial format', () => {
+		expect(service.getRequiredHeaders('msdial')).toEqual(
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM']
+		);
+	});
+
+	// applyMsdialHeaderAliases
+
+	it('should alias MS/MS SPECTRUM to MSMS SPECTRUM', () => {
+		const headers = ['AVERAGE RT(MIN)', 'MS/MS SPECTRUM'];
+		expect(service.applyMsdialHeaderAliases(headers)).toEqual(['AVERAGE RT(MIN)', 'MSMS SPECTRUM']);
+	});
+
+	it('should leave headers with no MS-DIAL alias unchanged', () => {
+		const headers = ['AVERAGE RT(MIN)', 'MSMS SPECTRUM', 'MS1 ISOTOPIC SPECTRUM'];
+		expect(service.applyMsdialHeaderAliases(headers)).toEqual(headers);
+	});
+
+	// hasHeaderErrors with an explicit requiredHeaders param
+
+	it('should return false for msdial headers missing MS1 SPECTRUM when checked against msdial required headers', () => {
+		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM'];
+		expect(service.hasHeaderErrors(headers, service.getRequiredHeaders('msdial'))).toBe(false);
+	});
+
+	it('should still return true when MS1 SPECTRUM is missing and no requiredHeaders param is given (spreadsheet default)', () => {
+		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM'];
+		expect(service.hasHeaderErrors(headers)).toBe(true);
+	});
+
+	// removeAttributes with an explicit requiredHeaders param
+
+	it('should keep only the given requiredHeaders when picking attributes', () => {
+		const entry = {'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X', 'MS1 SPECTRUM': 'ignored', 'EXTRA': 'drop me'};
+		const requiredHeaders = ['AVERAGE RT(MIN)', 'METABOLITE NAME'];
+		expect(service.removeAttributes([entry], requiredHeaders)).toEqual([{'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X'}]);
+	});
+
+	it('should default to vitalHeaders when no requiredHeaders param is given', () => {
+		const entry = {'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept', 'EXTRA': 'drop me'};
+		expect(service.removeAttributes([entry])).toEqual([{'AVERAGE RT(MIN)': '6.23', 'MS1 SPECTRUM': 'kept'}]);
+	});
+
+	// collectMissingData with an explicit requiredHeaders param
+
+	it('should not flag a row as missing when its dict has extra keys the requiredHeaders list does not check', () => {
+		// Simulates a dict built against a wider header list than the one collectMissingData checks against
+		const jsonArray = [
+			{'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.1', 'METABOLITE NAME': 'X', 'ADDUCT TYPE': '[M+H]+',
+			 'FORMULA': 'C1', 'INCHIKEY': 'ABC', 'MSMS SPECTRUM': '1:1'}
+		];
+		const narrowerHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY'];
+		service.collectMissingData(jsonArray, 2, narrowerHeaders);
+		expect(service.missingData.length).toBe(0);
+	});
+
+	it('should still flag a row missing a header the requiredHeaders list does check', () => {
+		const jsonArray = [
+			{'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X'}
+		];
+		service.collectMissingData(jsonArray, 2, ['AVERAGE RT(MIN)', 'METABOLITE NAME', 'FORMULA']);
+		expect(service.missingData).toEqual(['2: FORMULA']);
+	});
+
 	// processText
 
 	it('should return ["AVERAGE RT(MIN)", "AVERAGE MZ"] when ["Average Rt(min)", " Average Mz "] is sent', () => {

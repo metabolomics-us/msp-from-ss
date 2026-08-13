@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 import { _ } from 'underscore';
 
+export type MspSourceFormat = 'spreadsheet' | 'msdial';
+
 @Injectable({
 	providedIn: 'root'
 })
@@ -19,7 +21,22 @@ export class BuildMspService {
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'];
     }
-    
+
+
+	// Vital headers required for a given source format
+	//  MS-DIAL uploads don't require MS1 SPECTRUM: it's validated but never written into the .msp output
+	getRequiredHeaders(format: MspSourceFormat): string[] {
+		if (format === 'msdial') {
+			return this.vitalHeaders.filter(header => header !== 'MS1 SPECTRUM');
+		}
+		return this.vitalHeaders;
+	}
+
+
+	// MS-DIAL uses 'MS/MS spectrum' where this app's own headers use 'MSMS SPECTRUM'
+	applyMsdialHeaderAliases(headers: string[]): string[] {
+		return headers.map(header => header === 'MS/MS SPECTRUM' ? 'MSMS SPECTRUM' : header);
+	}
 
     resetErrors() {
         this.missingData = [];
@@ -103,29 +120,22 @@ export class BuildMspService {
 
 
     // Record all lines with missing data
-    collectMissingData(jsonArray: any[], correctionFactor: number) {
-        const vhLen = this.vitalHeaders.length;
+    collectMissingData(jsonArray: any[], correctionFactor: number, requiredHeaders: string[] = this.vitalHeaders) {
         let keyArray: string[];
         let missingCols: string[];
         for (let i = 0; i < jsonArray.length; i++) {
             keyArray = Object.keys(jsonArray[i]);
-            if (keyArray.length != vhLen) {
-                missingCols = [];
-                this.vitalHeaders.forEach(header => {
-                    if (keyArray.indexOf(header) < 0) {
-                        missingCols.push(header);
-                    }
-                });
+            missingCols = requiredHeaders.filter(header => keyArray.indexOf(header) < 0);
+            if (missingCols.length > 0) {
                 this.missingData.push(String(i + correctionFactor) + ': ' + missingCols.join(', '));
             }
         }
     }
 
 
-    // Remove unneeded attributes so that only the 'vital headers' remain
-    removeAttributes(jsonArray: any[]): any[] {
-        const self = this;
-        return _.map(jsonArray, function(entry: any) { return _.pick(entry, ...self.vitalHeaders); });
+    // Remove unneeded attributes so that only the required headers remain
+    removeAttributes(jsonArray: any[], requiredHeaders: string[] = this.vitalHeaders): any[] {
+        return _.map(jsonArray, (entry: any) => _.pick(entry, ...requiredHeaders));
     }
     
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
@@ -182,17 +192,15 @@ export class BuildMspService {
 
 
 	// Check for any column headers that are misspelled or missing
-	hasHeaderErrors(headers: any[]): boolean {
+	hasHeaderErrors(headers: any[], requiredHeaders: string[] = this.vitalHeaders): boolean {
 
 		let hasError = false;
-		// let headerErrors: string = 'These headers may be misspelled or missing:';
 		const headerErrors: string[] = [];
 
-		this.vitalHeaders.forEach(headerName => {
+		requiredHeaders.forEach(headerName => {
 			// If a vital header doesn't appear in the headers row, indexOf returns -1
 			if (headers.indexOf(headerName) < 0) {
 				hasError = true;
-				// headerErrors += ' ' + headerName;
 				headerErrors.push(headerName);
 			}
 		});
