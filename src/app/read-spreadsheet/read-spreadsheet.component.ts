@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
 import { BuildMspService, MspSourceFormat } from '../build-msp-service/build-msp.service';
-import { HeaderMappingService, HeaderMapping } from '../header-mapping-service/header-mapping.service';
+import { HeaderMapping } from '../header-mapping-service/header-mapping.service';
 import { NgxSpinnerService } from 'ngx-spinner';
 
 import { Subscription } from 'rxjs';

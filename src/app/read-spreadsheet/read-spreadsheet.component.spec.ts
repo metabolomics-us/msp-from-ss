@@ -181,4 +181,133 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'map', targetKey: 'FORMULA', isSample: false });
 	});
 
+	it('should update a mapping to "ignore" when updateMapping is called with value "ignore"', () => {
+		const mapping = { header: 'BATCH ID', action: 'map' as const, targetKey: 'FORMULA', isSample: false };
+		component.headerMappings = [mapping];
+		const select = document.createElement('select');
+		select.appendChild(new Option('Ignore', 'ignore'));
+		select.value = 'ignore';
+		component.updateMapping(mapping, { target: select } as unknown as Event);
+		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false });
+	});
+
+	it('should update notesText when getTextFromTextArea is called', () => {
+		const textArea = document.createElement('textarea');
+		textArea.value = 'Some notes';
+		component.getTextFromTextArea({ srcElement: textArea } as unknown as Event);
+		expect(component.notesText).toBe('Some notes');
+	});
+
+	it('should toggle showNotes when showNotesTextArea is called', () => {
+		expect(component.showNotes).toBe(false);
+		component.showNotesTextArea();
+		expect(component.showNotes).toBe(true);
+		component.showNotesTextArea();
+		expect(component.showNotes).toBe(false);
+	});
+
+	it('should call downloadFileService.downloadFile with the mapped file name when downloadExample is called', () => {
+		// downloadFileService is provided at the component level (see the component's `providers`
+		// array), so grab the exact instance this component instance holds rather than TestBed.inject.
+		const downloadFileService = (component as unknown as { downloadFileService: { downloadFile: (dir: string, name: string) => void } }).downloadFileService;
+		spyOn(downloadFileService, 'downloadFile');
+		const anchor = document.createElement('a');
+		anchor.setAttribute('name', 'example_msp-txt');
+		component.downloadExample({ target: anchor } as unknown as Event);
+		expect(downloadFileService.downloadFile).toHaveBeenCalledWith('../assets/files-to-read/', 'example_msp.txt');
+	});
+
+	it('should reject a file with an unsupported extension and clear cached state', () => {
+		const fileList = { length: 1, 0: new File([''], 'test.bad') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.cachedMsmsArray = [['stale']];
+		component.headerMappings = [{ header: 'stale', action: 'map', targetKey: 'FORMULA', isSample: false }];
+
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.submitValid).toBe(false);
+		expect(component.files).toBeNull();
+		expect(component.cachedMsmsArray).toBeNull();
+		expect(component.headerMappings).toEqual([]);
+		expect(component.showErrorBox).toBe(true);
+	});
+
+	it('should clear headerMappings when no header row is found while parsing', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(of([['not', 'a', 'header', 'row']]));
+		spyOn(component.buildMspService, 'getHeaderPosition').and.returnValue(-1);
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.headerMappings).toEqual([]);
+	});
+
+	it('should clear cachedMsmsArray and headerMappings when parsing the selected file errors', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(throwError(() => new Error('boom')));
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.cachedMsmsArray).toBeNull();
+		expect(component.headerMappings).toEqual([]);
+	});
+
+	it('should show an error when readFile is called without a file selected', () => {
+		component.targetInput = { value: '' } as HTMLInputElement;
+		component.files = null;
+
+		component.readFile();
+
+		expect(component.errorText).toBe('Select file before clicking \'Submit\'');
+		expect(component.showWrong).toBe(true);
+	});
+
+	it('should show a corrupted-file error when readFile is called with no cached data', () => {
+		component.targetInput = { value: '' } as HTMLInputElement;
+		component.files = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.cachedMsmsArray = null;
+
+		component.readFile();
+
+		expect(component.errorText).toBe('Error: file may be corrupted or may not exist');
+		expect(component.fileNameText).toBe('Click \'Browse\' to choose a spreadsheet');
+	});
+
+	it('should report ".msp created with some issues" when buildMspFile returns errors alongside missing/duplicate data', () => {
+		spyOn(component.buildMspService, 'buildMspFile').and.returnValue('some error text');
+		component.buildMspService.missingData = ['row 3: missing FORMULA'];
+		component.buildMspService.duplicates = [];
+
+		component.buildMsp('test.xlsx', '', 'spreadsheet');
+
+		expect(component.fileNameText).toBe('.msp created with some issues');
+		expect(component.showCorrect).toBe(true);
+		expect(component.errorText).toBe('some error text');
+	});
+
+	it('should report "Fix errors, then retry upload" when buildMspFile returns errors with no missing/duplicate data', () => {
+		spyOn(component.buildMspService, 'buildMspFile').and.returnValue('fatal error text');
+		component.buildMspService.missingData = [];
+		component.buildMspService.duplicates = [];
+
+		component.buildMsp('test.xlsx', '', 'spreadsheet');
+
+		expect(component.fileNameText).toBe('Fix errors, then retry upload');
+		expect(component.showWrong).toBe(true);
+		expect(component.errorText).toBe('fatal error text');
+	});
+
+	it('should delegate to buildMspService.saveErrorFile with a derived file name when getErrorFile is called', () => {
+		component.fileName = 'my-spreadsheet.xlsx';
+		spyOn(component.buildMspService, 'saveErrorFile');
+
+		component.getErrorFile();
+
+		expect(component.buildMspService.saveErrorFile).toHaveBeenCalledWith('error_file_my-spreadsheet.txt');
+	});
+
 });

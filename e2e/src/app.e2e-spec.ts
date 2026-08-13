@@ -1,5 +1,5 @@
 import { AppPage } from './app.po';
-import { browser, logging, element } from 'protractor';
+import { browser, logging } from 'protractor';
 import * as fs from 'fs';
 
 describe('workspace-project App', () => {
