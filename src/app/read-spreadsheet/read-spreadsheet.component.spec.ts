@@ -7,7 +7,7 @@ import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { BuildMspService } from '../build-msp-service/build-msp.service';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import * as path from 'path';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, Subject } from 'rxjs';
 
 describe('ReadSpreadsheetComponent', () => {
 	let component: ReadSpreadsheetComponent;
@@ -254,6 +254,60 @@ describe('ReadSpreadsheetComponent', () => {
 
 		expect(component.cachedMsmsArray).toBeNull();
 		expect(component.headerMappings).toEqual([]);
+	});
+
+	it('should set parsing=true and disable Submit while the async parse is still in flight (C1)', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		// Emits asynchronously (setTimeout), unlike of() which emits synchronously and would not
+		// reproduce the race: the parse must still be pending immediately after fileSelected() returns.
+		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(new Observable<string[][]>(subscriber => {
+			setTimeout(() => {
+				subscriber.next([['METABOLITE NAME'], ['Test Compound']]);
+				subscriber.complete();
+			}, 10);
+		}));
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.parsing).toBe(true);
+		// checkNoChanges=false: we are deliberately re-rendering after mutating component state
+		// (an unrelated pre-existing binding elsewhere in the template trips NG0100 otherwise).
+		fixture.detectChanges(false);
+		const submit = document.getElementById('submit') as HTMLButtonElement;
+		expect(submit.disabled).toBe(true);
+	});
+
+	it('should not let a stale, slower parse subscription overwrite a later file selection\'s cached state (I1)', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		const fileASubject = new Subject<string[][]>();
+		const fileBSubject = new Subject<string[][]>();
+		spyOn(readSpreadsheetService, 'readXlsx').and.returnValues(
+			fileASubject.asObservable(),
+			fileBSubject.asObservable()
+		);
+
+		// Select file A; its parse does not resolve yet.
+		const fileListA = { length: 1, 0: new File([''], 'fileA.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileListA } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		// Select file B before A resolves.
+		const fileListB = { length: 1, 0: new File([''], 'fileB.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileListB } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		// A's (stale) data arrives after B was selected.
+		fileASubject.next([['METABOLITE NAME'], ['From File A']]);
+		// B's data arrives.
+		fileBSubject.next([['METABOLITE NAME'], ['From File B']]);
+
+		expect(component.fileName).toBe('fileB.xlsx');
+		expect(component.cachedMsmsArray).toEqual([['METABOLITE NAME'], ['From File B']]);
+		expect(component.headerMappings).toEqual([
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false }
+		]);
 	});
 
 	it('should show an error when readFile is called without a file selected', () => {

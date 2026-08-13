@@ -50,12 +50,19 @@ export class HeaderMappingService {
 	}
 
 	classify(headers: string[], knownKeys: string[]): HeaderMapping[] {
+		// Exact matches always win. A canonical key already covered by an exact match
+		// elsewhere in this same header row must not also be claimed by a synonym match
+		// (which would rename two headers to the same key and silently corrupt one).
+		const normalizedHeaders = headers.map(header => this.normalize(header));
+		const exactMatchedKeys = new Set(knownKeys.filter(key => normalizedHeaders.indexOf(key) >= 0));
+
 		return headers.map(header => {
 			if (this.isSampleColumn(header)) {
 				return { header, action: 'ignore' as MspAction, targetKey: null, isSample: true };
 			}
+			const isExactMatch = knownKeys.indexOf(this.normalize(header)) >= 0;
 			const suggested = this.suggestKey(header, knownKeys);
-			if (suggested) {
+			if (suggested && (isExactMatch || !exactMatchedKeys.has(suggested))) {
 				return { header, action: 'map' as MspAction, targetKey: suggested, isSample: false };
 			}
 			return { header, action: 'ignore' as MspAction, targetKey: null, isSample: false };

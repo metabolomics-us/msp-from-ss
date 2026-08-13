@@ -59,4 +59,13 @@ describe('HeaderMappingService', () => {
 		const result = service.classify(['Batch ID'], knownKeys);
 		expect(result).toEqual([{ header: 'Batch ID', action: 'ignore', targetKey: null, isSample: false }]);
 	});
+
+	it('should not shadow an exact canonical match by renaming a co-occurring synonym to the same key', () => {
+		const result = service.classify(['METABOLITE NAME', 'NAME', 'AVERAGE RT(MIN)'], knownKeys);
+		expect(result).toEqual([
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false },
+			{ header: 'NAME', action: 'ignore', targetKey: null, isSample: false },
+			{ header: 'AVERAGE RT(MIN)', action: 'map', targetKey: 'AVERAGE RT(MIN)', isSample: false }
+		]);
+	});
 });

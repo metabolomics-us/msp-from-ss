@@ -96,7 +96,7 @@
                 </label>
                 <input id="file-input" type="file" (change)="fileSelected($event)">
             </span>
-            <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid" (click)="readFile()">
+            <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid || parsing" (click)="readFile()">
                 <i class="fa fa-check-circle btn-img"></i>
                 Submit
             </button>

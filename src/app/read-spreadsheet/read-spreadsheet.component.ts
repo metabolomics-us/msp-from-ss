@@ -22,6 +22,7 @@ import { timeout, take } from 'rxjs/operators';
 export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     
     submitValid: boolean;
+    parsing: boolean;
     files: FileList;
     fileName: string;
     fileNameText: string;
@@ -60,6 +61,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
         // Submit button disabled
         this.submitValid = false;
+        this.parsing = false;
         this.showNotes = false;
         this.showMappingPanel = false;
         this.mspKeys = this.buildMspService.vitalHeaders;
@@ -156,6 +158,15 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 	// Eagerly parse the selected file so the mapping panel has real headers before Submit
 	parseSelectedFile() {
+        // Cancel any still-in-flight parse from a previous file selection so its (now-stale)
+        // result can never land after this selection's result and overwrite it (I1).
+        if (this.parseSubscription) {
+            this.parseSubscription.unsubscribe();
+        }
+
+        this.parsing = true;
+        this.spinner.show();
+
         this.currentFormat = /\.txt$/g.test(this.fileNameText) ? 'msdial' : 'spreadsheet';
         const readObservable = this.currentFormat === 'msdial'
             ? this.readSpreadsheetService.readAlignmentResultTxt(this.files)
@@ -171,11 +182,15 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 } else {
                     this.headerMappings = [];
                 }
+                this.parsing = false;
+                this.spinner.hide();
             },
             error: () => {
                 // Submit's existing error path (via buildMsp) surfaces the real error to the user
                 this.cachedMsmsArray = null;
                 this.headerMappings = [];
+                this.parsing = false;
+                this.spinner.hide();
             }
         });
     }
@@ -184,7 +199,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 	// Called when the user submits their spreadsheet
 	readFile() {
 		if (this.files) {
-            this.spinner.show();
             if (this.cachedMsmsArray) {
                 this.updateErrorText('', false);
                 this.buildMsp(this.fileNameText, this.notesText.trim(), this.currentFormat);
@@ -192,12 +206,10 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.updateErrorText('Error: file may be corrupted or may not exist', false);
                 this.showCorrectImage(false);
                 this.fileNameText = 'Click \'Browse\' to choose a spreadsheet';
-                this.spinner.hide();
             }
 		} else {
             this.updateErrorText('Select file before clicking \'Submit\'', false);
             this.showCorrectImage(false);
-            this.spinner.hide();
         }
         this.submitValid = false;
         this.targetInput.value = null;
@@ -219,7 +231,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.showCorrectImage(false);
             this.updateErrorText(errorData, false);
         }
-        this.spinner.hide();
     } // end buildMsp
 
 
