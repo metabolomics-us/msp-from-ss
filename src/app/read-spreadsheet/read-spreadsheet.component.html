@@ -1,103 +1,111 @@
 <div class="rs-page">
-    <div id="instructions" class="rs-card">
-        <div class="rs-card__header">
-            <span class="rs-card__icon"><i class="fa fa-info-circle"></i></span>
-            <h2 class="rs-card__title">How it works</h2>
-        </div>
-        <p>
-            Click 'Browse' and select a spreadsheet with one of these extensions: .xlsx, .xls, .csv, .ods, or .numbers,
-            or a MS-DIAL "Alignment result" export (.txt). Then click 'Submit' to download a converted .msp text file.
-            The downloaded file will have a .txt extension which you can rename to .msp.</p>
-        <p>
-            Rows with no MS/MS spectrum are silently skipped (not left blank) for both spreadsheet and
-            MS-DIAL AlignmentResult.txt uploads. For a MS-DIAL AlignmentResult.txt file, rows with an
-            unidentified ("Unknown") metabolite name are kept as long as they have a spectrum.
-        </p>
-        <p>
-            Your spreadsheet must include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type',
-            'Formula', 'INCHIKEY', 'MS1 spectrum', and 'MSMS spectrum'.
-        </p>
-    </div>
+    <mat-card id="instructions" class="rs-card">
+        <mat-card-header>
+            <mat-icon mat-card-avatar class="rs-card__icon">info</mat-icon>
+            <mat-card-title>How it works</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <p>
+                Click 'Browse' and select a spreadsheet with one of these extensions: .xlsx, .xls, .csv, .ods, or .numbers,
+                or a MS-DIAL "Alignment result" export (.txt). Then click 'Submit' to download a converted .msp text file.
+                The downloaded file will have a .txt extension which you can rename to .msp.</p>
+            <p>
+                Rows with no MS/MS spectrum are silently skipped (not left blank) for both spreadsheet and
+                MS-DIAL AlignmentResult.txt uploads. For a MS-DIAL AlignmentResult.txt file, rows with an
+                unidentified ("Unknown") metabolite name are kept as long as they have a spectrum.
+            </p>
+            <p>
+                Your spreadsheet must include columns with these labels: 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type',
+                'Formula', 'INCHIKEY', 'MS1 spectrum', and 'MSMS spectrum'.
+            </p>
+        </mat-card-content>
+    </mat-card>
 
-    <div id="examples" class="rs-card">
-        <div class="rs-card__header">
-            <span class="rs-card__icon"><i class="fa fa-folder-open"></i></span>
-            <h2 class="rs-card__title">Example files</h2>
-        </div>
-        <!-- In downloadExample(), the name attribute is acquired and the dash is replaced by a period -->
-        <!-- This allows the correct file to be downloaded i.e. example_msp-txt => example_msp.txt -->
-        <!-- Hence whey there are both underscores and dashes -->
-        <p>
-            See a full spreadsheet with highlighted columns
-            <a name="example_spreadsheet_large-xlsx" (click)="downloadExample($event)">here</a>.<br>
-            See a spreadsheet with only the necessary columns
-            <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
-            See a resulting .msp file
-            <a name="example_msp-txt" (click)="downloadExample($event)">here</a>.
-        </p>
-    </div>
+    <mat-card id="examples" class="rs-card">
+        <mat-card-header>
+            <mat-icon mat-card-avatar class="rs-card__icon">folder_open</mat-icon>
+            <mat-card-title>Example files</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+            <!-- In downloadExample(), the name attribute is acquired and the dash is replaced by a period -->
+            <!-- This allows the correct file to be downloaded i.e. example_msp-txt => example_msp.txt -->
+            <!-- Hence whey there are both underscores and dashes -->
+            <p>
+                See a full spreadsheet with highlighted columns
+                <a name="example_spreadsheet_large-xlsx" (click)="downloadExample($event)">here</a>.<br>
+                See a spreadsheet with only the necessary columns
+                <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
+                See a resulting .msp file
+                <a name="example_msp-txt" (click)="downloadExample($event)">here</a>.
+            </p>
+        </mat-card-content>
+    </mat-card>
 
-    <div class="rs-card">
-        <div class="rs-card__header">
-            <span class="rs-card__icon"><i class="fa fa-upload"></i></span>
-            <h2 class="rs-card__title">Convert your file</h2>
-        </div>
+    <mat-card class="rs-card">
+        <mat-card-header>
+            <mat-icon mat-card-avatar class="rs-card__icon">upload</mat-icon>
+            <mat-card-title>Convert your file</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
 
         <form>
             <div id="more-info" [hidden]="false">
                 <p>
                     Click to include any additional comments for all entries before submitting:
-                    <button id="show-notes-button" class="btn" (click)="showNotesTextArea()">
-                        <i class="fa fa-plus show-notes-image" [hidden]="showNotes"></i>
-                        <i class="fa fa-minus show-notes-image" [hidden]="!showNotes"></i>
+                    <button id="show-notes-button" mat-icon-button (click)="showNotesTextArea()">
+                        <mat-icon>{{ showNotes ? 'remove' : 'add' }}</mat-icon>
                     </button>
                 </p>
                 <div id="added-notes" [hidden]="!showNotes">
-                    <form-group>
-                        <textarea id="notes-area" rows="4" name="notes-area"
+                    <mat-form-field appearance="outline" class="rs-full-width">
+                        <textarea matInput id="notes-area" rows="4" name="notes-area"
                         (change)="getTextFromTextArea($event)" [placeholder]="placeHolderText"></textarea>
-                    </form-group>
+                    </mat-form-field>
                 </div>
             </div>
 
-            <div id="mapping-info" [hidden]="headerMappings.length === 0">
-                <p>
+            <div id="mapping-info" class="rs-mapping" [hidden]="headerMappings.length === 0">
+                <p class="rs-mapping__intro">
                     Review how this file's columns are mapped to MSP fields:
-                    <button id="show-mapping-button" class="btn" (click)="showMappingPanelToggle()">
-                        <i class="fa fa-plus show-notes-image" [hidden]="showMappingPanel"></i>
-                        <i class="fa fa-minus show-notes-image" [hidden]="!showMappingPanel"></i>
+                    <button id="show-mapping-button" mat-icon-button (click)="showMappingPanelToggle()">
+                        <mat-icon>{{ showMappingPanel ? 'remove' : 'add' }}</mat-icon>
                     </button>
                 </p>
-                <table id="mapping-table" [hidden]="!showMappingPanel">
-                    <thead>
-                        <tr><th>File Column</th><th>Maps to MSP Tag</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr *ngFor="let mapping of visibleHeaderMappings; let i = index" [attr.data-header]="mapping.header">
-                            <td>{{ mapping.header }}</td>
-                            <td>
-                                <select [attr.id]="'mapping-select-' + i" (change)="updateMapping(mapping, $event)">
-                                    <option value="ignore" [selected]="mapping.action === 'ignore'">Ignore</option>
-                                    <option value="comment" [selected]="mapping.action === 'comment'">Add as comment</option>
-                                    <option *ngFor="let key of mspKeys" [value]="key" [selected]="mapping.action === 'map' && mapping.targetKey === key">{{ key }}</option>
-                                </select>
-                            </td>
-                        </tr>
-                    </tbody>
+                <table id="mapping-table" mat-table [dataSource]="visibleHeaderMappings" class="rs-mapping-table" [hidden]="!showMappingPanel">
+                    <ng-container matColumnDef="header">
+                        <th mat-header-cell *matHeaderCellDef>File Column</th>
+                        <td mat-cell *matCellDef="let mapping">{{ mapping.header }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="tag">
+                        <th mat-header-cell *matHeaderCellDef>Maps to MSP Tag</th>
+                        <td mat-cell *matCellDef="let mapping">
+                            <span *ngIf="mapping.recognizedAs === 'MSMS SPECTRUM'; else mappingSelect" class="rs-mapping-table__fixed-label">Mapped as list of peaks</span>
+                            <ng-template #mappingSelect>
+                                <mat-select [value]="mapping.action === 'map' ? mapping.targetKey : mapping.action"
+                                            (selectionChange)="updateMapping(mapping, $event.value)">
+                                    <mat-option value="ignore">Ignore</mat-option>
+                                    <mat-option value="comment">Add as comment</mat-option>
+                                    <mat-option *ngFor="let key of mspKeys" [value]="key">{{ key }}</mat-option>
+                                </mat-select>
+                            </ng-template>
+                        </td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="['header', 'tag']"></tr>
+                    <tr mat-row *matRowDef="let mapping; columns: ['header', 'tag'];" [attr.data-header]="mapping.header"></tr>
                 </table>
             </div>
         </form>
 
         <div id="rs-buttons" style="text-align: center;">
             <span class="button-wrap">
-                <label class="btn new-button file-button" for="file-input">
-                    <i class="fa fa-search-plus btn-img"></i>
+                <button mat-stroked-button (click)="fileInput.click()" type="button">
+                    <mat-icon>search</mat-icon>
                     Browse
-                </label>
-                <input id="file-input" type="file" (change)="fileSelected($event)">
+                </button>
+                <input #fileInput id="file-input" type="file" hidden (change)="fileSelected($event)">
             </span>
-            <button id="submit" class="btn btn-primary file-button" [disabled]="!submitValid || parsing" (click)="readFile()">
-                <i class="fa fa-check-circle btn-img"></i>
+            <button id="submit" mat-raised-button color="primary" [disabled]="!submitValid || parsing" (click)="readFile()">
+                <mat-icon>check_circle</mat-icon>
                 Submit
             </button>
         </div>
@@ -106,29 +114,23 @@
              [hidden]="!showCorrect && !showWrong"
              [class.status-banner--success]="showCorrect"
              [class.status-banner--error]="showWrong">
-            <i id="correct-image" [hidden]="!showCorrect" class="fa fa-thumbs-up"></i>
-            <i id="wrong-image" [hidden]="!showWrong" class="fa fa-times-circle"></i>{{ fileNameText }}
+            <mat-icon id="correct-image" [hidden]="!showCorrect">thumb_up</mat-icon>
+            <mat-icon id="wrong-image" [hidden]="!showWrong">cancel</mat-icon>{{ fileNameText }}
         </div>
 
         <div id="error-box" [hidden]="!showErrorBox">
             <p id="error-text">{{ errorText }}</p>
             <p id="error-file" [hidden]="!showErrorFile">
                 Download Error Data:
-                <button id="get-error-file" class="btn" (click)="getErrorFile()">Click</button>
+                <button id="get-error-file" mat-stroked-button color="warn" (click)="getErrorFile()">Click</button>
             </p>
         </div>
-    </div>
+
+        </mat-card-content>
+    </mat-card>
 </div>
 
-<div class="spinner-div">
-    <ngx-spinner bdColor="rgba(27, 58, 90, 0.85)" size="medium" color="#E4C767" type="ball-grid-beat" [fullScreen]="true">
-        <p class="spinner-text" style="color: white;font-size: 120%;"> Working... </p>
-    </ngx-spinner>
+<div id="loading-overlay" class="rs-loading-overlay" *ngIf="parsing">
+    <mat-spinner diameter="60"></mat-spinner>
+    <p class="rs-loading-overlay__text">Working...</p>
 </div>
-
-<!-- For when I decide to make the spinner not full screen -->
-<!-- <div class="spinner-div">
-    <ngx-spinner bdColor="white" size="medium" color="rgba(51, 51, 51, 0.8)" type="ball-grid-beat" [fullScreen]="false">
-        <p class="spinner-text"> Working... </p>
-    </ngx-spinner>
-</div> -->

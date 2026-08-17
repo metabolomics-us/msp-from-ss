@@ -18,6 +18,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTableModule } from '@angular/material/table';
 
 @NgModule({
 	declarations: [
@@ -26,7 +27,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 	imports: [
 		BrowserModule, BrowserAnimationsModule, AppRoutingModule, FormsModule, ReactiveFormsModule,
 		MatButtonModule, MatSelectModule, MatCardModule, MatIconModule, MatProgressSpinnerModule,
-		MatFormFieldModule, MatInputModule, MatToolbarModule
+		MatFormFieldModule, MatInputModule, MatToolbarModule, MatTableModule
 	],
 	providers: [],
 	bootstrap: [AppComponent],
