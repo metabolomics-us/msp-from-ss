@@ -1,369 +1,271 @@
-import { AppPage } from './app.po';
-import { browser, logging } from 'protractor';
+import { test, expect } from '@playwright/test';
+import { AppPage, deleteDownloads, fileExists } from './app.po';
 import * as fs from 'fs';
 
-describe('workspace-project App', () => {
+test.describe.configure({ mode: 'serial' });
+
+test.describe('workspace-project App', () => {
     let page: AppPage;
-    
-    beforeAll(() => {
-        page = new AppPage();
-        page.deleteDownloads();
+    const consoleErrors: string[] = [];
+
+    test.beforeAll(() => {
+        deleteDownloads();
     });
 
-	beforeEach(() => {
-        // page = new AppPage();
+    test.beforeEach(async ({ page: rawPage }) => {
+        consoleErrors.length = 0;
+        rawPage.on('console', msg => {
+            if (msg.type() === 'error') {
+                consoleErrors.push(msg.text());
+            }
+        });
+        rawPage.on('pageerror', err => {
+            consoleErrors.push(err.message);
+        });
+        page = new AppPage(rawPage);
+        await page.navigateTo();
     });
 
-    it('should have instruction elements', () => {
-        page.navigateTo();
-        expect(page.elementExists('title')).toBe(true);
-        expect(page.elementExists('instructions')).toBe(true);
-        expect(page.elementExists('examples')).toBe(true);
-        expect(page.elementExists('file-name-text')).toBe(true);
-        expect(page.getTitleText()).toEqual('MSP Creator');
+    test.afterEach(() => {
+        expect(consoleErrors).toEqual([]);
     });
 
-    it('should have interaction elements', () => {
-        page.navigateTo();
-        expect(page.elementExists('rs-buttons')).toBe(true);
-        expect(page.elementExists('file-input')).toBe(true);
-        expect(page.elementExists('submit')).toBe(true);
+    test.afterAll(() => {
+        deleteDownloads();
     });
 
-    it('should have correctly disabled and hidden elements to start', () => {
-        page.navigateTo();
-        expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isElementHidden('error-box')).toBe('true');
-        expect(page.isElementHidden('correct-image')).toBe('true');
-        expect(page.isElementHidden('wrong-image')).toBe('true');
+    test('should have instruction elements', async () => {
+        expect(await page.elementExists('instructions')).toBe(true);
+        expect(await page.elementExists('examples')).toBe(true);
+        expect(await page.elementExists('file-name-text')).toBe(true);
+        expect(await page.getTitleText()).toEqual('MSP Creator');
     });
 
-    it('should have a hidden error box and enabled submit button after uploading a valid .xlsx spreadsheet', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
-        expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isElementHidden('error-box')).toBe('true');
-        expect(page.isElementHidden('correct-image')).toBe(null);
-        expect(page.isElementHidden('wrong-image')).toBe('true');
+    test('should have interaction elements', async () => {
+        expect(await page.elementExists('rs-buttons')).toBe(true);
+        expect(await page.elementExists('file-input')).toBe(true);
+        expect(await page.elementExists('submit')).toBe(true);
     });
 
-    it('should have button and error box states change when uploading valid and then invalid files', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
-        expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isElementHidden('error-box')).toBe('true');
-        expect(page.isElementHidden('correct-image')).toBe(null);
-        expect(page.isElementHidden('wrong-image')).toBe('true');
-        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
-        expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isElementHidden('error-box')).toBe(null);
-        expect(page.isElementHidden('correct-image')).toBe('true');
-        expect(page.isElementHidden('wrong-image')).toBe(null);
+    test('should have correctly disabled and hidden elements to start', async () => {
+        expect(await page.isSubmitDisabled()).toBe('true');
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
     });
 
-    it('should have button and error box states change when uploading invalid and then valid files', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
-        expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isElementHidden('error-box')).toBe(null);
-        expect(page.isElementHidden('correct-image')).toBe('true');
-        expect(page.isElementHidden('wrong-image')).toBe(null);
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
-        expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isElementHidden('error-box')).toBe('true');
-        expect(page.isElementHidden('correct-image')).toBe(null);
-        expect(page.isElementHidden('wrong-image')).toBe('true');
+    test('should have a hidden error box and enabled submit button after uploading a valid .xlsx spreadsheet', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
     });
 
-    it('should have disabled submit button, correct error text with an unsupported file extension', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
-        expect(page.isSubmitDisabled()).toBe('true');
-        expect(page.isElementHidden('correct-image')).toBe('true');
-        expect(page.isElementHidden('wrong-image')).toBe(null);
+    test('should have button and error box states change when uploading valid and then invalid files', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        await page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
+        expect(await page.isSubmitDisabled()).toBe('true');
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe(null);
+    });
+
+    test('should have button and error box states change when uploading invalid and then valid files', async () => {
+        await page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
+        expect(await page.isSubmitDisabled()).toBe('true');
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe(null);
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+    });
+
+    test('should have disabled submit button, correct error text with an unsupported file extension', async () => {
+        await page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
+        expect(await page.isSubmitDisabled()).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe(null);
         const text = 'Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt';
-        expect(page.getErrorText()).toEqual(text);
+        expect(await page.getErrorText()).toEqual(text);
     });
 
-    it('should not show error file button when uploading wrong file type', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
-        expect(page.isElementHidden('error-box')).toBe(null);
-        expect(page.isElementHidden('error-file')).toBe('true');
+    test('should not show error file button when uploading wrong file type', async () => {
+        await page.uploadSpreadsheet('../testing-files/test_invalid_extension.rtf');
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('error-file')).toBe('true');
     });
 
-    it('should download .msp with small complete file', () => {
-        page.navigateTo();
-        // Prevents script timeout, not sure if it tests at right time though
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+    test('should download .msp with small complete file', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
         const name = './e2e/downloads/Height_0_20198281030_QTOF_small.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isElementHidden('error-box')).toBe('true');
-                expect(page.isElementHidden('correct-image')).toBe(null);
-                expect(page.isElementHidden('wrong-image')).toBe('true');
-                expect(page.getElementById('file-name-text').getText()).toEqual('.msp created')
-            });
-        });
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created');
     });
 
-    it('should download .msp and show error box with small file with duplicates', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates.xlsx');
+    test('should download .msp and show error box with small file with duplicates', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
         const name = './e2e/downloads/Height_0_20198281030_QTOF_small_duplicates.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isElementHidden('error-box')).toBe(null);
-                expect(page.isElementHidden('correct-image')).toBe(null);
-                expect(page.isElementHidden('wrong-image')).toBe('true');
-                expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
-                const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_duplicates.txt';
-                page.downloadErrorFile().then(() => {
-                    browser.driver.wait(function() {
-                        return fs.existsSync(errorFile);
-                    }, 5*1000, 'Error file should be downloaded');
-                });
-            });
-        });
-    });
-
-    it('should download .msp and show error box with large file with missing data', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH_columns_renamed.xlsx');
-        const name = './e2e/downloads/Height_0_20197191136negCSH_columns_renamed.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isElementHidden('error-box')).toBe(null);
-                expect(page.isElementHidden('correct-image')).toBe(null);
-                expect(page.isElementHidden('wrong-image')).toBe('true');
-                expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
-            });
-        });
-    });
-
-    it('should download error file when submitting small file with duplicates', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates.xlsx');
-        page.submitFile();
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created with some issues');
         const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_duplicates.txt';
-        page.downloadErrorFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(errorFile);
-            }, 5*1000, 'Error file should be downloaded');
-        });
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
     });
 
-    it('should download error file when submitting large file with missing data', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH_columns_renamed.xlsx');
-        page.submitFile();
-        expect(page.isElementHidden('error-box')).toBe(null);
-        expect(page.isElementHidden('error-file')).toBe(null);
-        const errorFile = './e2e/downloads/error_file_Height_0_20197191136negCSH_columns_renamed.txt';
-        page.downloadErrorFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(errorFile);
-            }, 5*1000, 'Error file should be downloaded');
-        });
+    test('should download .msp cleanly from a large file with renamed/case-varied headers', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH_columns_renamed.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/Height_0_20197191136negCSH_columns_renamed.txt';
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created');
     });
 
-    it('should NOT show error box with medium sized complete file', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.xlsx');
+    test('should download error file when submitting small file with duplicates', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        await download.saveAs('./e2e/downloads/Height_0_20198281030_QTOF_small_duplicates.txt');
+        const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_duplicates.txt';
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
+    });
+
+    test('should NOT show error box with medium sized complete file', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
         const name = './e2e/downloads/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isElementHidden('error-box')).toBe('true');
-            });
-        });
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe('true');
     });
 
-    it('should have correct error text when user submits file that does not exist', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        // Write dummy file
-        const BOM = "\uFEFF";
-        const testData = BOM + "test,data\ntest,data";
-        fs.writeFile('./e2e/testing-files/not_a_file.csv', testData, (err) => {
-            if (err) throw err;
-        });
-        // Check that file has been written then upload it
-        browser.driver.wait(function() {
-            return fs.existsSync('./e2e/testing-files/not_a_file.csv');
-        }, 3*1000, 'Dummy file should be written').then(function() {
-            page.uploadSpreadsheet('../testing-files/not_a_file.csv');
-            // Check that file exists, then delete it
-            //  Not sure why I have to do this again, but this is the only way it works
-            browser.driver.wait(function() {
-                return fs.existsSync('./e2e/testing-files/not_a_file.csv');
-            }, 3*1000, 'File should exist before trying to delete it').then(function() {
-                fs.unlinkSync('./e2e/testing-files/not_a_file.csv');
-                // Attempt to submit a deleted file
-                page.submitFile();
-                expect(page.isElementHidden('error-box')).toBe(null);
-                const text = 'Error: file may be corrupted or may not exist; Check uploaded file';
-                expect(page.getErrorText()).toEqual(text);
-            });
-        });
-    });
-
-    it('should tell the user that headers are not found',() => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_no_headers.ods');
-        page.submitFile();
+    test('should still parse a selected file correctly after the underlying file is deleted from disk', async () => {
+        const BOM = '﻿';
+        const testData = BOM + 'test,data\ntest,data';
+        const dummyPath = './e2e/testing-files/not_a_file.csv';
+        fs.writeFileSync(dummyPath, testData);
+        await page.uploadSpreadsheet('../testing-files/not_a_file.csv');
+        fs.unlinkSync(dummyPath);
+        await page.submitFile();
+        expect(await page.isElementHidden('error-box')).toBe(null);
         const text = 'Error: column headers not found';
-        expect(page.getErrorText()).toEqual(text);
-        expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
-        expect(page.isElementHidden('correct-image')).toBe('true');
-        expect(page.isElementHidden('wrong-image')).toBe(null);
+        expect(await page.getErrorText()).toEqual(text);
     });
 
-    it('should tell the user what headers are missing',() => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH.xlsx');
-        page.submitFile();
+    test('should tell the user that headers are not found', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_no_headers.ods');
+        await page.submitFile();
+        const text = 'Error: column headers not found';
+        expect(await page.getErrorText()).toEqual(text);
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('Fix errors, then retry upload');
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe(null);
+    });
+
+    test('should tell the user what headers are missing', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH.xlsx');
+        await page.submitFile();
         const text = 'These headers may be misspelled or missing: ADDUCT TYPE';
-        expect(page.getErrorText()).toEqual(text);
-        expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
-        expect(page.isElementHidden('correct-image')).toBe('true');
-        expect(page.isElementHidden('wrong-image')).toBe(null);
+        expect(await page.getErrorText()).toEqual(text);
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('Fix errors, then retry upload');
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe(null);
     });
 
-    it('should tell the user headers are not found when uploading a comma-delimited .txt file', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
-        // Extension is now accepted, so the submit button is enabled...
-        expect(page.isSubmitDisabled()).toBe(null);
-        page.submitFile();
-        // ...but the file has no tab characters, so no header row can be found
+    test('should tell the user headers are not found when uploading a comma-delimited .txt file', async () => {
+        await page.uploadSpreadsheet('../testing-files/test_spreadsheet.txt');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        await page.submitFile();
         const text = 'Error: column headers not found';
-        expect(page.getErrorText()).toEqual(text);
-        expect(page.getElementById('file-name-text').getText()).toEqual('Fix errors, then retry upload');
+        expect(await page.getErrorText()).toEqual(text);
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('Fix errors, then retry upload');
     });
 
-    it('should have a hidden error box and enabled submit button after uploading a valid MS-DIAL AlignmentResult .txt file', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
-        expect(page.isSubmitDisabled()).toBe(null);
-        expect(page.isElementHidden('error-box')).toBe('true');
-        expect(page.isElementHidden('correct-image')).toBe(null);
-        expect(page.isElementHidden('wrong-image')).toBe('true');
+    test('should have a hidden error box and enabled submit button after uploading a valid MS-DIAL AlignmentResult .txt file', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
     });
 
-    it('should download .msp from a MS-DIAL AlignmentResult .txt file, keeping the Unknown-but-spectrum row and dropping the no-spectrum row', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+    test('should download .msp from a MS-DIAL AlignmentResult .txt file, keeping the Unknown-but-spectrum row and dropping the no-spectrum row', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+        const download = await page.submitFileAndWaitForDownload();
         const name = './e2e/downloads/msdial_alignment_result_small.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                expect(page.isElementHidden('error-box')).toBe(null);
-                expect(page.isElementHidden('correct-image')).toBe(null);
-                expect(page.isElementHidden('wrong-image')).toBe('true');
-                expect(page.getElementById('file-name-text').getText()).toEqual('.msp created with some issues');
-                const text = 'Warning: Some entries have missing data; these attributes were left blank';
-                expect(page.getErrorText()).toEqual(text);
-                const mspContent = fs.readFileSync(name, 'utf8');
-                expect(mspContent).toContain('Name: 1-Methyltryptophan');
-                expect(mspContent).toContain('Name: Unknown');
-                expect(mspContent).not.toContain('ShouldBeFiltered');
-            });
-        });
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        const text = 'Warning: Some entries have missing data; these attributes were left blank';
+        expect(await page.getErrorText()).toEqual(text);
+        const mspContent = fs.readFileSync(name, 'utf8');
+        expect(mspContent).toContain('Name: 1-Methyltryptophan');
+        expect(mspContent).toContain('Name: Unknown');
+        expect(mspContent).not.toContain('ShouldBeFiltered');
     });
 
-    it('should download an error file listing the msdial row with missing data', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
-        page.submitFile();
+    test('should download an error file listing the msdial row with missing data', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_small.txt');
+        const download = await page.submitFileAndWaitForDownload();
+        await download.saveAs('./e2e/downloads/msdial_alignment_result_small.txt');
         const errorFile = './e2e/downloads/error_file_msdial_alignment_result_small.txt';
-        page.downloadErrorFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(errorFile);
-            }, 5*1000, 'Error file should be downloaded');
-        });
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
     });
 
-    it('should show a hidden-by-default mapping panel after uploading a file with unmatched columns', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
-        expect(page.elementExists('show-mapping-button')).toBe(true);
-        expect(page.isMappingPanelHidden()).toBe('true');
+    test('should show a hidden-by-default mapping panel after uploading a file with unmatched columns', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        expect(await page.elementExists('show-mapping-button')).toBe(true);
+        expect(await page.isMappingPanelHidden()).toBe('true');
     });
 
-    it('should exclude a Sample N style column from the mapping panel', () => {
-        page.navigateTo();
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
-        page.toggleMappingPanel();
-        expect(page.isMappingRowPresent('SAMPLE 1')).toBe(false);
-        expect(page.isMappingRowPresent('NOTES')).toBe(true);
+    test('should exclude a Sample N style column from the mapping panel', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        await page.toggleMappingPanel();
+        expect(await page.isMappingRowPresent('SAMPLE 1')).toBe(false);
+        expect(await page.isMappingRowPresent('NOTES')).toBe(true);
     });
 
-    it('should include a user-added MSP Comment from an unmatched column after a mapping override', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
-        page.toggleMappingPanel();
-        page.selectMappingOption('NOTES', 'Add as comment');
-        const name = './e2e/downloads/msdial_alignment_result_with_extra_column.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                const mspContent = fs.readFileSync(name, 'utf8');
-                expect(mspContent).toContain('Comments: NOTES: Interesting peak');
-            });
-        });
+    test('should include a user-added MSP Comment from an unmatched column after a mapping override', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        await page.toggleMappingPanel();
+        await page.selectMappingOption('NOTES', 'Add as comment');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/msdial_alignment_result_with_extra_column_override.txt';
+        await download.saveAs(name);
+        const mspContent = fs.readFileSync(name, 'utf8');
+        expect(mspContent).toContain('Comments: NOTES: Interesting peak');
     });
 
-    it('should still download an unmodified .msp when the mapping panel is left untouched', () => {
-        page.navigateTo();
-        browser.waitForAngularEnabled(false);
-        page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
-        const name = './e2e/downloads/msdial_alignment_result_with_extra_column.txt';
-        page.submitFile().then(() => {
-            browser.driver.wait(function() {
-                return fs.existsSync(name);
-            }, 10*1000, 'File with correct name should be downloaded').then(function() {
-                const mspContent = fs.readFileSync(name, 'utf8');
-                expect(mspContent).toContain('Name: 1-Methyltryptophan');
-                expect(mspContent).not.toContain('Comments:');
-                expect(mspContent).not.toContain('Interesting peak');
-            });
-        });
-    });
-
-    // What if file re-saved in libre office is fucking up???
-    // Test .numbers, .ods, .csv
-
-	afterEach(async () => {
-		// Assert that there are no errors emitted from the browser
-		const logs = await browser.manage().logs().get(logging.Type.BROWSER);
-		expect(logs).not.toContain(jasmine.objectContaining({
-			level: logging.Level.SEVERE,
-        } as logging.Entry));
-    });
-    
-    afterAll(() => {
-        page.deleteDownloads();
+    test('should still download an unmodified .msp when the mapping panel is left untouched', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/msdial_alignment_result_with_extra_column_untouched.txt';
+        await download.saveAs(name);
+        const mspContent = fs.readFileSync(name, 'utf8');
+        expect(mspContent).toContain('Name: 1-Methyltryptophan');
+        expect(mspContent).not.toContain('Comments:');
+        expect(mspContent).not.toContain('Interesting peak');
     });
 });
