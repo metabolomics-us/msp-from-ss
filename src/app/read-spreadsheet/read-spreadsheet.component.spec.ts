@@ -161,33 +161,21 @@ describe('ReadSpreadsheetComponent', () => {
 	it('should update a mapping to "comment" when updateMapping is called with value "comment"', () => {
 		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
 		component.headerMappings = [mapping];
-		const select = document.createElement('select');
-		// A bare <select> with no matching <option> silently ignores a .value assignment
-		// (the browser resets it to ''), so add the option the real template would render.
-		select.appendChild(new Option('Add as comment', 'comment'));
-		select.value = 'comment';
-		component.updateMapping(mapping, { target: select } as unknown as Event);
+		component.updateMapping(mapping, 'comment');
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'comment', targetKey: null, isSample: false });
 	});
 
 	it('should update a mapping to "map" with the chosen key when updateMapping is called with a key value', () => {
 		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
 		component.headerMappings = [mapping];
-		const select = document.createElement('select');
-		// See note above: a matching <option> is required for the .value assignment to take effect.
-		select.appendChild(new Option('FORMULA', 'FORMULA'));
-		select.value = 'FORMULA';
-		component.updateMapping(mapping, { target: select } as unknown as Event);
+		component.updateMapping(mapping, 'FORMULA');
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'map', targetKey: 'FORMULA', isSample: false });
 	});
 
 	it('should update a mapping to "ignore" when updateMapping is called with value "ignore"', () => {
 		const mapping = { header: 'BATCH ID', action: 'map' as const, targetKey: 'FORMULA', isSample: false };
 		component.headerMappings = [mapping];
-		const select = document.createElement('select');
-		select.appendChild(new Option('Ignore', 'ignore'));
-		select.value = 'ignore';
-		component.updateMapping(mapping, { target: select } as unknown as Event);
+		component.updateMapping(mapping, 'ignore');
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false });
 	});
 

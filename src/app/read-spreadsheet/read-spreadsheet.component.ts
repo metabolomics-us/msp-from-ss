@@ -4,7 +4,6 @@ import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreads
 import { DownloadFileService } from '../download-file-service/download-file.service';
 import { BuildMspService, MspSourceFormat } from '../build-msp-service/build-msp.service';
 import { HeaderMapping } from '../header-mapping-service/header-mapping.service';
-import { NgxSpinnerService } from 'ngx-spinner';
 
 import { Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
@@ -49,8 +48,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     constructor(
 		private readSpreadsheetService: ReadSpreadsheetService,
 		private downloadFileService: DownloadFileService,
-        public buildMspService: BuildMspService,
-        private spinner: NgxSpinnerService) {}
+        public buildMspService: BuildMspService) {}
 
 
 	ngOnInit() {
@@ -65,7 +63,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.showNotes = false;
         this.showMappingPanel = false;
         this.mspKeys = this.buildMspService.vitalHeaders;
-        this.spinner.hide();
 
         this.notesText = "";
         this.placeHolderText = "Include optional data such as: submitter name, submitter organization, column measurements, etc.";
@@ -111,8 +108,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     }
 
 
-    updateMapping(mapping: HeaderMapping, event: Event) {
-        const value = (event.target as HTMLSelectElement).value;
+    updateMapping(mapping: HeaderMapping, value: string) {
         if (value === 'ignore') {
             mapping.action = 'ignore';
             mapping.targetKey = null;
@@ -165,7 +161,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         }
 
         this.parsing = true;
-        this.spinner.show();
 
         this.currentFormat = /\.txt$/g.test(this.fileNameText) ? 'msdial' : 'spreadsheet';
         const readObservable = this.currentFormat === 'msdial'
@@ -183,14 +178,12 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                     this.headerMappings = [];
                 }
                 this.parsing = false;
-                this.spinner.hide();
             },
             error: () => {
                 // Submit's existing error path (via buildMsp) surfaces the real error to the user
                 this.cachedMsmsArray = null;
                 this.headerMappings = [];
                 this.parsing = false;
-                this.spinner.hide();
             }
         });
     }

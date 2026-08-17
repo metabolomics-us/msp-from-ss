@@ -24,7 +24,6 @@
     "d3": "^5.12.0",
     "file-saver": "^2.0.2",
     "fs": "0.0.1-security",
-    "ngx-spinner": "21.1.0",
     "pandas-js": "^0.2.4",
     "rxjs": "^7.8.2",
     "tslib": "^2.0.0",
