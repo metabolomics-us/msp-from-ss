@@ -2,10 +2,6 @@
     <div class="app-navbar__inner">
         <h1 class="app-navbar__brand">MSP Creator</h1>
         <span class="app-navbar__badge">XLSX &middot; CSV &middot; ODS &middot; MS-DIAL TXT</span>
-        <button id="theme-toggle-button" mat-icon-button (click)="themeService.toggle()"
-                [attr.aria-label]="themeService.isDark ? 'Switch to light mode' : 'Switch to dark mode'">
-            <mat-icon>{{ themeService.isDark ? 'light_mode' : 'dark_mode' }}</mat-icon>
-        </button>
     </div>
 </mat-toolbar>
 <div id="page-wrapper">

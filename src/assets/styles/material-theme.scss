@@ -6,9 +6,8 @@
 // --primary-color=#1B3A5A --tertiary-color=#C9A227` was run once to derive the
 // tonal palettes below (HCT-based, same algorithm Material uses internally).
 // The generated palette maps are pasted in here so this file has no schematic
-// dependency at build time; `mat.theme()` is then invoked twice — once for the
-// light theme (default) and once scoped under `html[data-theme='dark']`, which
-// is the attribute ThemeService toggles.
+// dependency at build time; `mat.theme()` is invoked once, producing a single
+// light-only theme. There is no dark variant and no runtime toggle.
 @use 'sass:map';
 @use '@angular/material' as mat;
 
@@ -150,20 +149,6 @@ html {
   @include mat.theme((
     color: (
       theme-type: light,
-      primary: $primary-palette,
-      tertiary: $tertiary-palette,
-    ),
-    typography: Roboto,
-    density: 0,
-  ));
-}
-
-html[data-theme='dark'] {
-  color-scheme: dark;
-
-  @include mat.theme((
-    color: (
-      theme-type: dark,
       primary: $primary-palette,
       tertiary: $tertiary-palette,
     ),
