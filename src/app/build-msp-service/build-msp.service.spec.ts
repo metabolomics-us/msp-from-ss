@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { BuildMspService } from './build-msp.service';
 import { HeaderMappingService } from '../header-mapping-service/header-mapping.service';
@@ -324,22 +325,22 @@ describe('BuildMspService', () => {
 		});
 
 		it('should call lineHasHeaders', () => {
-			spyOn(service, 'lineHasHeaders');
+			vi.spyOn(service, 'lineHasHeaders').mockImplementation(() => false);
 			service.buildMspFile(arr, name, '');
 			expect(service.lineHasHeaders).toHaveBeenCalled();
 		});
 
 		it('should call functions from buildMspFile()', () => {
-			service.getHeaderPosition = jasmine.createSpy('getHeaderPosition() spy').and.returnValue(0);
-			service.processText = jasmine.createSpy('processText() spy').and.returnValue(arr[0]);
-			service.hasHeaderErrors = jasmine.createSpy('hasHeaderErrors() spy').and.returnValue(false);
-			service.buildJsonArray = jasmine.createSpy('buildJsonArray() spy').and.returnValue(jsonArr);
-			service.removeAttributes = jasmine.createSpy('removeAttributes() spy').and.returnValue(jsonArr);
-			service.collectMissingData = jasmine.createSpy('collectMissingData() spy');
-			service.removeDuplicates = jasmine.createSpy('removeDuplicates() spy').and.returnValue(jsonArr);
-			service.removeRowsWithoutSpectrum = jasmine.createSpy('removeRowsWithoutSpectrum() spy').and.returnValue(jsonArr);
-			service.buildMspStringFromArray = jasmine.createSpy('buildMspStringFromArray() spy').and.returnValue(testStr);
-			service.saveFile = jasmine.createSpy('saveFile() spy');
+			service.getHeaderPosition = vi.fn().mockReturnValue(0);
+			service.processText = vi.fn().mockReturnValue(arr[0]);
+			service.hasHeaderErrors = vi.fn().mockReturnValue(false);
+			service.buildJsonArray = vi.fn().mockReturnValue(jsonArr);
+			service.removeAttributes = vi.fn().mockReturnValue(jsonArr);
+			service.collectMissingData = vi.fn();
+			service.removeDuplicates = vi.fn().mockReturnValue(jsonArr);
+			service.removeRowsWithoutSpectrum = vi.fn().mockReturnValue(jsonArr);
+			service.buildMspStringFromArray = vi.fn().mockReturnValue(testStr);
+			service.saveFile = vi.fn();
 
 			service.buildMspFile(arr, name, '');
 
@@ -386,7 +387,7 @@ describe('BuildMspService', () => {
 	describe('BuildMspService: buildMspFile with msdial format', () => {
 
 		it('should build the .msp string applying msdial-specific rules: MS1 not required, MS/MS SPECTRUM alias, null-to-blank, no-spectrum row dropped, no-spectrum row not reported as missing data', () => {
-			spyOn(service, 'saveFile');
+			vi.spyOn(service, 'saveFile').mockImplementation(() => {});
 
 			const arr = [
 				['Alignment ID', 'Average Rt(min)', 'Average Mz', 'Metabolite name', 'Adduct type', 'Formula', 'INCHIKEY', 'MS1 isotopic spectrum', 'MS/MS spectrum'],
@@ -409,7 +410,7 @@ describe('BuildMspService', () => {
 			// Row 3 has no spectrum: filtered out, and NOT reported as missing data (would be row 4: 2 + 2)
 			expect(service.missingData.some(entry => entry.startsWith('4:'))).toBe(false);
 
-			const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+			const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
 			expect(mspString).toContain('Name: 1-Methyltryptophan');
 			expect(mspString).toContain('Name: Unknown');
 			expect(mspString).toContain('Formula: \n'); // Unknown row's null Formula normalized to blank
@@ -423,7 +424,7 @@ describe('BuildMspService', () => {
 	describe('BuildMspService: buildMspFile with spreadsheet format, no-spectrum row', () => {
 
 		it('should drop a row missing only its spectrum, without reporting it as missing data', () => {
-			spyOn(service, 'saveFile');
+			vi.spyOn(service, 'saveFile').mockImplementation(() => {});
 
 			const arr = [
 				['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
@@ -440,7 +441,7 @@ describe('BuildMspService', () => {
 			expect(service.missingData.length).toBe(0);
 			expect(errorWarning).not.toContain('Warning: Some entries have missing data');
 
-			const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+			const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
 			expect(mspString).toContain('Name: 1-Methyltryptophan');
 			expect(mspString).not.toContain('ShouldBeFiltered');
 		});
@@ -461,7 +462,7 @@ describe('BuildMspService', () => {
 	// buildMspFile: mapping renames a header before required-header validation runs
 
 	it('should accept a file whose headers only match via user-supplied mapping, with no header errors', () => {
-		spyOn(service, 'saveFile');
+		vi.spyOn(service, 'saveFile').mockImplementation(() => {});
 		const arr = [
 			['Retention Time', 'Average Mz', 'Metabolite name', 'Adduct type', 'Formula', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
 			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7']
@@ -469,7 +470,7 @@ describe('BuildMspService', () => {
 		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
 		expect(errorWarning).not.toContain('column headers not found');
 		expect(errorWarning).not.toContain('may be misspelled or missing');
-		const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
 		expect(mspString).toContain('Name: 1-Methyltryptophan');
 	});
 
@@ -514,7 +515,7 @@ describe('BuildMspService', () => {
 	// buildMspFile end-to-end: an unmatched column marked "comment" survives into the .msp output
 
 	it('should include a comment-mapped column\'s per-row value in the .msp Comments line', () => {
-		spyOn(service, 'saveFile');
+		vi.spyOn(service, 'saveFile').mockImplementation(() => {});
 		const arr = [
 			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM', 'NOTES'],
 			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7', 'Interesting peak']
@@ -523,7 +524,7 @@ describe('BuildMspService', () => {
 			{ header: 'NOTES', action: 'comment' as const, targetKey: null, isSample: false }
 		];
 		service.buildMspFile(arr, 'test.csv', '', 'spreadsheet', headerMappings);
-		const mspString = (service.saveFile as jasmine.Spy).calls.mostRecent().args[0] as string;
+		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
 		expect(mspString).toContain('Comments: NOTES: Interesting peak\n');
 	});
 

@@ -107,8 +107,7 @@
              [class.status-banner--success]="showCorrect"
              [class.status-banner--error]="showWrong">
             <i id="correct-image" [hidden]="!showCorrect" class="fa fa-thumbs-up"></i>
-            <i id="wrong-image" [hidden]="!showWrong" class="fa fa-times-circle"></i>
-            {{ fileNameText }}
+            <i id="wrong-image" [hidden]="!showWrong" class="fa fa-times-circle"></i>{{ fileNameText }}
         </div>
 
         <div id="error-box" [hidden]="!showErrorBox">

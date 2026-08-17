@@ -18,18 +18,18 @@ describe('DownloadFileService', () => {
 	it('should download example files', () => {
 
 		// create spy object with a click() method
-		const spyObj = jasmine.createSpyObj('a', ['click']);
+		const spyObj = { click: vi.fn() };
 		// spy on document.createElement() and return the spy object
-		spyOn(document, 'createElement').and.returnValue(spyObj);
+		vi.spyOn(document, 'createElement').mockReturnValue(spyObj as unknown as HTMLElement);
 
 		service.downloadFile('../assets/files-to-read/', 'example.msp');
 
 		expect(document.createElement).toHaveBeenCalledTimes(1);
 		expect(document.createElement).toHaveBeenCalledWith('a');
 
-		expect(spyObj.href).toBe('../assets/files-to-read/example.msp');
-		expect(spyObj.target).toBe('_blank');
-		expect(spyObj.download).toBe('example.msp');
+		expect((spyObj as any).href).toBe('../assets/files-to-read/example.msp');
+		expect((spyObj as any).target).toBe('_blank');
+		expect((spyObj as any).download).toBe('example.msp');
 		expect(spyObj.click).toHaveBeenCalledTimes(1);
 		expect(spyObj.click).toHaveBeenCalledWith();
 	});
