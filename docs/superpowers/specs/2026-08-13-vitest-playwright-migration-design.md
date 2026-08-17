@@ -2,12 +2,63 @@
 
 ## Summary
 
-Replace this app's unit-test tooling (Karma + Jasmine) with Vitest via
-Angular's official experimental unit-test builder, and its e2e tooling
+Replace this app's unit-test tooling (Karma + Jasmine) with Vitest (via
+`@analogjs/vite-plugin-angular`, a standalone Vite config — see Amendment
+below for why Angular's official unit-test builder doesn't work for this
+app), and its e2e tooling
 (Protractor, now a permanently-throwing stub as of Angular 21) with a plain
 Playwright setup. This closes out the already-tracked "Phase 3: replace
 Protractor" item and the Vitest half of "Phase 4: bump frozen test-tooling"
 from the Angular-21-upgrade design.
+
+## Amendment (during Task 1 implementation)
+
+Decisions 1-3 below were revised after implementation revealed the original
+approach doesn't work for this repo. Original text is struck through in
+spirit (kept below for history) but superseded by the "Revised" notes:
+
+- **Decision 1 is reversed**: `@angular/build:unit-test` explicitly does not
+  support apps whose `build` architect target still uses the legacy
+  `@angular-devkit/build-angular:browser` builder (this repo's actual
+  configuration — an `NgModule`-based app, not yet migrated to
+  `@angular/build:application`). Confirmed by reproducing identical
+  `NG8001`/`NG8002` "not a known element" failures (components declared in
+  `AppModule` unresolved) under two independent diagnostic configurations.
+  Migrating the `build` target itself to the new builder is a much larger,
+  separate, production-build-risk-bearing change (different builder options
+  schema, output layout, `serve`/`e2e` knock-on effects) that was never
+  authorized by "refactor tests to vitest and playwright" — **ruled out of
+  scope**. Revised: use a standalone `vitest.config.ts` with
+  `@analogjs/vite-plugin-angular` (the community-standard Angular+Vitest
+  integration specifically for apps on the legacy build toolchain — its
+  peer dependencies explicitly support `@angular-devkit/build-angular`
+  17-22.x). `angular.json`'s `test` architect target is **removed entirely**
+  (same treatment as the `e2e` target) — `npm test` becomes `vitest run`
+  directly, no longer `ng test`. This is a real, acknowledged behavior
+  change from the original "npm test/ng test keep working unchanged"
+  promise, forced by the builder incompatibility above.
+- **Decision 3 is reversed**: AnalogJS's setup helper
+  (`@analogjs/vite-plugin-angular/setup-vitest`) works by monkey-patching
+  Vitest's *global* `describe`/`it`/`beforeEach`/etc. to wrap Angular
+  TestBed execution in zone.js proxy zones (required for
+  `fixture.detectChanges()`/`waitForAsync` to behave correctly, matching
+  what zone.js + Karma provided before). This patching only takes effect if
+  spec files read `describe`/`it`/`vi`/etc. off the global scope — an
+  explicit `import { describe, it, vi, ... } from 'vitest'` in a spec file
+  would import the *unpatched* originals directly from the module,
+  silently bypassing the zone wrapping. Revised: `vitest.config.ts` sets
+  `test.globals: true`; spec files add **no import line** for
+  `describe`/`it`/`expect`/`vi`/`beforeEach`/`beforeAll` at all (ambient
+  globals, typed via `tsconfig.spec.json`'s `"types": ["vitest/globals",
+  "node"]`) — closer to the original Jasmine files' shape than originally
+  planned. A type-only `import type { Mock } from 'vitest'` is still needed
+  wherever the `jasmine.Spy`-cast translation applies (Decision 5,
+  unchanged) — type imports are erased at compile time and don't
+  participate in the global-patching concern.
+- **Decision 2 (jsdom environment) is unaffected** — AnalogJS's Vitest
+  integration also defaults to/supports a jsdom environment the same way.
+- Everything else (Decisions 4-10, the whole Playwright/e2e side) is
+  unaffected by this amendment.
 
 ## Background
 
@@ -21,10 +72,19 @@ from the Angular-21-upgrade design.
   Jasmine + Angular `TestBed`, currently 99 passing / 1 pre-existing skip.
 - 1 e2e spec file (`e2e/src/app.e2e-spec.ts`, ~25 cases) + 1 page object
   (`e2e/src/app.po.ts`), Protractor-based.
-- Confirmed via `npm view`: `@angular/build@21.2.21` (matching this
-  project's Angular CLI version) ships Angular's official experimental
-  Vitest integration (`@angular/build:unit-test` builder, `runner: "vitest"`
-  option) — no need for a hand-rolled `@analogjs/vite-plugin-angular` setup.
+- **This repo's `build` architect target uses the legacy
+  `@angular-devkit/build-angular:browser` builder** (webpack-based,
+  `NgModule`-declarations, no `development` configuration defined — only
+  `production`). This matters because it rules out Angular's official
+  Vitest builder (see Amendment above) — `@angular/build:unit-test` is
+  designed for apps already on `@angular/build:application`, which this
+  app is not.
+- Confirmed via `npm view`: `@analogjs/vite-plugin-angular@2.7.0` (latest
+  stable) peer-depends on `@angular-devkit/build-angular` `^17.0.0` through
+  `^22.0.0` (this repo has 21.2.21 — compatible) and `vite` `^6/^7/^8`
+  (pinning `vite@8.2.1`, current stable). Its `./setup-vitest` export
+  provides the zone.js/TestBed proxy-zone wiring `src/test.ts` used to do
+  by hand under Karma.
 - No official Angular+Playwright builder exists (Protractor was the last
   one Angular shipped a builder for). A plain `@playwright/test` setup —
   its own `playwright.config.ts` with a `webServer` block — is the standard
@@ -99,32 +159,55 @@ the two known bugs fixed inline.
 ## Components & data flow
 
 **`angular.json`**
-- `architect.test`: builder → `@angular/build:unit-test`; options set
-  `runner: "vitest"`, point at a new `vitest.config.ts` (or inline options,
-  whichever the builder's schema expects — confirmed at implementation
-  time by reading the installed builder's schema), keep the existing
-  `tsConfig`/`polyfills`/`assets`/`styles` wiring adapted as needed.
+- `architect.test`: **removed entirely** (per the Amendment above) — no
+  longer a valid `ng test` target.
 - `architect.e2e`: removed.
 
-**`vitest.config.ts`** (new, if the builder's schema requires a separate
-config file rather than inline `angular.json` options) or inline
-`angular.json` options — environment `jsdom`, coverage provider `v8`,
-thresholds 80/80/80/80.
+**`vitest.config.ts`** (new, repo root):
+```ts
+import { defineConfig } from 'vitest/config';
+import angular from '@analogjs/vite-plugin-angular';
+
+export default defineConfig({
+  plugins: [angular()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['src/test-setup.ts'],
+    include: ['src/**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['html', 'lcovonly', 'text-summary'],
+      thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 },
+    },
+  },
+});
+```
+Coverage stays opt-in (matches the old `ng test --code-coverage` convention)
+via `vitest run --coverage` — `test.coverage.enabled` is left unset
+(defaults false) in the config itself.
+
+**`src/test-setup.ts`** (new, replaces `src/test.ts`):
+```ts
+import '@analogjs/vite-plugin-angular/setup-vitest';
+```
 
 **`tsconfig.spec.json`**
-- `types`: `["jasmine", "node"]` → `["node"]` (Vitest globals come from
-  explicit imports, not ambient types, per Decision 3).
-- `files`: drop `src/test.ts` if the new builder doesn't need a manual
-  Zone/TestBed bootstrap entry point (confirmed at implementation time).
+- `types`: `["jasmine", "node"]` → `["vitest/globals", "node"]` (per the
+  Amendment — Vitest globals are ambient, not per-file imports).
+- `files`: drop the old `src/test.ts` reference — the new bootstrap file is
+  `src/test-setup.ts`, wired via `vitest.config.ts`'s `setupFiles`, not
+  `tsconfig.spec.json`.
 
 **6 spec files** (`app.component.spec.ts`,
 `build-msp.service.spec.ts`, `download-file.service.spec.ts`,
 `header-mapping.service.spec.ts`, `read-spreadsheet.component.spec.ts`,
-`read-spreadsheet-service.spec.ts`): import `vitest`'s `describe`/`it`/
-`expect`/`vi`/`beforeEach`/`beforeAll` etc.; translate every
-`jasmine.*`/`spyOn`/`.calls.*` usage per Decision 5. Test *bodies*
-(what's being asserted) are unchanged — only the harness API calls
-change.
+`read-spreadsheet-service.spec.ts`): **no new import line** for
+`describe`/`it`/`expect`/`vi`/`beforeEach`/`beforeAll` (ambient globals,
+per the Amendment) — translate every `jasmine.*`/`spyOn`/`.calls.*` usage
+per Decision 5, adding only a type-only `import type { Mock } from
+'vitest'` where a `jasmine.Spy` cast is translated. Test *bodies* (what's
+being asserted) are unchanged — only the harness API calls change.
 
 **`playwright.config.ts`** (new, repo root): `testDir: './e2e/src'`,
 `webServer: { command: 'npm start', url: 'http://localhost:4200', reuseExistingServer: !process.env.CI }`,
@@ -146,32 +229,28 @@ filename-colliding download specs get distinct filenames (or a
 `test.beforeEach` cleanup step) so both can assert their own downloaded
 content independently.
 
-**Removed files**: `karma.conf.js`, `e2e/protractor.conf.js`,
-`e2e/protractor-ci.conf.js`, `e2e/tsconfig.json`, and (pending
-implementation-time confirmation) `src/test.ts`.
+**Removed files**: `karma.conf.js`, `src/test.ts` (replaced by
+`src/test-setup.ts`), `e2e/protractor.conf.js`, `e2e/protractor-ci.conf.js`,
+`e2e/tsconfig.json`.
 
 **Removed dependencies**: `karma`, `karma-chrome-launcher`,
 `karma-firefox-launcher`, `karma-jasmine`, `karma-jasmine-html-reporter`,
 `karma-coverage-istanbul-reporter`, `jasmine-core`, `jasmine-spec-reporter`,
 `@types/jasmine`, `@types/jasminewd2`, `protractor`, `webdriver-manager`,
 `chromedriver`, and `ts-node` (pending confirmation nothing else in the
-repo depends on it).
+repo depends on it). `@angular/build` is NOT added at all (per the
+Amendment — its `unit-test` builder is unused).
 
-**Added dependencies**: `vitest`, `@vitest/coverage-v8`,
-`@playwright/test` — all pinned to specific versions compatible with
-Angular 21 / Node's installed version, checked for advisories before
-pinning.
+**Added dependencies**: `vitest@4.0.8`, `@vitest/coverage-v8@4.0.8`,
+`jsdom@30.0.1`, `vite@8.2.1`, `@analogjs/vite-plugin-angular@2.7.0`,
+`@playwright/test@1.62.1` — versions confirmed current-stable via `npm
+view` at design time; re-check for advisories at implementation time.
 
-**`package.json` scripts**: `"test": "ng test"` unchanged;
-`"e2e": "playwright test"` (was `"ng e2e"`).
+**`package.json` scripts**: `"test": "vitest run"` (was `"ng test"` — see
+Amendment); `"e2e": "playwright test"` (was `"ng e2e"`).
 
 ## Error handling
 
-- If the Vitest builder's exact schema (config file vs. inline options,
-  exact option names) differs from what's assumed above, resolve against
-  the installed `@angular/build` package's actual schema at implementation
-  time — this doc's Components section is the best understanding as of
-  writing, not a guarantee of the exact builder API surface.
 - If removing `ts-node` breaks something unrelated (unlikely, but
   unverified until implementation), keep it and note why.
 - Playwright's `webServer` reuse setting (`reuseExistingServer:
