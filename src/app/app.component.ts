@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { ThemeService } from './theme-service/theme.service';
 
 @Component({
     selector: 'app-root',
@@ -6,6 +7,12 @@ import { Component } from '@angular/core';
     styleUrls: ['./app.component.css'],
     standalone: false
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'Read-Spreadsheet';
+
+  constructor(public themeService: ThemeService) {}
+
+  ngOnInit() {
+    this.themeService.initTheme();
+  }
 }
