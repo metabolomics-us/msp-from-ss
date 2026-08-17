@@ -60,6 +60,59 @@ spirit (kept below for history) but superseded by the "Revised" notes:
 - Everything else (Decisions 4-10, the whole Playwright/e2e side) is
   unaffected by this amendment.
 
+## Amendment 2 (during the retry of Task 1, after Amendment 1)
+
+A second, deeper blocker surfaced on retry, requiring a new Decision 0
+(numbered before Decision 1, since it's now a prerequisite everything else
+depends on) and one dependency addition to Amendment 1's package list:
+
+- **New Decision 0: bump `rxjs` from `~6.6.7` to `^7.8.2` (production
+  dependency, not devDependency) as a prerequisite for any Vite/Vitest-based
+  test runner to work at all.** `rxjs@6.x` packages `rxjs/operators` as a
+  legacy CommonJS-style directory (an `index.js` inside, no `package.json`
+  `"exports"` map), relying on Node's legacy "directory has an index.js"
+  resolution convention. `@angular/core`'s modern `fesm2022` bundles import
+  `rxjs/operators` as a bare specifier; under the strict ESM resolution
+  Vitest's module runner uses for `node_modules` packages, that bare
+  directory import is rejected outright (`Directory import '.../rxjs/operators'
+  is not supported resolving ES modules`, surfacing as a less legible
+  `EISDIR` error under Vitest's default VM-based pool) — confirmed by
+  reproducing the failure identically under both Vitest's default pool and
+  `--pool=forks` (real Node ESM resolution), and confirming the clean error
+  message only appears under the latter. This blocks **any** Vitest-based
+  runner for this app, not just `@analogjs/vite-plugin-angular`
+  specifically. Angular 21's own `@angular/core` peer dependency officially
+  supports `rxjs: '^6.5.3 || ^7.4.0'` — so this repo's rxjs 6 pin was not a
+  violation of anything, and this bump is a genuine, previously-unforced
+  scope expansion into production dependencies, not a bugfix. Presented to
+  the user as a decision (options: Vite-config workaround / rxjs bump /
+  pause Vitest and proceed Playwright-only) — **user chose the rxjs bump**.
+  Verified low-risk for this specific codebase: the app's only rxjs usage
+  is `Observable`, `Subscription`, and the pipeable operators `timeout`/
+  `take` via `rxjs/operators` (`read-spreadsheet.component.ts`,
+  `read-spreadsheet-service.ts`) — all stable, unchanged APIs across the
+  6→7 boundary; `rxjs/operators` remains a valid (if legacy-flavored) import
+  path in rxjs 7, just packaged as a proper ESM-compatible module this
+  time, which is exactly what resolves the conflict.
+- **Amendment 1's package list gains `@angular/build@21.2.21` as an
+  explicit devDependency** — not because the app's `build` target uses it
+  (it doesn't, per Amendment 1's Decision 1), but because
+  `@analogjs/vite-plugin-angular@2.7.0`'s own internal utilities
+  (`src/lib/utils/devkit.js`) do an unconditional `require('@angular/build/private')`
+  for any Angular major version ≥18, regardless of what builder the host
+  app's own `build` target uses. Its `peerDependenciesMeta` marks
+  `@angular/build` as `optional: true`, but the code has no fallback path
+  for its absence on Angular 18+ — confirmed by reproducing the load
+  failure without it, and confirming it resolves once added. This
+  supersedes Amendment 1's "do not add `@angular/build`" instruction.
+- This second retry is a genuinely new, previously-unanticipated
+  incompatibility, not a repeat of Amendment 1's finding — Amendment 1 was
+  about which Angular *builder* the app uses; this one is about the app's
+  pinned *rxjs* version being incompatible with strict ESM resolution,
+  something neither the original design nor Amendment 1 could have
+  anticipated without actually running the tests under the corrected
+  Amendment-1 setup.
+
 ## Background
 
 - This repo's `angular.json` `test` target uses
@@ -238,13 +291,19 @@ content independently.
 `karma-coverage-istanbul-reporter`, `jasmine-core`, `jasmine-spec-reporter`,
 `@types/jasmine`, `@types/jasminewd2`, `protractor`, `webdriver-manager`,
 `chromedriver`, and `ts-node` (pending confirmation nothing else in the
-repo depends on it). `@angular/build` is NOT added at all (per the
-Amendment — its `unit-test` builder is unused).
+repo depends on it).
 
 **Added dependencies**: `vitest@4.0.8`, `@vitest/coverage-v8@4.0.8`,
 `jsdom@30.0.1`, `vite@8.2.1`, `@analogjs/vite-plugin-angular@2.7.0`,
-`@playwright/test@1.62.1` — versions confirmed current-stable via `npm
-view` at design time; re-check for advisories at implementation time.
+`@angular/build@21.2.21` (devDependency — required by AnalogJS's own
+internals on Angular ≥18, per Amendment 2; NOT used as this app's test
+architect builder), `@playwright/test@1.62.1` — versions confirmed
+current-stable via `npm view` at design time; re-check for advisories at
+implementation time.
+
+**Bumped dependency**: `rxjs` `~6.6.7` → `^7.8.2` (a `dependencies` entry,
+not `devDependencies` — this is a real production dependency change, per
+Amendment 2's Decision 0).
 
 **`package.json` scripts**: `"test": "vitest run"` (was `"ng test"` — see
 Amendment); `"e2e": "playwright test"` (was `"ng e2e"`).
@@ -274,8 +333,9 @@ Amendment); `"e2e": "playwright test"` (was `"ng e2e"`).
 
 - `tslint` → `eslint` migration (separately tracked Phase 4 item; `ng
   lint` remains non-functional, unrelated to this change).
-- `rxjs` 6→7 bump, removing other dead deps (`pandas-js`, `d3`,
-  `underscore`).
+- Removing other dead deps (`pandas-js`, `d3`, `underscore`) — `rxjs` 6→7
+  itself is now IN scope, per Amendment 2's Decision 0 (a discovered
+  prerequisite, not a discretionary cleanup).
 - Zoneless change detection / standalone components (Phase 2).
 - A multi-browser Playwright matrix (Chromium-only for now).
 - Adding CI (`.github/` workflows) — this repo has none today; out of
