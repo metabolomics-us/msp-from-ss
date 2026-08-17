@@ -58,7 +58,7 @@ describe('ReadSpreadsheetComponent', () => {
  
     it('should call downloadExample when user clicks <a>', () => {
 		const anchorNames = ['example_spreadsheet_large-xlsx', 'example_spreadsheet_small-xlsx', 'example_msp-txt'];
-		spyOn(component, 'downloadExample');
+		vi.spyOn(component, 'downloadExample').mockImplementation(() => {});
 		// let anchorElement = document.getElementsByName("example_spreadsheet_large-xlsx");
 		let anchorElement: HTMLAnchorElement;
 		anchorNames.forEach(name => {
@@ -77,7 +77,7 @@ describe('ReadSpreadsheetComponent', () => {
     });
  
     it('should call fileSelected when change event occurs', () => {
-		spyOn(component, 'fileSelected');
+		vi.spyOn(component, 'fileSelected').mockImplementation(() => {});
 		const element = document.getElementById('file-input');
 		const event = new Event('change');
         element.dispatchEvent(event);
@@ -90,7 +90,7 @@ describe('ReadSpreadsheetComponent', () => {
     });
  
     it('should call readFile when submit button is clicked', () => {
-		spyOn(component, 'fileSelected');
+		vi.spyOn(component, 'fileSelected').mockImplementation(() => {});
         const element = document.getElementById('file-input');
         const event = new Event('change');
         element.dispatchEvent(event);
@@ -102,7 +102,7 @@ describe('ReadSpreadsheetComponent', () => {
 
 	it('should eagerly parse the file and populate headerMappings on a valid file selection', () => {
 		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(of([
+		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
 			['AVERAGE RT(MIN)', 'BATCH ID'],
 			['6.23', '3']
 		]));
@@ -120,10 +120,10 @@ describe('ReadSpreadsheetComponent', () => {
 
 	it('should pass the cached array and headerMappings to buildMspFile on submit, without re-reading the file', () => {
 		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		const readSpy = spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(of([
+		const readSpy = vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
 			['METABOLITE NAME'], ['Test Compound']
 		]));
-		spyOn(component.buildMspService, 'buildMspFile').and.returnValue('');
+		vi.spyOn(component.buildMspService, 'buildMspFile').mockReturnValue('');
 
 		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
@@ -133,8 +133,8 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(readSpy).toHaveBeenCalledTimes(1);
 		expect(component.buildMspService.buildMspFile).toHaveBeenCalledWith(
 			[['METABOLITE NAME'], ['Test Compound']],
-			jasmine.any(String),
-			jasmine.any(String),
+			expect.any(String),
+			expect.any(String),
 			'spreadsheet',
 			component.headerMappings
 		);
@@ -210,7 +210,7 @@ describe('ReadSpreadsheetComponent', () => {
 		// downloadFileService is provided at the component level (see the component's `providers`
 		// array), so grab the exact instance this component instance holds rather than TestBed.inject.
 		const downloadFileService = (component as unknown as { downloadFileService: { downloadFile: (dir: string, name: string) => void } }).downloadFileService;
-		spyOn(downloadFileService, 'downloadFile');
+		vi.spyOn(downloadFileService, 'downloadFile').mockImplementation(() => {});
 		const anchor = document.createElement('a');
 		anchor.setAttribute('name', 'example_msp-txt');
 		component.downloadExample({ target: anchor } as unknown as Event);
@@ -234,8 +234,8 @@ describe('ReadSpreadsheetComponent', () => {
 
 	it('should clear headerMappings when no header row is found while parsing', () => {
 		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(of([['not', 'a', 'header', 'row']]));
-		spyOn(component.buildMspService, 'getHeaderPosition').and.returnValue(-1);
+		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([['not', 'a', 'header', 'row']]));
+		vi.spyOn(component.buildMspService, 'getHeaderPosition').mockReturnValue(-1);
 
 		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
@@ -246,7 +246,7 @@ describe('ReadSpreadsheetComponent', () => {
 
 	it('should clear cachedMsmsArray and headerMappings when parsing the selected file errors', () => {
 		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(throwError(() => new Error('boom')));
+		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(throwError(() => new Error('boom')));
 
 		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
@@ -260,7 +260,7 @@ describe('ReadSpreadsheetComponent', () => {
 		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
 		// Emits asynchronously (setTimeout), unlike of() which emits synchronously and would not
 		// reproduce the race: the parse must still be pending immediately after fileSelected() returns.
-		spyOn(readSpreadsheetService, 'readXlsx').and.returnValue(new Observable<string[][]>(subscriber => {
+		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(new Observable<string[][]>(subscriber => {
 			setTimeout(() => {
 				subscriber.next([['METABOLITE NAME'], ['Test Compound']]);
 				subscriber.complete();
@@ -283,10 +283,9 @@ describe('ReadSpreadsheetComponent', () => {
 		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
 		const fileASubject = new Subject<string[][]>();
 		const fileBSubject = new Subject<string[][]>();
-		spyOn(readSpreadsheetService, 'readXlsx').and.returnValues(
-			fileASubject.asObservable(),
-			fileBSubject.asObservable()
-		);
+		vi.spyOn(readSpreadsheetService, 'readXlsx')
+			.mockReturnValueOnce(fileASubject.asObservable())
+			.mockReturnValueOnce(fileBSubject.asObservable());
 
 		// Select file A; its parse does not resolve yet.
 		const fileListA = { length: 1, 0: new File([''], 'fileA.xlsx') } as unknown as FileList;
@@ -332,7 +331,7 @@ describe('ReadSpreadsheetComponent', () => {
 	});
 
 	it('should report ".msp created with some issues" when buildMspFile returns errors alongside missing/duplicate data', () => {
-		spyOn(component.buildMspService, 'buildMspFile').and.returnValue('some error text');
+		vi.spyOn(component.buildMspService, 'buildMspFile').mockReturnValue('some error text');
 		component.buildMspService.missingData = ['row 3: missing FORMULA'];
 		component.buildMspService.duplicates = [];
 
@@ -344,7 +343,7 @@ describe('ReadSpreadsheetComponent', () => {
 	});
 
 	it('should report "Fix errors, then retry upload" when buildMspFile returns errors with no missing/duplicate data', () => {
-		spyOn(component.buildMspService, 'buildMspFile').and.returnValue('fatal error text');
+		vi.spyOn(component.buildMspService, 'buildMspFile').mockReturnValue('fatal error text');
 		component.buildMspService.missingData = [];
 		component.buildMspService.duplicates = [];
 
@@ -357,7 +356,7 @@ describe('ReadSpreadsheetComponent', () => {
 
 	it('should delegate to buildMspService.saveErrorFile with a derived file name when getErrorFile is called', () => {
 		component.fileName = 'my-spreadsheet.xlsx';
-		spyOn(component.buildMspService, 'saveErrorFile');
+		vi.spyOn(component.buildMspService, 'saveErrorFile').mockImplementation(() => {});
 
 		component.getErrorFile();
 
