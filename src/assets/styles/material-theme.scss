@@ -229,3 +229,42 @@ body {
 	margin: 14px 0 0;
 	font-weight: 600;
 }
+
+// Qualified with the `mat-toolbar` element to out-specificity Material's own
+// `.mat-toolbar { background: ... }` rule (both are single-class-equivalent
+// selectors otherwise; Material's rule is injected into a later stylesheet in
+// document order, so a same-specificity `.app-navbar` rule loses the cascade
+// tie and never paints — confirmed via getComputedStyle during Task 6c).
+mat-toolbar.app-navbar {
+	background: var(--mat-sys-primary);
+	border-bottom: 3px solid var(--mat-sys-tertiary);
+}
+
+.app-navbar__inner {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 0 24px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	width: 100%;
+}
+
+.app-navbar__brand {
+	color: var(--mat-sys-on-primary);
+	font-weight: 700;
+	font-size: 1.75rem;
+	letter-spacing: 0.01em;
+	margin: 0;
+}
+
+.app-navbar__badge {
+	border: 1px solid var(--mat-sys-tertiary);
+	color: var(--mat-sys-on-primary);
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--mat-sys-tertiary) 12%, transparent);
+}
