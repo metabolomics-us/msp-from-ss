@@ -2,20 +2,22 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace this app's Karma/Jasmine unit-test tooling with Angular's official experimental Vitest builder, and its dead-stub Protractor e2e tooling with a plain Playwright setup — no application source code changes, test-tooling only.
+**Goal:** Replace this app's Karma/Jasmine unit-test tooling with Vitest (via a standalone `@analogjs/vite-plugin-angular` config — Angular's official unit-test builder doesn't support this app's build setup, see amended spec), and its dead-stub Protractor e2e tooling with a plain Playwright setup — no application source code changes, test-tooling only.
 
-**Architecture:** Swap `angular.json`'s `test` target to `@angular/build:unit-test` (runner defaults to `vitest`), translate all 6 spec files' Jasmine-specific APIs to Vitest's, then replace Protractor with a standalone `@playwright/test` config and port the e2e page object + spec file, fixing two known-broken tests along the way.
+**Architecture:** Add a repo-root `vitest.config.ts` using `@analogjs/vite-plugin-angular` with `test.globals: true`, remove `angular.json`'s `test` architect target entirely (`npm test` becomes `vitest run`, not `ng test`), translate all 6 spec files' Jasmine-specific APIs to Vitest's, then replace Protractor with a standalone `@playwright/test` config and port the e2e page object + spec file, fixing two known-broken tests along the way.
 
-**Tech Stack:** Angular 21.2.21, `@angular/build@21.2.21` (unit-test builder), Vitest 4.0.8, `@vitest/coverage-v8` 4.0.8, jsdom 30.0.1, `@playwright/test` 1.62.1.
+**Tech Stack:** Angular 21.2.21, Vitest 4.0.8, `@vitest/coverage-v8` 4.0.8, jsdom 30.0.1, `vite` 8.2.1, `@analogjs/vite-plugin-angular` 2.7.0, `@playwright/test` 1.62.1.
 
-**Spec:** `docs/superpowers/specs/2026-08-13-vitest-playwright-migration-design.md`
+**Spec:** `docs/superpowers/specs/2026-08-13-vitest-playwright-migration-design.md` (see its "Amendment" section — the original plan assumed Angular's official `@angular/build:unit-test` builder would work; Task 1's implementer discovered it doesn't, for a well-diagnosed reason documented there, and the spec was corrected before Task 1 was re-dispatched.)
 
 ## Global Constraints
 
-- Vitest via Angular's official `@angular/build:unit-test` builder (`runner` defaults to `"vitest"`) — not a hand-rolled Vite config.
-- Test environment: jsdom (the builder's default when no `browsers` option is set).
-- Explicit `import { ... } from 'vitest'` in every spec file — no `globals: true` config flag.
-- Coverage stays on `@vitest/coverage-v8`, thresholds 80/80/80/80 (statements/branches/functions/lines), same as today.
+- Vitest via a standalone `vitest.config.ts` + `@analogjs/vite-plugin-angular` — NOT Angular's official `@angular/build:unit-test` builder (confirmed incompatible with this app's legacy `@angular-devkit/build-angular:browser` build target) and NOT a hand-rolled Vite config without the Angular plugin.
+- `angular.json`'s `test` architect target is removed entirely — `npm test` runs `vitest run` directly.
+- Test environment: jsdom.
+- `vitest.config.ts` sets `test.globals: true`. **Spec files add NO import line for `describe`/`it`/`expect`/`vi`/`beforeEach`/`beforeAll`** — these are ambient globals (typed via `tsconfig.spec.json`'s `"types": ["vitest/globals", "node"]`). This is required, not a style choice: AnalogJS's `setup-vitest` helper monkey-patches the *global* `describe`/`it`/etc. to wrap Angular TestBed execution in zone.js proxy zones; an explicit per-file `import { describe, ... } from 'vitest'` would import the unpatched originals and silently break `fixture.detectChanges()`/`waitForAsync` behavior. A type-only `import type { Mock } from 'vitest'` is still needed wherever a `jasmine.Spy` cast is translated (type imports are erased, so they don't participate in this concern).
+- `src/test-setup.ts` (new, replaces `src/test.ts`) contains exactly one line: `import '@analogjs/vite-plugin-angular/setup-vitest';`, wired via `vitest.config.ts`'s `setupFiles`.
+- Coverage stays on `@vitest/coverage-v8`, thresholds 80/80/80/80 (statements/branches/functions/lines), same as today — opt-in via `vitest run --coverage`, matching the old `ng test --code-coverage` convention (not enabled by default in config).
 - **Every bare `spyOn(obj, 'method')` (no `.and.*` chain) MUST translate to `vi.spyOn(obj, 'method').mockImplementation(...)` — never a bare `vi.spyOn(...)` alone.** Jasmine's bare `spyOn` replaces the method with a no-op by default; Vitest's `vi.spyOn` calls through to the real implementation by default unless you also stub it. Getting this wrong means tests silently start executing real side effects (writing real files via `saveFile`/`saveAs`, real DOM manipulation via `downloadFile`). This does NOT apply to direct-assignment spies (`obj.method = jasmine.createSpy(...)` → `obj.method = vi.fn()`), which are safe as bare `vi.fn()` since they fully replace the method rather than wrap it.
 - **`isElementHidden`/`isMappingPanelHidden`/`isSubmitDisabled` in the new Playwright page object must return the string `'true'`/`null` (not `''`/`null`)**, matching Protractor/Selenium's boolean-attribute normalization that every existing assertion already expects — Playwright's plain-DOM `getAttribute('hidden')` returns `''` for a hidden element, not `'true'`, so the page-object method must normalize this internally rather than changing every call-site assertion.
 - Plain `@playwright/test`, not a community Angular schematic package.
@@ -28,16 +30,20 @@
 ### Task 1: Stand up the Vitest builder end-to-end
 
 **Files:**
-- Modify: `angular.json` (the `test` architect target)
+- Create: `vitest.config.ts` (repo root)
+- Create: `src/test-setup.ts`
+- Modify: `angular.json` (remove the `test` architect target)
 - Modify: `tsconfig.spec.json`
-- Modify: `package.json` (scripts unchanged; devDependencies/dependencies updated)
+- Modify: `package.json` (`test` script + devDependencies/dependencies updated)
 - Delete: `karma.conf.js`
 - Delete: `src/test.ts`
 - Modify: `src/app/app.component.spec.ts`
 - Modify: `src/app/header-mapping-service/header-mapping.service.spec.ts`
 
 **Interfaces:**
-- Produces: a working `npm test` (→ `ng test`) command running on Vitest, with these 2 spec files passing (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts` — confirmed by running both under the current Karma runner before this migration), proving the builder swap itself is correct before the remaining 4 (larger) spec files are translated in later tasks.
+- Produces: a working `npm test` (→ `vitest run`) command, with these 2 spec files passing (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts` — confirmed by running both under the current Karma runner before this migration), proving the whole pipeline (AnalogJS plugin + zone.js setup + jsdom + TestBed) works end-to-end before the remaining 4 (larger) spec files are translated in later tasks.
+
+**Note on why this task looks the way it does:** an earlier attempt at this task used Angular's official `@angular/build:unit-test` builder (per the plan's original design) and hit a hard, well-diagnosed blocker — that builder doesn't support apps whose `build` target still uses the legacy `@angular-devkit/build-angular:browser` builder, which is this app's actual configuration. Migrating the `build` target itself is a much larger, riskier, out-of-scope change. The steps below use the corrected approach instead: a standalone `vitest.config.ts` with `@analogjs/vite-plugin-angular`, which explicitly supports apps on the legacy build toolchain.
 
 - [ ] **Step 1: Update `package.json`**
 
@@ -47,19 +53,22 @@ Bump `@types/node` from `"^12.11.1"` to `"^24.0.0"` (Vitest 4's peer dependency 
 
 Add these devDependencies:
 ```json
-"@angular/build": "21.2.21",
+"@analogjs/vite-plugin-angular": "2.7.0",
 "@vitest/coverage-v8": "4.0.8",
 "jsdom": "30.0.1",
+"vite": "8.2.1",
 "vitest": "4.0.8"
 ```
 
-Do not touch `karma-firefox-launcher`'s sibling `protractor`/`webdriver-manager`/`chromedriver`/`ts-node` in this task — those are removed in Task 5, when the e2e side is migrated. Do not touch `tslint`/`codelyzer`/`tslint-eslint-rules` (out of scope).
+Change the `"test"` script from `"ng test"` to `"vitest run"`.
+
+Do not touch `protractor`/`webdriver-manager`/`chromedriver`/`ts-node` in this task — those are removed in Task 5, when the e2e side is migrated. Do not touch `tslint`/`codelyzer`/`tslint-eslint-rules` (out of scope). Do not add `@angular/build` — it's not used by this approach.
 
 Run: `npm install --legacy-peer-deps` (this repo's known ERESOLVE pattern — see project memory — always needs this flag; plain `npm install` will fail with a peer-dependency error unrelated to this change).
 
-- [ ] **Step 2: Swap the `test` architect target in `angular.json`**
+- [ ] **Step 2: Remove the `test` architect target from `angular.json`**
 
-Replace the entire `test` target:
+Delete the entire `test` block:
 ```json
 "test": {
     "builder": "@angular-devkit/build-angular:karma",
@@ -79,24 +88,44 @@ Replace the entire `test` target:
     }
 }
 ```
-with:
-```json
-"test": {
-    "builder": "@angular/build:unit-test",
-    "options": {
-        "coverageReporters": ["html", "lcovonly", "text-summary"],
-        "coverageThresholds": {
-            "statements": 80,
-            "branches": 80,
-            "functions": 80,
-            "lines": 80
-        }
-    }
-}
-```
-(`buildTarget` defaults to this project's own `build` target with the `development` configuration — no need to specify it; `tsConfig` defaults to `tsconfig.spec.json` if present — no need to specify it either. Coverage itself is opt-in via the `--code-coverage` CLI flag, same as before — `coverageReporters`/`coverageThresholds` only take effect when coverage is enabled.)
+(No replacement — `vitest.config.ts`, created in Step 3, is now the single source of truth for how tests run. `ng test` is no longer a valid command after this task; `npm test` → `vitest run` is the new entry point.)
 
-- [ ] **Step 3: Update `tsconfig.spec.json`**
+- [ ] **Step 3: Create `vitest.config.ts` at the repo root**
+
+```typescript
+import { defineConfig } from 'vitest/config';
+import angular from '@analogjs/vite-plugin-angular';
+
+export default defineConfig({
+  plugins: [angular()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['src/test-setup.ts'],
+    include: ['src/**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['html', 'lcovonly', 'text-summary'],
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+    },
+  },
+});
+```
+(`globals: true` is required, not a style choice — see the Global Constraints section on why. Coverage stays disabled by default; enable it per-run with `vitest run --coverage`.)
+
+- [ ] **Step 4: Create `src/test-setup.ts`**
+
+```typescript
+import '@analogjs/vite-plugin-angular/setup-vitest';
+```
+(Replaces `src/test.ts`'s old manual `getTestBed().initTestEnvironment(...)` call — AnalogJS's setup helper does the equivalent zone.js/TestBed wiring, plus the global `describe`/`it`/etc. zone-patching described in the Global Constraints section.)
+
+- [ ] **Step 5: Update `tsconfig.spec.json`**
 
 Replace the entire file with:
 ```json
@@ -105,6 +134,7 @@ Replace the entire file with:
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
     "types": [
+      "vitest/globals",
       "node"
     ]
   },
@@ -114,68 +144,34 @@ Replace the entire file with:
   ]
 }
 ```
-(Dropped the `jasmine` type — Vitest globals come from explicit imports, not ambient types. Dropped the `files` array entirely — the old `src/test.ts`/`src/polyfills.ts` bootstrap-entry-point mechanism doesn't apply to the new builder, which reuses the project's own `build` target's `polyfills` option automatically and initializes the Angular TestBed itself before any spec runs.)
+(`"vitest/globals"` replaces `"jasmine"` — this ambient-types the global `describe`/`it`/`expect`/`vi`/`beforeEach`/`beforeAll`/etc. that `vitest.config.ts`'s `globals: true` injects at runtime. Dropped the `files` array — `src/test-setup.ts` is wired via `vitest.config.ts`'s `setupFiles`, not `tsconfig.spec.json`.)
 
-- [ ] **Step 4: Delete the now-unused Karma config and TestBed bootstrap file**
+- [ ] **Step 6: Delete the now-unused Karma config and old TestBed bootstrap file**
 
 ```bash
 rm karma.conf.js
 rm src/test.ts
 ```
 
-- [ ] **Step 5: Translate `src/app/app.component.spec.ts`**
+- [ ] **Step 7: Translate `src/app/app.component.spec.ts`**
 
-Replace the entire file with:
-```typescript
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed, waitForAsync } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
-import { AppComponent } from './app.component';
-import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.component';
+No changes needed to this file's content at all — it uses no Jasmine-specific API (`describe`/`it`/`expect`/`beforeEach`/`waitForAsync`/`TestBed` are either ambient globals now or already-correct Angular imports). Confirm it is byte-identical to its pre-migration content; if so, this step requires no edit.
 
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+- [ ] **Step 8: Translate `src/app/header-mapping-service/header-mapping.service.spec.ts`**
 
-describe('AppComponent', () => {
-  beforeEach(waitForAsync(() => {
-	TestBed.configureTestingModule({
-		imports: [
-		RouterTestingModule
-		],
-		declarations: [
-		AppComponent, ReadSpreadsheetComponent
-		],
-		schemas: [CUSTOM_ELEMENTS_SCHEMA]
-	}).compileComponents();
-  }));
+No changes needed to this file's content at all either, for the same reason — pure `describe`/`it`/`expect`/`beforeEach`/`TestBed`, no `spyOn`/`jasmine.*`/`.calls.*` usage. Confirm it is byte-identical to its pre-migration content.
 
-  it('should create the app', () => {
-	const fixture = TestBed.createComponent(AppComponent);
-	const app = fixture.debugElement.componentInstance;
-	expect(app).toBeTruthy();
-  });
-});
-```
-(Only change from the original: the added `import { describe, it, expect, beforeEach } from 'vitest';` line at the top. Nothing else in this file uses a Jasmine-specific API.)
+- [ ] **Step 9: Run the two translated spec files**
 
-- [ ] **Step 6: Translate `src/app/header-mapping-service/header-mapping.service.spec.ts`**
+Run: `npx vitest run src/app/app.component.spec.ts src/app/header-mapping-service/header-mapping.service.spec.ts`
+Expected: both suites pass (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts`). If the AnalogJS/zone.js pipeline itself has a configuration problem, it will surface here as a build/config error rather than a test failure — resolve that before proceeding to any other task. If you hit a NEW blocker not anticipated by this corrected brief, STOP and report it the same way the previous attempt did — do not silently work around a second unanticipated incompatibility.
 
-Add this import as the new first line of the file:
-```typescript
-import { describe, it, expect, beforeEach } from 'vitest';
-```
-(Keep every other line in the file exactly as-is — `TestBed`, `HeaderMappingService` imports, and all 9 `it(...)` test bodies are untouched. This file uses no `spyOn`/`jasmine.*`/`.calls.*` APIs at all — it's pure `describe`/`it`/`expect`/`beforeEach`.)
-
-- [ ] **Step 7: Run the two translated spec files**
-
-Run: `npx ng test --watch=false --include='**/app.component.spec.ts' --include='**/header-mapping.service.spec.ts'`
-Expected: both suites pass (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts`). If the builder itself has a configuration problem, it will surface here as a build/config error rather than a test failure — resolve that before proceeding to any other task.
-
-- [ ] **Step 8: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git add angular.json tsconfig.spec.json package.json package-lock.json src/app/app.component.spec.ts src/app/header-mapping-service/header-mapping.service.spec.ts
+git add vitest.config.ts src/test-setup.ts angular.json tsconfig.spec.json package.json package-lock.json src/app/app.component.spec.ts src/app/header-mapping-service/header-mapping.service.spec.ts
 git rm karma.conf.js src/test.ts
-git commit -m "Swap Karma/Jasmine for Angular's official Vitest builder"
+git commit -m "Stand up Vitest via @analogjs/vite-plugin-angular, remove Karma/Jasmine"
 ```
 
 ---
@@ -191,9 +187,8 @@ git commit -m "Swap Karma/Jasmine for Angular's official Vitest builder"
 
 - [ ] **Step 1: Translate `download-file.service.spec.ts`**
 
-Replace the entire file with:
+Replace the entire file with (no `vitest` import line needed — `describe`/`it`/`expect`/`vi`/`beforeEach` are ambient globals per this plan's Global Constraints):
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 
 import { DownloadFileService } from './download-file.service';
@@ -235,9 +230,8 @@ describe('DownloadFileService', () => {
 
 - [ ] **Step 2: Translate `read-spreadsheet.service.spec.ts`**
 
-Replace the entire file with:
+Replace the entire file with (no `vitest` import line needed — same reason as Step 1):
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ReadSpreadsheetService } from './read-spreadsheet.service';
 import { BuildMspService } from '../build-msp-service/build-msp.service';
@@ -372,11 +366,11 @@ describe('ReadSpreadsheetService', () => {
 
 });
 ```
-(Only two changes from the original: the new import line, `xit(...)` → `it.skip(...)`, and `jasmine.createSpy('bMF spy')` → `vi.fn()` — a direct method-replacement assignment, safe as a bare `vi.fn()` since it fully replaces `buildMspFile` rather than wrapping it. Every other line, including the `(done) => {...}` async-completion callback style, is unchanged — Vitest supports the same `done`-callback test signature.)
+(Only two changes from the original (besides dropping the now-unneeded `vitest` import): `xit(...)` → `it.skip(...)`, and `jasmine.createSpy('bMF spy')` → `vi.fn()` — a direct method-replacement assignment, safe as a bare `vi.fn()` since it fully replaces `buildMspFile` rather than wrapping it. Every other line, including the `(done) => {...}` async-completion callback style, is unchanged — Vitest supports the same `done`-callback test signature.)
 
 - [ ] **Step 3: Run both translated files**
 
-Run: `npx ng test --watch=false --include='**/download-file.service.spec.ts' --include='**/read-spreadsheet.service.spec.ts'`
+Run: `npx vitest run src/app/download-file-service/download-file.service.spec.ts src/app/read-spreadsheet-service/read-spreadsheet.service.spec.ts`
 Expected: `download-file.service.spec.ts` — 2/2 passing. `read-spreadsheet.service.spec.ts` — 6 passing, 1 skipped (the `it.skip`'d test, matching today's `xit`-skipped behavior). Combined: 9 total, 8 passing, 1 skipped.
 
 - [ ] **Step 4: Commit**
@@ -396,14 +390,13 @@ git commit -m "Translate download-file and read-spreadsheet service specs to Vit
 **Interfaces:**
 - Consumes: the Global Constraint's bare-`spyOn` rule (every bare `spyOn(service, 'saveFile')` in this file must get `.mockImplementation(() => {})`, since `saveFile`'s real body calls `saveAs()` from `file-saver`, which must never actually run during a test).
 
-- [ ] **Step 1: Add the Vitest import line**
+- [ ] **Step 1: Add the type-only `Mock` import**
 
 Add as the new first line of the file:
 ```typescript
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import type { Mock } from 'vitest';
 ```
-(`beforeAll` is used by the nested `describe('BuildMspService: buildMspFile', ...)` block; `Mock` is the type needed for the `jasmine.Spy` cast translations below.)
+(No runtime `vitest` import for `describe`/`it`/`expect`/`vi`/`beforeAll`/`beforeEach` — those are ambient globals per this plan's Global Constraints. `Mock` is a compile-time-only type (erased at build time, doesn't participate in the globals-vs-import concern), needed for the `jasmine.Spy` cast translations below.)
 
 - [ ] **Step 2: Translate the single bare `spyOn` with no `.and.*` chain**
 
@@ -478,7 +471,7 @@ Replace with:
 
 - [ ] **Step 6: Run the translated file**
 
-Run: `npx ng test --watch=false --include='**/build-msp.service.spec.ts'`
+Run: `npx vitest run src/app/build-msp-service/build-msp.service.spec.ts`
 Expected: 51/51 passing (same count as before this translation — no test bodies changed, only the spy-creation API).
 
 - [ ] **Step 7: Commit**
@@ -498,18 +491,9 @@ git commit -m "Translate build-msp.service.spec.ts to Vitest"
 **Interfaces:**
 - Consumes: the same bare-`spyOn` rule from Task 3's Global Constraint — this file has several bare `spyOn(...)` calls on methods with real, non-trivial side effects (`downloadExample`, `fileSelected`, `downloadFile`, `saveErrorFile`) that must not call through.
 
-- [ ] **Step 1: Update the import line**
+- [ ] **Step 1: No import changes needed**
 
-Find:
-```typescript
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-```
-Replace with (add the vitest import as a new line immediately above it):
-```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-```
-(Every other import in the file — `CUSTOM_ELEMENTS_SCHEMA`, `CommonModule`, `FormsModule`, `ReadSpreadsheetComponent`, `BuildMspService`, `ReadSpreadsheetService`, `path`, and the `rxjs` import of `Observable, of, throwError, Subject` — is unchanged.)
+This file's existing import line (`import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';`) and every other import (`CUSTOM_ELEMENTS_SCHEMA`, `CommonModule`, `FormsModule`, `ReadSpreadsheetComponent`, `BuildMspService`, `ReadSpreadsheetService`, `path`, and the `rxjs` import of `Observable, of, throwError, Subject`) stay exactly as-is — no `vitest` import line is added, since `describe`/`it`/`expect`/`vi`/`beforeEach` are ambient globals per this plan's Global Constraints, and this file has no `jasmine.Spy` type cast (so no type-only `Mock` import is needed here either, unlike Task 3's file).
 
 - [ ] **Step 2: Translate the 3 bare `spyOn` calls with no `.and.*` chain**
 
@@ -671,12 +655,12 @@ Replace with:
 
 - [ ] **Step 7: Run the translated file**
 
-Run: `npx ng test --watch=false --include='**/read-spreadsheet.component.spec.ts'`
+Run: `npx vitest run src/app/read-spreadsheet/read-spreadsheet.component.spec.ts`
 Expected: 29/29 passing (same count as before this translation).
 
 - [ ] **Step 8: Run the full unit suite**
 
-Run: `npx ng test --watch=false`
+Run: `npx vitest run`
 Expected: 99/99 passing (1 pre-existing skip, matching the `it.skip` from Task 2) — no regressions across any of the 6 translated files.
 
 - [ ] **Step 9: Commit**
@@ -1247,7 +1231,7 @@ git commit -m "Port app.e2e-spec.ts from Protractor to Playwright, fixing the st
 
 - [ ] **Step 1: Run the full unit suite with coverage**
 
-Run: `npx ng test --code-coverage`
+Run: `npx vitest run --coverage`
 Expected: 99/99 passing (1 pre-existing skip), coverage ≥80% on all four metrics (statements/branches/functions/lines) — matching the Karma-era baseline. If any metric falls short, add the missing test case(s) to the relevant spec file (spec-only changes, no implementation changes for coverage's sake) and re-run.
 
 - [ ] **Step 2: Run the full Playwright suite once more**
