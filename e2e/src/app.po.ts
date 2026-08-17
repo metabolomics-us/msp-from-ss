@@ -1,94 +1,107 @@
-import { browser, by, element } from 'protractor';
+import { Page, Download } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
 
-export class AppPage {
-	navigateTo() {
-		// Navigating to the home page, I think
-		return browser.get(browser.baseUrl) as Promise<any>;
+export function deleteDownloads() {
+    let files: string[];
+    let filePath: string;
+    const dirPath = './e2e/downloads';
+    try {
+        files = fs.readdirSync(dirPath);
+    } catch (e) {
+        return;
     }
-    
-    deleteDownloads() {
-        let files: string[];
-        let filePath: string;
-        const dirPath = './e2e/downloads';
-        try {
-            files = fs.readdirSync(dirPath);
-        } catch(e) {
-            return;
-        }
-        if (files.length > 0) {
-            for (let i = 0; i < files.length; i++) {
-                filePath = dirPath + '/' + files[i];
-                if (fs.statSync(filePath).isFile()) {
-                    fs.unlinkSync(filePath);
-                }
+    if (files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+            filePath = dirPath + '/' + files[i];
+            if (fs.statSync(filePath).isFile()) {
+                fs.unlinkSync(filePath);
             }
         }
-        fs.rmdirSync(dirPath);
+    }
+    fs.rmdirSync(dirPath);
+}
+
+export function fileExists(name: string): boolean {
+    return fs.existsSync(name);
+}
+
+export class AppPage {
+    constructor(private page: Page) {}
+
+    async navigateTo() {
+        await this.page.goto('/');
     }
 
-	getTitleText() {
-        // Both of these lines work
-        return element(by.css('app-root #page-wrapper read-spreadsheet #title')).getText() as Promise<string>;
-        // return element(by.id('title')).getText() as Promise<string>;
+    async getTitleText(): Promise<string> {
+        return this.page.locator('.app-navbar__brand').innerText();
     }
 
     getElementById(identifier: string) {
-        return element(by.css('#' + identifier));
+        return this.page.locator('#' + identifier);
     }
 
-    elementExists(identifier: string) {
-        return element(by.css('#' + identifier)).isPresent();
-        // return element(by.css('#' + identifier)).isPresent() as Promise<boolean>;
+    async elementExists(identifier: string): Promise<boolean> {
+        return (await this.page.locator('#' + identifier).count()) > 0;
     }
 
-    isElementHidden(identifier: string) {
-        return element(by.id(identifier)).getAttribute('hidden');
+    async isElementHidden(identifier: string): Promise<string | null> {
+        // Protractor/Selenium's getAttribute('hidden') normalized a hidden boolean
+        // property to the string 'true'; Playwright's plain-DOM getAttribute returns
+        // '' for a hidden element. Normalize here so every existing call-site
+        // assertion (.toBe('true') / .toBe(null)) keeps working unchanged.
+        const attr = await this.page.locator('#' + identifier).getAttribute('hidden');
+        return attr !== null ? 'true' : null;
     }
 
-    uploadSpreadsheet(fileName: string) {
+    async uploadSpreadsheet(fileName: string) {
         const absolutePath = path.resolve(__dirname, fileName);
-        element(by.css('input[type="file"]')).sendKeys(absolutePath);
-        // Throws an error and is also unnecessary
-        // element(by.id('file-input')).click();
+        await this.page.locator('input[type="file"]').setInputFiles(absolutePath);
     }
 
-    isSubmitDisabled() {
-        return element(by.id('submit')).getAttribute('disabled');
+    async isSubmitDisabled(): Promise<string | null> {
+        const attr = await this.page.locator('#submit').getAttribute('disabled');
+        return attr !== null ? 'true' : null;
     }
 
-    submitFile() {
-        return element(by.id('submit')).click();
+    async submitFile() {
+        await this.page.locator('#submit').click();
     }
 
-    getErrorText() {
-        // return element(by.id('error-text')).getText();
-        return element(by.id('error-text')).getText() as Promise<string>;
+    async submitFileAndWaitForDownload(): Promise<Download> {
+        const [download] = await Promise.all([
+            this.page.waitForEvent('download'),
+            this.page.locator('#submit').click(),
+        ]);
+        return download;
     }
 
-    downloadErrorFile() {
-        return element(by.id('get-error-file')).click();
+    async getErrorText(): Promise<string> {
+        return this.page.locator('#error-text').innerText();
     }
 
-    fileExists(name: string) {
-        return fs.existsSync(name);
+    async downloadErrorFile(): Promise<Download> {
+        const [download] = await Promise.all([
+            this.page.waitForEvent('download'),
+            this.page.locator('#get-error-file').click(),
+        ]);
+        return download;
     }
 
-    toggleMappingPanel() {
-        return element(by.id('show-mapping-button')).click();
+    async toggleMappingPanel() {
+        await this.page.locator('#show-mapping-button').click();
     }
 
-    isMappingPanelHidden() {
-        return element(by.id('mapping-table')).getAttribute('hidden');
+    async isMappingPanelHidden(): Promise<string | null> {
+        const attr = await this.page.locator('#mapping-table').getAttribute('hidden');
+        return attr !== null ? 'true' : null;
     }
 
-    isMappingRowPresent(header: string) {
-        return element(by.css(`tr[data-header="${header}"]`)).isPresent();
+    async isMappingRowPresent(header: string): Promise<boolean> {
+        return (await this.page.locator(`tr[data-header="${header}"]`).count()) > 0;
     }
 
-    selectMappingOption(header: string, optionText: string) {
-        const select = element(by.css(`tr[data-header="${header}"] select`));
-        return select.element(by.cssContainingText('option', optionText)).click();
+    async selectMappingOption(header: string, optionText: string) {
+        await this.page.locator(`tr[data-header="${header}"] select`).selectOption({ label: optionText });
     }
 }
