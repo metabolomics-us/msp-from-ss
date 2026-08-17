@@ -44,7 +44,7 @@ describe('ReadSpreadsheetService', () => {
 		expect(service.readAlignmentResultTxt(fileList) instanceof Observable).toBe(true);
 	});
 
-	it('should parse tab-delimited text into a 2D array of strings', (done) => {
+	it('should parse tab-delimited text into a 2D array of strings', () => new Promise<void>((resolve, reject) => {
 		const content = 'Alignment ID\tAverage Rt(min)\tMetabolite name\n1\t6.23\t1-Methyltryptophan\n';
 		const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
 		blob["name"] = 'filename.txt';
@@ -55,16 +55,23 @@ describe('ReadSpreadsheetService', () => {
 			item: (index: number) => file
 		} as unknown as FileList;
 
-		service.readAlignmentResultTxt(fileList).subscribe(msmsArray => {
-			expect(msmsArray).toEqual([
-				['Alignment ID', 'Average Rt(min)', 'Metabolite name'],
-				['1', '6.23', '1-Methyltryptophan']
-			]);
-			done();
+		service.readAlignmentResultTxt(fileList).subscribe({
+			next: msmsArray => {
+				try {
+					expect(msmsArray).toEqual([
+						['Alignment ID', 'Average Rt(min)', 'Metabolite name'],
+						['1', '6.23', '1-Methyltryptophan']
+					]);
+					resolve();
+				} catch (e) {
+					reject(e);
+				}
+			},
+			error: reject
 		});
-	});
+	}));
 
-	it('should not produce a trailing empty row for a file ending in a newline', (done) => {
+	it('should not produce a trailing empty row for a file ending in a newline', () => new Promise<void>((resolve, reject) => {
 		const content = 'Alignment ID\tAverage Rt(min)\n1\t6.23\n';
 		const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
 		blob["name"] = 'filename.txt';
@@ -75,13 +82,20 @@ describe('ReadSpreadsheetService', () => {
 			item: (index: number) => file
 		} as unknown as FileList;
 
-		service.readAlignmentResultTxt(fileList).subscribe(msmsArray => {
-			expect(msmsArray.length).toBe(2);
-			done();
+		service.readAlignmentResultTxt(fileList).subscribe({
+			next: msmsArray => {
+				try {
+					expect(msmsArray.length).toBe(2);
+					resolve();
+				} catch (e) {
+					reject(e);
+				}
+			},
+			error: reject
 		});
-	});
+	}));
 
-	it('should not produce an extra row for a whitespace-only line between real data lines', (done) => {
+	it('should not produce an extra row for a whitespace-only line between real data lines', () => new Promise<void>((resolve, reject) => {
 		const content = 'Alignment ID\tAverage Rt(min)\n1\t6.23\n\t\t\n2\t9.543\n';
 		const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
 		blob["name"] = 'filename.txt';
@@ -92,15 +106,22 @@ describe('ReadSpreadsheetService', () => {
 			item: (index: number) => file
 		} as unknown as FileList;
 
-		service.readAlignmentResultTxt(fileList).subscribe(msmsArray => {
-			expect(msmsArray).toEqual([
-				['Alignment ID', 'Average Rt(min)'],
-				['1', '6.23'],
-				['2', '9.543']
-			]);
-			done();
+		service.readAlignmentResultTxt(fileList).subscribe({
+			next: msmsArray => {
+				try {
+					expect(msmsArray).toEqual([
+						['Alignment ID', 'Average Rt(min)'],
+						['1', '6.23'],
+						['2', '9.543']
+					]);
+					resolve();
+				} catch (e) {
+					reject(e);
+				}
+			},
+			error: reject
 		});
-	});
+	}));
 
 	it.skip('should call buildMspFile from subscriber', () => {
 

@@ -45,7 +45,7 @@
     "tslint": "~6.1.0",
     "tslint-eslint-rules": "^5.4.0",
     "typescript": "~5.9.3",
-    "vite": "8.2.1",
+    "vite": "^7.3.6",
     "vitest": "4.0.8"
   }
 }
