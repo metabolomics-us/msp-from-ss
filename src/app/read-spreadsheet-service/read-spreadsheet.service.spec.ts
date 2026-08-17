@@ -17,18 +17,7 @@ describe('ReadSpreadsheetService', () => {
 		expect(rsService).toBeTruthy();
 	});
 
-	// it('should return observable from readCsv', () => {
-	// 	const dummyInput = document.createElement('input');
-	// 	const files = dummyInput.files;
-	// 	expect(service.readCsv(files) instanceof Observable).toBe(true);
-	// });
-
 	it('should return observable from readXlsx', () => {
-
-		// Two strategies, both seem to work
-
-		// const dummyInput = document.createElement('input');
-		// const files = dummyInput.files;
 
 		const blob = new Blob(['text'], {type: 'text/plain;charset=utf-8'});
 		blob["name"] = 'filename.xlsx';
@@ -113,7 +102,7 @@ describe('ReadSpreadsheetService', () => {
 		});
 	});
 
-	xit('should call buildMspFile from subscriber', () => {
+	it.skip('should call buildMspFile from subscriber', () => {
 
 		const blob = new Blob(['0', '1', '2'], {type: 'text/plain;charset=utf-8'});
 		blob["name"] = 'filename.xlsx';
@@ -126,7 +115,7 @@ describe('ReadSpreadsheetService', () => {
 
 		const errorText = '';
 		const bMService = TestBed.inject(BuildMspService);
-		bMService.buildMspFile = jasmine.createSpy('bMF spy');
+		bMService.buildMspFile = vi.fn();
 
 		const observable = service.readXlsx(fileList);
 		observable.subscribe({
@@ -136,7 +125,6 @@ describe('ReadSpreadsheetService', () => {
 			},
 			error(err) { console.error('something wrong occurred: ' + err); },
 			complete() {
-				// expect(bMService.buildMspFile).toHaveBeenCalled();
 				console.log('Done');
 			}
 		});
