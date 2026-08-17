@@ -6,13 +6,15 @@
 
 **Architecture:** Add a repo-root `vitest.config.ts` using `@analogjs/vite-plugin-angular` with `test.globals: true`, remove `angular.json`'s `test` architect target entirely (`npm test` becomes `vitest run`, not `ng test`), translate all 6 spec files' Jasmine-specific APIs to Vitest's, then replace Protractor with a standalone `@playwright/test` config and port the e2e page object + spec file, fixing two known-broken tests along the way.
 
-**Tech Stack:** Angular 21.2.21, Vitest 4.0.8, `@vitest/coverage-v8` 4.0.8, jsdom 30.0.1, `vite` 8.2.1, `@analogjs/vite-plugin-angular` 2.7.0, `@playwright/test` 1.62.1.
+**Tech Stack:** Angular 21.2.21, `rxjs` 7.8.2 (bumped from 6.6.7), Vitest 4.0.8, `@vitest/coverage-v8` 4.0.8, jsdom 30.0.1, `vite` 8.2.1, `@analogjs/vite-plugin-angular` 2.7.0, `@angular/build` 21.2.21 (AnalogJS internal dependency only), `@playwright/test` 1.62.1.
 
-**Spec:** `docs/superpowers/specs/2026-08-13-vitest-playwright-migration-design.md` (see its "Amendment" section — the original plan assumed Angular's official `@angular/build:unit-test` builder would work; Task 1's implementer discovered it doesn't, for a well-diagnosed reason documented there, and the spec was corrected before Task 1 was re-dispatched.)
+**Spec:** `docs/superpowers/specs/2026-08-13-vitest-playwright-migration-design.md` (see its two "Amendment" sections — the original plan assumed Angular's official `@angular/build:unit-test` builder would work (Amendment 1: it doesn't, for this app's legacy build target), and after correcting that, a second retry found this app's pinned `rxjs` version is incompatible with any Vite/Vitest-based runner (Amendment 2). Both were discovered by Task-1 implementers who correctly escalated instead of guessing, and both were resolved with the user's input before this plan was corrected and re-dispatched.)
 
 ## Global Constraints
 
+- **`rxjs` is bumped from `~6.6.7` to `^7.8.2` (Task 1, a real production `dependencies` change) — a discovered prerequisite, not a discretionary cleanup.** rxjs 6's legacy CommonJS-style packaging of `rxjs/operators` is rejected by Node's strict ESM resolver when Angular's modern bundles import it; this blocks any Vite/Vitest-based test runner for this app. Verified low-risk: the app's only rxjs usage (`Observable`, `Subscription`, `timeout`/`take` via `rxjs/operators`) is stable, unchanged API across the 6→7 boundary.
 - Vitest via a standalone `vitest.config.ts` + `@analogjs/vite-plugin-angular` — NOT Angular's official `@angular/build:unit-test` builder (confirmed incompatible with this app's legacy `@angular-devkit/build-angular:browser` build target) and NOT a hand-rolled Vite config without the Angular plugin.
+- `@angular/build` IS an explicit devDependency (unlike what an earlier version of this plan said) — not because this app's `build` target uses it, but because `@analogjs/vite-plugin-angular@2.7.0`'s own internals do an unconditional `require('@angular/build/private')` for any Angular major version ≥18, with no fallback if it's absent.
 - `angular.json`'s `test` architect target is removed entirely — `npm test` runs `vitest run` directly.
 - Test environment: jsdom.
 - `vitest.config.ts` sets `test.globals: true`. **Spec files add NO import line for `describe`/`it`/`expect`/`vi`/`beforeEach`/`beforeAll`** — these are ambient globals (typed via `tsconfig.spec.json`'s `"types": ["vitest/globals", "node"]`). This is required, not a style choice: AnalogJS's `setup-vitest` helper monkey-patches the *global* `describe`/`it`/etc. to wrap Angular TestBed execution in zone.js proxy zones; an explicit per-file `import { describe, ... } from 'vitest'` would import the unpatched originals and silently break `fixture.detectChanges()`/`waitForAsync` behavior. A type-only `import type { Mock } from 'vitest'` is still needed wherever a `jasmine.Spy` cast is translated (type imports are erased, so they don't participate in this concern).
@@ -23,11 +25,55 @@
 - Plain `@playwright/test`, not a community Angular schematic package.
 - `playwright.config.ts`'s `webServer` auto-starts `npm start`, Chromium-only project.
 - The stale `#title` selector and the 2-spec filename collision are fixed as part of the e2e port, not ported as-is.
-- Out of scope: `tslint`→`eslint` migration, `rxjs` 6→7, removing other dead deps (`pandas-js`, `d3`, `underscore`), zoneless CD, multi-browser Playwright matrix, adding CI workflows.
+- Out of scope: `tslint`→`eslint` migration, removing other dead deps (`pandas-js`, `d3`, `underscore`), zoneless CD, multi-browser Playwright matrix, adding CI workflows.
 
 ---
 
-### Task 1: Stand up the Vitest builder end-to-end
+### Task 1: Bump `rxjs` 6→7 (prerequisite for Vitest)
+
+**Files:**
+- Modify: `package.json` (`rxjs` dependency version)
+- Modify: `package-lock.json` (via `npm install`)
+
+**Interfaces:**
+- Produces: this repo running on `rxjs@^7.8.2` instead of `~6.6.7`, verified safe under the EXISTING Karma/Jasmine test runner (untouched by this task) before any Vitest work begins. This isolates "did the rxjs bump alone break anything" from "does Vitest also work" — if Task 2 hits a problem later, it won't be confused with an rxjs-compatibility issue, because this task already proves rxjs 7 is safe on its own.
+
+**Why this task exists:** an earlier attempt at Task 2 (the Vitest setup) discovered that this app's pinned `rxjs@~6.6.7` is packaged in a way that Node's strict ESM module resolver rejects when Angular's modern bundles import it — this blocks any Vite/Vitest-based test runner, not specific to any one integration approach. Angular 21 officially supports rxjs 6.5.3+ too, so this wasn't a forced fix, but the user chose to bump rxjs as the cleanest resolution (see the amended spec's "Amendment 2").
+
+- [ ] **Step 1: Bump the `rxjs` dependency**
+
+In `package.json`, change:
+```json
+"rxjs": "~6.6.7"
+```
+to:
+```json
+"rxjs": "^7.8.2"
+```
+(This is in `dependencies`, not `devDependencies` — a real production dependency change.)
+
+Run: `npm install --legacy-peer-deps` (this repo's known ERESOLVE pattern — see project memory — always needs this flag).
+
+- [ ] **Step 2: Run the full existing (Karma/Jasmine) unit test suite**
+
+Run: `npx ng test --watch=false --browsers=ChromeHeadless`
+Expected: 99/99 passing (1 pre-existing skip) — identical to the pre-bump baseline. This confirms the app's actual rxjs usage (`Observable`, `Subscription`, `timeout`/`take` via `rxjs/operators` in `read-spreadsheet.component.ts`/`read-spreadsheet.service.ts`; `Subject`, `of`, `throwError` in test files) is unaffected by the 6→7 bump. If anything fails here, STOP — this means the bump itself has a real compatibility problem with this app's code, which is a bigger issue than anything about test tooling and needs its own investigation before continuing.
+
+- [ ] **Step 3: Run a production build**
+
+Run: `npm run build`
+Expected: succeeds with no new errors — confirms the app itself still compiles and builds correctly with the new rxjs, independent of the test-tooling changes still to come.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add package.json package-lock.json
+git commit -m "Bump rxjs 6->7: discovered prerequisite for any Vite/Vitest-based test runner"
+```
+
+---
+
+### Task 2: Stand up the Vitest builder end-to-end
 
 **Files:**
 - Create: `vitest.config.ts` (repo root)
@@ -43,7 +89,7 @@
 **Interfaces:**
 - Produces: a working `npm test` (→ `vitest run`) command, with these 2 spec files passing (11 tests total: 1 from `app.component.spec.ts`, 10 from `header-mapping.service.spec.ts` — confirmed by running both under the current Karma runner before this migration), proving the whole pipeline (AnalogJS plugin + zone.js setup + jsdom + TestBed) works end-to-end before the remaining 4 (larger) spec files are translated in later tasks.
 
-**Note on why this task looks the way it does:** an earlier attempt at this task used Angular's official `@angular/build:unit-test` builder (per the plan's original design) and hit a hard, well-diagnosed blocker — that builder doesn't support apps whose `build` target still uses the legacy `@angular-devkit/build-angular:browser` builder, which is this app's actual configuration. Migrating the `build` target itself is a much larger, riskier, out-of-scope change. The steps below use the corrected approach instead: a standalone `vitest.config.ts` with `@analogjs/vite-plugin-angular`, which explicitly supports apps on the legacy build toolchain.
+**Note on why this task looks the way it does:** an earlier attempt at this task used Angular's official `@angular/build:unit-test` builder (per the plan's original design) and hit a hard, well-diagnosed blocker — that builder doesn't support apps whose `build` target still uses the legacy `@angular-devkit/build-angular:browser` builder, which is this app's actual configuration. Migrating the `build` target itself is a much larger, riskier, out-of-scope change. The steps below use the corrected approach instead: a standalone `vitest.config.ts` with `@analogjs/vite-plugin-angular`, which explicitly supports apps on the legacy build toolchain. `rxjs` is already bumped to 7.x by Task 1 — a prerequisite discovered on the first attempt at this corrected approach.
 
 - [ ] **Step 1: Update `package.json`**
 
@@ -54,15 +100,17 @@ Bump `@types/node` from `"^12.11.1"` to `"^24.0.0"` (Vitest 4's peer dependency 
 Add these devDependencies:
 ```json
 "@analogjs/vite-plugin-angular": "2.7.0",
+"@angular/build": "21.2.21",
 "@vitest/coverage-v8": "4.0.8",
 "jsdom": "30.0.1",
 "vite": "8.2.1",
 "vitest": "4.0.8"
 ```
+(`@angular/build` IS needed here, even though this app's `build` target doesn't use it — `@analogjs/vite-plugin-angular@2.7.0`'s own internals do an unconditional `require('@angular/build/private')` for Angular ≥18, with no fallback if it's absent. Confirmed by reproducing the `Cannot find module '@angular/build/private'` load failure without it.)
 
 Change the `"test"` script from `"ng test"` to `"vitest run"`.
 
-Do not touch `protractor`/`webdriver-manager`/`chromedriver`/`ts-node` in this task — those are removed in Task 5, when the e2e side is migrated. Do not touch `tslint`/`codelyzer`/`tslint-eslint-rules` (out of scope). Do not add `@angular/build` — it's not used by this approach.
+Do not touch `protractor`/`webdriver-manager`/`chromedriver`/`ts-node` in this task — those are removed in Task 6, when the e2e side is migrated. Do not touch `tslint`/`codelyzer`/`tslint-eslint-rules` (out of scope).
 
 Run: `npm install --legacy-peer-deps` (this repo's known ERESOLVE pattern — see project memory — always needs this flag; plain `npm install` will fail with a peer-dependency error unrelated to this change).
 
@@ -176,14 +224,14 @@ git commit -m "Stand up Vitest via @analogjs/vite-plugin-angular, remove Karma/J
 
 ---
 
-### Task 2: Translate the two small remaining unit spec files
+### Task 3: Translate the two small remaining unit spec files
 
 **Files:**
 - Modify: `src/app/download-file-service/download-file.service.spec.ts`
 - Modify: `src/app/read-spreadsheet-service/read-spreadsheet.service.spec.ts`
 
 **Interfaces:**
-- Consumes: nothing new from Task 1 beyond the now-working Vitest builder.
+- Consumes: nothing new from Task 2 beyond the now-working Vitest builder.
 
 - [ ] **Step 1: Translate `download-file.service.spec.ts`**
 
@@ -382,7 +430,7 @@ git commit -m "Translate download-file and read-spreadsheet service specs to Vit
 
 ---
 
-### Task 3: Translate `build-msp.service.spec.ts`
+### Task 4: Translate `build-msp.service.spec.ts`
 
 **Files:**
 - Modify: `src/app/build-msp-service/build-msp.service.spec.ts`
@@ -483,17 +531,17 @@ git commit -m "Translate build-msp.service.spec.ts to Vitest"
 
 ---
 
-### Task 4: Translate `read-spreadsheet.component.spec.ts`
+### Task 5: Translate `read-spreadsheet.component.spec.ts`
 
 **Files:**
 - Modify: `src/app/read-spreadsheet/read-spreadsheet.component.spec.ts`
 
 **Interfaces:**
-- Consumes: the same bare-`spyOn` rule from Task 3's Global Constraint — this file has several bare `spyOn(...)` calls on methods with real, non-trivial side effects (`downloadExample`, `fileSelected`, `downloadFile`, `saveErrorFile`) that must not call through.
+- Consumes: the same bare-`spyOn` rule from the plan's Global Constraints (first exercised heavily in Task 4) — this file has several bare `spyOn(...)` calls on methods with real, non-trivial side effects (`downloadExample`, `fileSelected`, `downloadFile`, `saveErrorFile`) that must not call through.
 
 - [ ] **Step 1: No import changes needed**
 
-This file's existing import line (`import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';`) and every other import (`CUSTOM_ELEMENTS_SCHEMA`, `CommonModule`, `FormsModule`, `ReadSpreadsheetComponent`, `BuildMspService`, `ReadSpreadsheetService`, `path`, and the `rxjs` import of `Observable, of, throwError, Subject`) stay exactly as-is — no `vitest` import line is added, since `describe`/`it`/`expect`/`vi`/`beforeEach` are ambient globals per this plan's Global Constraints, and this file has no `jasmine.Spy` type cast (so no type-only `Mock` import is needed here either, unlike Task 3's file).
+This file's existing import line (`import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';`) and every other import (`CUSTOM_ELEMENTS_SCHEMA`, `CommonModule`, `FormsModule`, `ReadSpreadsheetComponent`, `BuildMspService`, `ReadSpreadsheetService`, `path`, and the `rxjs` import of `Observable, of, throwError, Subject`) stay exactly as-is — no `vitest` import line is added, since `describe`/`it`/`expect`/`vi`/`beforeEach` are ambient globals per this plan's Global Constraints, and this file has no `jasmine.Spy` type cast (so no type-only `Mock` import is needed here either, unlike Task 4's file).
 
 - [ ] **Step 2: Translate the 3 bare `spyOn` calls with no `.and.*` chain**
 
@@ -661,7 +709,7 @@ Expected: 29/29 passing (same count as before this translation).
 - [ ] **Step 8: Run the full unit suite**
 
 Run: `npx vitest run`
-Expected: 99/99 passing (1 pre-existing skip, matching the `it.skip` from Task 2) — no regressions across any of the 6 translated files.
+Expected: 99/99 passing (1 pre-existing skip, matching the `it.skip` from Task 3) — no regressions across any of the 6 translated files.
 
 - [ ] **Step 9: Commit**
 
@@ -672,7 +720,7 @@ git commit -m "Translate read-spreadsheet.component.spec.ts to Vitest"
 
 ---
 
-### Task 5: Add Playwright, remove Protractor
+### Task 6: Add Playwright, remove Protractor
 
 **Files:**
 - Create: `playwright.config.ts`
@@ -683,7 +731,7 @@ git commit -m "Translate read-spreadsheet.component.spec.ts to Vitest"
 - Delete: `e2e/tsconfig.json`
 
 **Interfaces:**
-- Produces: `npx playwright test` as the e2e entry point; `playwright.config.ts`'s `testDir: './e2e/src'` is what Task 6/7 will populate.
+- Produces: `npx playwright test` as the e2e entry point; `playwright.config.ts`'s `testDir: './e2e/src'` is what Task 7/8 will populate.
 
 - [ ] **Step 1: Update `package.json`**
 
@@ -761,17 +809,17 @@ git rm e2e/protractor.conf.js e2e/protractor-ci.conf.js e2e/tsconfig.json
 git commit -m "Add Playwright, remove Protractor config and dependencies"
 ```
 
-(This task intentionally leaves `e2e/src/app.po.ts` and `e2e/src/app.e2e-spec.ts` untouched and still Protractor-shaped — they're translated in Tasks 6 and 7. The e2e suite will not run correctly between this task and Task 7's completion; that's expected and reflects the natural sequencing of a config-then-content migration.)
+(This task intentionally leaves `e2e/src/app.po.ts` and `e2e/src/app.e2e-spec.ts` untouched and still Protractor-shaped — they're translated in Tasks 7 and 8. The e2e suite will not run correctly between this task and Task 8's completion; that's expected and reflects the natural sequencing of a config-then-content migration.)
 
 ---
 
-### Task 6: Port `app.po.ts` to Playwright
+### Task 7: Port `app.po.ts` to Playwright
 
 **Files:**
 - Modify: `e2e/src/app.po.ts`
 
 **Interfaces:**
-- Produces: `AppPage` class (constructor takes a Playwright `Page`), plus two standalone functions `deleteDownloads()` and `fileExists(name: string): boolean` (extracted out of the class since they have no dependency on a `Page` instance). New methods `submitFileAndWaitForDownload(): Promise<Download>` and `downloadErrorFile(): Promise<Download>` that Task 7 will use for real on-disk download verification.
+- Produces: `AppPage` class (constructor takes a Playwright `Page`), plus two standalone functions `deleteDownloads()` and `fileExists(name: string): boolean` (extracted out of the class since they have no dependency on a `Page` instance). New methods `submitFileAndWaitForDownload(): Promise<Download>` and `downloadErrorFile(): Promise<Download>` that Task 8 will use for real on-disk download verification.
 - Consumes: nothing from earlier tasks — this file has no dependency on the unit-test side.
 
 - [ ] **Step 1: Replace the entire file**
@@ -893,7 +941,7 @@ Notes on specific translations:
 
 - [ ] **Step 2: Verify the file compiles**
 
-Run: `npx tsc --noEmit -p tsconfig.json` (or equivalent — this file has no dedicated tsconfig anymore since `e2e/tsconfig.json` was deleted in Task 5; confirm it type-checks under the root `tsconfig.json`, and if it doesn't compile under that config, escalate rather than guessing at a new e2e-specific tsconfig — that would be a plan gap to report, not silently patch).
+Run: `npx tsc --noEmit -p tsconfig.json` (or equivalent — this file has no dedicated tsconfig anymore since `e2e/tsconfig.json` was deleted in Task 6; confirm it type-checks under the root `tsconfig.json`, and if it doesn't compile under that config, escalate rather than guessing at a new e2e-specific tsconfig — that would be a plan gap to report, not silently patch).
 
 - [ ] **Step 3: Commit**
 
@@ -904,13 +952,13 @@ git commit -m "Port app.po.ts from Protractor to Playwright"
 
 ---
 
-### Task 7: Port `app.e2e-spec.ts` to Playwright
+### Task 8: Port `app.e2e-spec.ts` to Playwright
 
 **Files:**
 - Modify: `e2e/src/app.e2e-spec.ts`
 
 **Interfaces:**
-- Consumes: `AppPage` (constructor `(page: Page)`), `deleteDownloads()`, `fileExists(name): boolean` from Task 6's `app.po.ts`.
+- Consumes: `AppPage` (constructor `(page: Page)`), `deleteDownloads()`, `fileExists(name): boolean` from Task 7's `app.po.ts`.
 
 - [ ] **Step 1: Replace the entire file**
 
@@ -1205,7 +1253,7 @@ Notes on specific translations:
 - The `afterEach` console-error check is reimplemented via `page.on('console', ...)` (filtered to `'error'`-type messages) plus `page.on('pageerror', ...)` for uncaught exceptions, replacing Protractor's `browser.manage().logs().get(logging.Type.BROWSER)` + `jasmine.objectContaining` check.
 - The two previously filename-colliding specs (`'...mapping override'` and `'...left untouched'`) now save to `msdial_alignment_result_with_extra_column_override.txt` and `msdial_alignment_result_with_extra_column_untouched.txt` respectively — distinct filenames, fixing the collision.
 - The "file does not exist" test uses synchronous `fs.writeFileSync`/`fs.unlinkSync` instead of the old `browser.driver.wait`-based polling — Node's synchronous fs calls complete in one call, no polling needed.
-- Every download-verifying test now uses `submitFileAndWaitForDownload()`/`downloadErrorFile()` (Task 6) instead of a `browser.driver.wait(() => fs.existsSync(...))` polling loop — this is the concrete fix for the pre-existing "no download ever verifiable under headless Chrome" bug.
+- Every download-verifying test now uses `submitFileAndWaitForDownload()`/`downloadErrorFile()` (Task 7) instead of a `browser.driver.wait(() => fs.existsSync(...))` polling loop — this is the concrete fix for the pre-existing "no download ever verifiable under headless Chrome" bug.
 
 - [ ] **Step 2: Run the full Playwright suite against a real dev server**
 
@@ -1225,7 +1273,7 @@ git commit -m "Port app.e2e-spec.ts from Protractor to Playwright, fixing the st
 
 ---
 
-### Task 8: Full regression pass
+### Task 9: Full regression pass
 
 **Files:** none (verification only)
 
@@ -1251,7 +1299,7 @@ Expected: same pre-existing failure as before this migration (`Cannot find "lint
 
 - [ ] **Step 5: Restart the dev server and manually verify**
 
-Run: `./dev-stop.sh && ./dev-start.sh`, then in a browser: upload a file, submit, confirm the `.msp` downloads correctly and the mapping panel still works — this migration touched only test tooling, so the running app's behavior should be completely unchanged.
+Run: `./dev-stop.sh && ./dev-start.sh`, then in a browser: upload a file, submit, confirm the `.msp` downloads correctly and the mapping panel still works — this migration's application-facing change is limited to the rxjs 6→7 bump (Task 1), already verified safe under both Karma (Task 1) and the app's own build (Task 1, Step 3); the rest is test tooling only, so the running app's behavior should be unchanged.
 
 - [ ] **Step 6: Commit any fixes from this task**
 
