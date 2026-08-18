@@ -1531,6 +1531,8 @@ git commit -m "chore: scaffold xlsx-parse web worker"
 
 - [ ] **Step 1: Replace the placeholder content**
 
+**Note:** this file is subject to the project's `strict: true` (Task 27) via `tsconfig.worker.json`'s `extends: "./tsconfig.json"`. The snippet below already accounts for that (typed `WorkBook`, a nullish-coalescing fallback for `!ref` — the same fix Task 27 already applied to `readXlsxSync`'s eventual counterpart in `read-spreadsheet.service.ts`, kept consistent here).
+
 ```typescript
 /// <reference lib="webworker" />
 
@@ -1539,11 +1541,14 @@ import * as XLSX from 'xlsx';
 addEventListener('message', ({ data }: { data: ArrayBuffer }) => {
 	try {
 		const wb: XLSX.WorkBook = XLSX.read(data, { type: 'array' });
-		const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
+		// An empty sheet has no '!ref' range; fall back to a single-cell range so
+		// decode_range still returns a valid (empty) range instead of throwing.
+		const sheetRef = wb.Sheets[wb.SheetNames[0]]['!ref'] ?? 'A1';
+		const range = XLSX.utils.decode_range(sheetRef);
 		const numRows = range.e.r;
 
 		if (numRows < 10000) {
-			const msmsArray = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+			const msmsArray: string[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
 			postMessage({ result: msmsArray });
 		} else {
 			postMessage({ error: `Error: file may be corrupted or too large; 
@@ -1573,6 +1578,8 @@ git commit -m "feat: implement xlsx-parse web worker"
 
 jsdom (the Vitest test environment) has no `Worker` global, so this task keeps the current synchronous FileReader path as an explicit fallback — this means the existing unit tests need no changes, while real browsers (which all support Web Workers) get the off-main-thread parse.
 
+**Note:** Task 27 (strict mode) already modified this file — `readXlsx` now returns `Observable<string[][]>` (not `Observable<any>`), uses `const wb: XLSX.WorkBook = XLSX.read(...)`, and has a `const sheetRef = wb.Sheets[wb.SheetNames[0]]['!ref'] ?? 'A1';` nullability fallback before `decode_range`. The replacement below is written against that current state, not the pre-strict-mode original — it preserves all of Task 27's fixes inside the new `readXlsxSync` fallback method.
+
 - [ ] **Step 1: Run baseline**
 
 Run: `npx vitest run src/app/read-spreadsheet-service/read-spreadsheet.service.spec.ts`
@@ -1592,7 +1599,8 @@ import { Observable } from 'rxjs';
 export class ReadSpreadsheetService {
 
 	// Return observable where excel file is converted into 2x2 array that can be used by the subscriber
-	readXlsx(sheetData: FileList): Observable<any> {
+	//  Same array shape as readAlignmentResultTxt() produces, so the rest of the pipeline is shared
+	readXlsx(sheetData: FileList): Observable<string[][]> {
 		if (typeof Worker !== 'undefined') {
 			return this.readXlsxViaWorker(sheetData);
 		}
@@ -1601,11 +1609,11 @@ export class ReadSpreadsheetService {
 		return this.readXlsxSync(sheetData);
 	} // end readXlsx
 
-	private readXlsxViaWorker(sheetData: FileList): Observable<any> {
-		return new Observable(subscriber => {
+	private readXlsxViaWorker(sheetData: FileList): Observable<string[][]> {
+		return new Observable<string[][]>(subscriber => {
 			const worker = new Worker(new URL('./xlsx-parse.worker', import.meta.url));
 
-			worker.addEventListener('message', ({ data }: { data: { result?: any[][]; error?: string } }) => {
+			worker.addEventListener('message', ({ data }: { data: { result?: string[][]; error?: string } }) => {
 				if (data.error) {
 					subscriber.error(data.error);
 				} else {
@@ -1630,8 +1638,8 @@ export class ReadSpreadsheetService {
 		});
 	}
 
-	private readXlsxSync(sheetData: FileList): Observable<any> {
-		return new Observable(subscriber => {
+	private readXlsxSync(sheetData: FileList): Observable<string[][]> {
+		return new Observable<string[][]>(subscriber => {
 			const reader = new FileReader();
 			const onLoad = (loadEvent: ProgressEvent<FileReader>) => {
 				const target = loadEvent.target as FileReader;
@@ -1640,8 +1648,11 @@ export class ReadSpreadsheetService {
 				// Make sure the length of the array is appropriate
 				//  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows
 				//  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long
-				let msmsArray: any[][];
-				const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
+				let msmsArray: string[][];
+				// An empty sheet has no '!ref' range; fall back to a single-cell range so
+				// decode_range still returns a valid (empty) range instead of throwing.
+				const sheetRef = wb.Sheets[wb.SheetNames[0]]['!ref'] ?? 'A1';
+				const range = XLSX.utils.decode_range(sheetRef);
 				const numRows = range.e.r;
 
 				if (numRows < 10000) {
