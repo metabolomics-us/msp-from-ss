@@ -23,7 +23,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/assets/styles/material-theme.scss"
             ],
             "scripts": [],
             "vendorChunk": true,

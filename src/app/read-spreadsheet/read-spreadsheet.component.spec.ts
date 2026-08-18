@@ -1,8 +1,19 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { MatSelectHarness } from '@angular/material/select/testing';
 // Doesn't seem to fix problem of Template parse errors
 import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { BuildMspService } from '../build-msp-service/build-msp.service';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
@@ -16,7 +27,11 @@ describe('ReadSpreadsheetComponent', () => {
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
         declarations: [ ReadSpreadsheetComponent ],
-        imports: [CommonModule, FormsModule],
+        imports: [
+			CommonModule, FormsModule, NoopAnimationsModule,
+			MatButtonModule, MatSelectModule, MatCardModule, MatIconModule,
+			MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, MatTableModule
+		],
 		schemas: [CUSTOM_ELEMENTS_SCHEMA]
 	})
 	.compileComponents(); }));
@@ -158,36 +173,43 @@ describe('ReadSpreadsheetComponent', () => {
 		]);
 	});
 
+	it('should show a fixed "Mapped as list of peaks" label instead of a dropdown for the MSMS SPECTRUM column', async () => {
+		component.headerMappings = [
+			{ header: 'MSMS SPECTRUM', action: 'map', targetKey: 'MSMS SPECTRUM', isSample: false, recognizedAs: 'MSMS SPECTRUM' },
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'Name', isSample: false, recognizedAs: 'METABOLITE NAME' }
+		];
+		fixture.componentRef.changeDetectorRef.markForCheck();
+		fixture.detectChanges(false);
+
+		const loader = TestbedHarnessEnvironment.loader(fixture);
+		const msmsRowLoader = await loader.getChildLoader('tr[data-header="MSMS SPECTRUM"]');
+		const nameRowLoader = await loader.getChildLoader('tr[data-header="METABOLITE NAME"]');
+
+		expect(await msmsRowLoader.getAllHarnesses(MatSelectHarness)).toHaveLength(0);
+		const msmsRow = fixture.debugElement.nativeElement.querySelector('tr[data-header="MSMS SPECTRUM"]');
+		expect(msmsRow.textContent).toContain('Mapped as list of peaks');
+
+		expect(await nameRowLoader.getAllHarnesses(MatSelectHarness)).toHaveLength(1);
+	});
+
 	it('should update a mapping to "comment" when updateMapping is called with value "comment"', () => {
 		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
 		component.headerMappings = [mapping];
-		const select = document.createElement('select');
-		// A bare <select> with no matching <option> silently ignores a .value assignment
-		// (the browser resets it to ''), so add the option the real template would render.
-		select.appendChild(new Option('Add as comment', 'comment'));
-		select.value = 'comment';
-		component.updateMapping(mapping, { target: select } as unknown as Event);
+		component.updateMapping(mapping, 'comment');
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'comment', targetKey: null, isSample: false });
 	});
 
 	it('should update a mapping to "map" with the chosen key when updateMapping is called with a key value', () => {
 		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
 		component.headerMappings = [mapping];
-		const select = document.createElement('select');
-		// See note above: a matching <option> is required for the .value assignment to take effect.
-		select.appendChild(new Option('FORMULA', 'FORMULA'));
-		select.value = 'FORMULA';
-		component.updateMapping(mapping, { target: select } as unknown as Event);
+		component.updateMapping(mapping, 'FORMULA');
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'map', targetKey: 'FORMULA', isSample: false });
 	});
 
 	it('should update a mapping to "ignore" when updateMapping is called with value "ignore"', () => {
 		const mapping = { header: 'BATCH ID', action: 'map' as const, targetKey: 'FORMULA', isSample: false };
 		component.headerMappings = [mapping];
-		const select = document.createElement('select');
-		select.appendChild(new Option('Ignore', 'ignore'));
-		select.value = 'ignore';
-		component.updateMapping(mapping, { target: select } as unknown as Event);
+		component.updateMapping(mapping, 'ignore');
 		expect(component.headerMappings[0]).toEqual({ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false });
 	});
 

@@ -1,0 +1,337 @@
+// M3 theme for msp-from-ss, generated from the app's navy/gold identity.
+//
+// Angular Material 21 doesn't ship a Sass function to turn a hex color into an
+// M3 palette at compile time (there is no `mat.m3-define-palette-from-color`).
+// Instead, the CLI schematic `ng generate @angular/material:theme-color
+// --primary-color=#022851 --tertiary-color=#FFBF00` was run once to derive the
+// tonal palettes below (HCT-based, same algorithm Material uses internally).
+// The generated palette maps are pasted in here so this file has no schematic
+// dependency at build time; `mat.theme()` is invoked once, producing a single
+// light-only theme. There is no dark variant and no runtime toggle.
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+// Note: Color palettes are generated from primary: #022851 (UC Davis Aggie Blue), tertiary: #FFBF00 (UC Davis Aggie Gold)
+$_palettes: (
+  primary: (
+    0: #000000,
+    10: #001b3c,
+    20: #0f315a,
+    25: #1d3c66,
+    30: #2a4772,
+    35: #36537e,
+    40: #435f8b,
+    50: #5c78a5,
+    60: #7592c1,
+    70: #90acdd,
+    80: #abc8fa,
+    90: #d5e3ff,
+    95: #ecf1ff,
+    98: #f9f9ff,
+    99: #fdfbff,
+    100: #ffffff,
+  ),
+  secondary: (
+    0: #000000,
+    10: #111c2c,
+    20: #273142,
+    25: #323c4d,
+    30: #3d4759,
+    35: #495365,
+    40: #555f72,
+    50: #6d778b,
+    60: #8791a5,
+    70: #a1acc1,
+    80: #bcc7dd,
+    90: #d8e3f9,
+    95: #ecf1ff,
+    98: #f9f9ff,
+    99: #fdfbff,
+    100: #ffffff,
+  ),
+  tertiary: (
+    0: #000000,
+    10: #261a00,
+    20: #402d00,
+    25: #4e3800,
+    30: #5c4300,
+    35: #6a4e00,
+    40: #795900,
+    50: #987100,
+    60: #b88900,
+    70: #d9a200,
+    80: #fbbc00,
+    90: #ffdfa0,
+    95: #ffefd5,
+    98: #fff8f2,
+    99: #fffbff,
+    100: #ffffff,
+  ),
+  neutral: (
+    0: #000000,
+    10: #1a1c1f,
+    20: #2f3034,
+    25: #3a3b3f,
+    30: #46474a,
+    35: #515256,
+    40: #5d5e62,
+    50: #76777a,
+    60: #909094,
+    70: #ababaf,
+    80: #c7c6ca,
+    90: #e3e2e6,
+    95: #f1f0f4,
+    98: #faf9fd,
+    99: #fdfbff,
+    100: #ffffff,
+    4: #0d0e11,
+    6: #121316,
+    12: #1e2023,
+    17: #292a2d,
+    22: #343538,
+    24: #38393c,
+    87: #dad9dd,
+    92: #e9e7ec,
+    94: #eeedf1,
+    96: #f4f3f7,
+  ),
+  neutral-variant: (
+    0: #000000,
+    10: #181c22,
+    20: #2d3038,
+    25: #383b43,
+    30: #43474f,
+    35: #4f525a,
+    40: #5b5e66,
+    50: #74777f,
+    60: #8d9199,
+    70: #a8abb4,
+    80: #c4c6d0,
+    90: #e0e2ec,
+    95: #eef0fa,
+    98: #f9f9ff,
+    99: #fdfbff,
+    100: #ffffff,
+  ),
+  error: (
+    0: #000000,
+    10: #410002,
+    20: #690005,
+    25: #7e0007,
+    30: #93000a,
+    35: #a80710,
+    40: #ba1a1a,
+    50: #de3730,
+    60: #ff5449,
+    70: #ff897d,
+    80: #ffb4ab,
+    90: #ffdad6,
+    95: #ffedea,
+    98: #fff8f7,
+    99: #fffbff,
+    100: #ffffff,
+  ),
+);
+
+$_rest: (
+  secondary: map.get($_palettes, secondary),
+  neutral: map.get($_palettes, neutral),
+  neutral-variant: map.get($_palettes, neutral-variant),
+  error: map.get($_palettes, error),
+);
+
+$primary-palette: map.merge(map.get($_palettes, primary), $_rest);
+$tertiary-palette: map.merge(map.get($_palettes, tertiary), $_rest);
+
+html {
+  color-scheme: light;
+
+  @include mat.theme((
+    color: (
+      theme-type: light,
+      primary: $primary-palette,
+      tertiary: $tertiary-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ), (
+    // M3 maps primary/tertiary to tone-40 of the generated tonal palette, which
+    // washes out a very dark seed (Aggie Blue) and a very light seed (Aggie
+    // Gold). Pin the literal brand colors as system-token overrides so the UI
+    // renders the actual UC Davis identity instead of the derived tone.
+    // Confirmed via `mat.theme($config, $overrides: ())` in
+    // node_modules/@angular/material/core/tokens/_system.scss:57, forwarded
+    // as `mat.theme` by node_modules/@angular/material/_index.scss:20-23.
+    primary: #022851,
+    on-primary: #ffffff,
+    tertiary: #ffbf00,
+    on-tertiary: #000000,
+  ));
+}
+
+body {
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font-family: var(--mat-sys-body-medium-font, Roboto, sans-serif);
+  margin: 0;
+}
+
+.rs-page {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 32px 24px 64px;
+}
+
+.rs-card {
+	margin-bottom: 20px;
+}
+
+.rs-mapping {
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.rs-mapping__intro {
+	color: var(--mat-sys-on-surface-variant);
+}
+
+.rs-mapping-table {
+	width: 100%;
+	margin-top: 12px;
+	border-radius: 12px;
+	overflow: hidden;
+	// mat-table reads these as CSS custom properties (see
+	// node_modules/@angular/material/table/_m3-table.scss), so setting them
+	// here recolors the table without fighting Material's own class rules.
+	--mat-table-background-color: var(--mat-sys-surface);
+	--mat-table-row-item-outline-color: var(--mat-sys-outline-variant);
+}
+
+// #mapping-table (an ID) is used here instead of the .rs-mapping-table class
+// because Material's own `.mat-mdc-table { border: 0; }` rule is a same-
+// specificity class selector on this same <table> element — an ID
+// unconditionally out-specifies it regardless of stylesheet load order (see
+// the mat-toolbar.app-navbar / mat-icon[hidden] precedent above).
+#mapping-table {
+	border: 1px solid var(--mat-sys-outline-variant);
+}
+
+.rs-mapping-table .mat-mdc-header-row {
+	background: var(--mat-sys-surface-container-high);
+}
+
+.rs-mapping-table .mat-mdc-row:nth-child(even) {
+	background: var(--mat-sys-surface-container-low);
+}
+
+.rs-mapping-table .mat-mdc-row:hover {
+	background: var(--mat-sys-surface-container);
+}
+
+.rs-mapping-table .mat-mdc-header-cell,
+.rs-mapping-table .mat-mdc-cell {
+	padding: 6px 16px;
+}
+
+.rs-mapping-table mat-select {
+	width: 100%;
+	max-width: 260px;
+}
+
+.rs-mapping-table__fixed-label {
+	color: var(--mat-sys-on-surface-variant);
+	font-style: italic;
+}
+
+.status-banner {
+	border-radius: 8px;
+	padding: 14px 18px;
+	margin-top: 18px;
+	text-align: center;
+	font-weight: 600;
+	background: var(--mat-sys-surface-variant);
+	color: var(--mat-sys-on-surface-variant);
+}
+
+.status-banner--success {
+	// M3 has no built-in "success" role, so this is a literal green rather
+	// than a --mat-sys-* token, following the same light-container /
+	// dark-on-container pairing as the tertiary/error containers above.
+	background: #e6f4ea;
+	color: #1e7b34;
+}
+
+.status-banner--error {
+	background: var(--mat-sys-error-container);
+	color: var(--mat-sys-on-error-container);
+}
+
+#error-box {
+	background: var(--mat-sys-error-container);
+	color: var(--mat-sys-on-error-container);
+	border-radius: 8px;
+	text-align: center;
+	padding: 12px 16px;
+	margin: 14px 0 0;
+	font-weight: 600;
+}
+
+// Task 3 removed the Bootstrap/theme CSS that gave anchors link styling, and
+// nothing replaced it. These anchors have no `href` (they're click-handled),
+// so the UA's own `:link` styling never applied either — restore it globally.
+a {
+	color: var(--mat-sys-primary);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+// Qualified with the `mat-toolbar` element to out-specificity Material's own
+// `.mat-toolbar { background: ... }` rule (both are single-class-equivalent
+// selectors otherwise; Material's rule is injected into a later stylesheet in
+// document order, so a same-specificity `.app-navbar` rule loses the cascade
+// tie and never paints — confirmed via getComputedStyle during Task 6c).
+mat-toolbar.app-navbar {
+	background: var(--mat-sys-primary);
+	border-bottom: 3px solid var(--mat-sys-tertiary);
+}
+
+.app-navbar__inner {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 0 24px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	width: 100%;
+}
+
+.app-navbar__brand {
+	color: var(--mat-sys-on-primary);
+	font-weight: 700;
+	font-size: 1.75rem;
+	letter-spacing: 0.01em;
+	margin: 0;
+}
+
+.app-navbar__badge {
+	border: 1px solid var(--mat-sys-tertiary);
+	color: var(--mat-sys-on-primary);
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--mat-sys-tertiary) 12%, transparent);
+}
+
+// Qualified with the `mat-icon` element to out-specificity Material's own
+// `.mat-icon { display: inline-block; ... }` rule. The browser's native
+// `[hidden] { display: none }` UA-stylesheet rule has the same specificity as
+// `.mat-icon` (0,1,0), and Material's author-stylesheet rule is loaded after
+// the UA stylesheet, so it wins the cascade tie and `[hidden]` silently stops
+// hiding any `<mat-icon>` — same mechanism as Task 6c's navbar bug. This
+// selector's specificity (0,1,1) unconditionally beats `.mat-icon`'s.
+mat-icon[hidden] {
+	display: none;
+}
