@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
-import _ from 'underscore';
 import { HeaderMappingService, HeaderMapping, RecognizedHeader } from '../header-mapping-service/header-mapping.service';
 
 export type MspSourceFormat = 'spreadsheet' | 'msdial';
@@ -234,7 +233,9 @@ export class BuildMspService {
 
     // Remove unneeded attributes so that only the required headers remain
     removeAttributes(jsonArray: any[], requiredHeaders: string[] = this.vitalHeaders): any[] {
-        return _.map(jsonArray, (entry: any) => _.pick(entry, ...requiredHeaders));
+        return jsonArray.map((entry: any) => Object.fromEntries(
+            requiredHeaders.filter(header => header in entry).map(header => [header, entry[header]])
+        ));
     }
     
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
