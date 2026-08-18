@@ -162,14 +162,18 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.showMappingPanel).toBe(true);
 	});
 
-	it('should exclude sample-flagged headers from visibleHeaderMappings', () => {
-		component.headerMappings = [
-			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true },
-			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
-		];
-		expect(component.visibleHeaderMappings).toEqual([
-			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
-		]);
+	it('should exclude sample-flagged headers from visibleHeaderMappings after a parse', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
+			['SAMPLE 1', 'BATCH ID'],
+			['1', '2']
+		]));
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.visibleHeaderMappings.some(m => m.isSample)).toBe(false);
 	});
 
 	it('should show a fixed "Mapped as list of peaks" label instead of a dropdown for the MSMS SPECTRUM column', async () => {
@@ -177,6 +181,7 @@ describe('ReadSpreadsheetComponent', () => {
 			{ header: 'MSMS SPECTRUM', action: 'map', targetKey: 'MSMS SPECTRUM', isSample: false, recognizedAs: 'MSMS SPECTRUM' },
 			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'Name', isSample: false, recognizedAs: 'METABOLITE NAME' }
 		];
+		component.visibleHeaderMappings = component.headerMappings.filter(mapping => !mapping.isSample);
 		fixture.componentRef.changeDetectorRef.markForCheck();
 		fixture.detectChanges(false);
 

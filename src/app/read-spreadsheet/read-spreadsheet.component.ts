@@ -30,6 +30,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     parseSubscription: Subscription;
     cachedMsmsArray: string[][] | null;
     headerMappings: HeaderMapping[];
+    visibleHeaderMappings: HeaderMapping[];
     currentFormat: MspSourceFormat;
     targetInput: HTMLInputElement;
 
@@ -68,6 +69,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.placeHolderText = "Include optional data such as: submitter name, submitter organization, column measurements, etc.";
         this.cachedMsmsArray = null;
         this.headerMappings = [];
+        this.visibleHeaderMappings = [];
     }
 
 
@@ -98,11 +100,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
     showMappingPanelToggle() {
         this.showMappingPanel = !this.showMappingPanel;
-    }
-
-
-    get visibleHeaderMappings(): HeaderMapping[] {
-        return this.headerMappings.filter(mapping => !mapping.isSample);
     }
 
 
@@ -143,6 +140,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.submitValid = false;
                 this.cachedMsmsArray = null;
                 this.headerMappings = [];
+                this.visibleHeaderMappings = [];
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt', false);
                 this.showCorrectImage(false);
             }
@@ -175,12 +173,14 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 } else {
                     this.headerMappings = [];
                 }
+                this.visibleHeaderMappings = this.headerMappings.filter(mapping => !mapping.isSample);
                 this.parsing = false;
             },
             error: () => {
                 // Submit's existing error path (via buildMsp) surfaces the real error to the user
                 this.cachedMsmsArray = null;
                 this.headerMappings = [];
+                this.visibleHeaderMappings = [];
                 this.parsing = false;
             }
         });
