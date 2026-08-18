@@ -199,6 +199,44 @@ body {
 .rs-mapping-table {
 	width: 100%;
 	margin-top: 12px;
+	border-radius: 12px;
+	overflow: hidden;
+	// mat-table reads these as CSS custom properties (see
+	// node_modules/@angular/material/table/_m3-table.scss), so setting them
+	// here recolors the table without fighting Material's own class rules.
+	--mat-table-background-color: var(--mat-sys-surface);
+	--mat-table-row-item-outline-color: var(--mat-sys-outline-variant);
+}
+
+// #mapping-table (an ID) is used here instead of the .rs-mapping-table class
+// because Material's own `.mat-mdc-table { border: 0; }` rule is a same-
+// specificity class selector on this same <table> element — an ID
+// unconditionally out-specifies it regardless of stylesheet load order (see
+// the mat-toolbar.app-navbar / mat-icon[hidden] precedent above).
+#mapping-table {
+	border: 1px solid var(--mat-sys-outline-variant);
+}
+
+.rs-mapping-table .mat-mdc-header-row {
+	background: var(--mat-sys-surface-container-high);
+}
+
+.rs-mapping-table .mat-mdc-row:nth-child(even) {
+	background: var(--mat-sys-surface-container-low);
+}
+
+.rs-mapping-table .mat-mdc-row:hover {
+	background: var(--mat-sys-surface-container);
+}
+
+.rs-mapping-table .mat-mdc-header-cell,
+.rs-mapping-table .mat-mdc-cell {
+	padding: 6px 16px;
+}
+
+.rs-mapping-table mat-select {
+	width: 100%;
+	max-width: 260px;
 }
 
 .rs-mapping-table__fixed-label {
@@ -217,8 +255,11 @@ body {
 }
 
 .status-banner--success {
-	background: var(--mat-sys-tertiary-container);
-	color: var(--mat-sys-on-tertiary-container);
+	// M3 has no built-in "success" role, so this is a literal green rather
+	// than a --mat-sys-* token, following the same light-container /
+	// dark-on-container pairing as the tertiary/error containers above.
+	background: #e6f4ea;
+	color: #1e7b34;
 }
 
 .status-banner--error {
