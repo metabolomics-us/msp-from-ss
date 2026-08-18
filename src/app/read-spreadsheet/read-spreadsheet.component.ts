@@ -41,7 +41,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     mspKeys: string[];
 
     errorText: string;
-    // form: FormGroup;
 
     notesText: string;
     placeHolderText: string;

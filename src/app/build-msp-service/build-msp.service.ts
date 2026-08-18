@@ -142,7 +142,6 @@ export class BuildMspService {
         let duplicatesText = 'These lines are most likely duplicates:\n';
         let possibleDuplicatesText = 'These lines are possible duplicates based on the connectivity hash of INCHIKEY:\n';
         if (this.missingData.length > 0) {
-            // missingDataText += this.missingData.map(x => String(x)).join(', ');
             missingDataText += this.missingData.join('\n');
         }
         if (this.duplicates.length > 0) {
