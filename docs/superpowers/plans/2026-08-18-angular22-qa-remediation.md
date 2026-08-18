@@ -270,48 +270,11 @@ git add docker/nginx.conf
 git commit -m "perf: cache hashed static assets for a year at the nginx layer"
 ```
 
-### Task 7: Remove redundant `ChangeDetectionStrategy.Eager` (P3)
+### Task 7: DROPPED — `ChangeDetectionStrategy.Eager` is not a no-op on Angular 22 (P3)
 
-**Files:** Modify `src/app/app.component.ts`, `src/app/read-spreadsheet/read-spreadsheet.component.ts`
+**Ruling (recorded during Phase 1 execution):** This task's premise was wrong and it must NOT be implemented as originally written. `Eager` and `Default` are numerically identical (both `1`), but Angular 22's `@Component({changeDetection})` falls back to `OnPush` (`0`) — not `Eager`/`Default` — when the property is omitted entirely ("OnPush is enabled by default" per the decorator's own doc comment). Removing the explicit `changeDetection: ChangeDetectionStrategy.Eager` line therefore silently converts both components to `OnPush`, which is a real behavior change, not cleanup — confirmed empirically (2 of 112 tests fail with the line removed; both pass again with it restored) during the Phase 1 batch implementation.
 
-`Eager` is numerically identical to Angular's own default — the line changes nothing and misleadingly reads as an optimization. Remove it rather than convert to `OnPush` (converting would require re-verifying every state mutation path — out of scope for a mechanical-cleanup phase).
-
-- [ ] **Step 1: Edit app.component.ts**
-
-Remove `changeDetection: ChangeDetectionStrategy.Eager,` from the `@Component` decorator, and remove `ChangeDetectionStrategy` from the import if it's now unused:
-```typescript
-import { Component } from '@angular/core';
-
-@Component({
-    selector: 'app-root',
-    templateUrl: './app.component.html',
-    styleUrls: ['./app.component.css'],
-    standalone: false
-})
-export class AppComponent {
-  title = 'MSP Creator';
-}
-```
-
-- [ ] **Step 2: Edit read-spreadsheet.component.ts**
-
-Remove the same line and unused import reference from the `@Component` decorator (keep `OnInit`, `OnDestroy` imports — those are still used):
-```typescript
-import { Component, OnInit, OnDestroy } from '@angular/core';
-```
-and remove `changeDetection: ChangeDetectionStrategy.Eager,` from its `@Component({...})`.
-
-- [ ] **Step 3: Verify**
-
-Run: `npm test && npm run build`
-Expected: both PASS
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/app/app.component.ts src/app/read-spreadsheet/read-spreadsheet.component.ts
-git commit -m "chore: remove no-op explicit ChangeDetectionStrategy.Eager"
-```
+**Action:** leave `changeDetection: ChangeDetectionStrategy.Eager` in place, unchanged, in both `src/app/app.component.ts` and `src/app/read-spreadsheet/read-spreadsheet.component.ts`, for the remainder of this plan — including Phase 6's standalone-conversion tasks (Task 29, Task 30), which must preserve this line and its `ChangeDetectionStrategy` import rather than omitting them. No commit exists for this task. A genuine `OnPush` migration (re-verifying every state-mutation path both components rely on) is a reasonable candidate for a future, dedicated phase — out of scope here.
 
 ### Task 8: Remove `underscore` dependency (Q13)
 
@@ -1298,7 +1261,7 @@ Expected: PASS
 - [ ] **Step 2: Edit app.component.ts**
 
 ```typescript
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.component';
 
@@ -1306,6 +1269,7 @@ import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.co
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: true,
     imports: [MatToolbarModule, ReadSpreadsheetComponent]
 })
@@ -1313,6 +1277,7 @@ export class AppComponent {
   title = 'MSP Creator';
 }
 ```
+(Per Task 7's ruling, `changeDetection: ChangeDetectionStrategy.Eager` is load-bearing on this Angular 22 install — omitting it falls back to `OnPush`, not `Eager`/`Default`. Keep it exactly as it was pre-migration.)
 
 - [ ] **Step 3: Verify (expect this to fail until Task 30 also converts ReadSpreadsheetComponent)**
 
@@ -1329,7 +1294,7 @@ Hold this change uncommitted until Task 30 is also complete — see Task 30's St
 
 Add the standalone flag and imports to the `@Component` decorator:
 ```typescript
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
@@ -1352,6 +1317,7 @@ import { timeout, take } from 'rxjs/operators';
     selector: 'read-spreadsheet',
     templateUrl: 'read-spreadsheet.component.html',
     styleUrls: ['read-spreadsheet.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: true,
     imports: [
         CommonModule, MatButtonModule, MatSelectModule, MatCardModule, MatIconModule,
@@ -1360,7 +1326,7 @@ import { timeout, take } from 'rxjs/operators';
 })
 export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 ```
-(`DownloadFileService`/`BuildMspService` are no longer listed in `providers:` per Task 21 — no change needed there. No `FormsModule` — the template uses no `ngModel`/`formGroup`, confirmed in Phase 1.)
+(`DownloadFileService`/`BuildMspService` are no longer listed in `providers:` per Task 21 — no change needed there. No `FormsModule` — the template uses no `ngModel`/`formGroup`, confirmed in Phase 1. Per Task 7's ruling, `changeDetection: ChangeDetectionStrategy.Eager` is load-bearing on this Angular 22 install — keep it exactly as it was pre-migration.)
 
 - [ ] **Step 2: Update `read-spreadsheet.component.spec.ts`'s TestBed config**
 
@@ -1512,7 +1478,7 @@ Expected: PASS
 Run: `npm test`
 Expected: PASS
 
-Run: `npm start` and manually open `http://localhost:4200` in a browser — confirm the navbar renders, a spreadsheet uploads and produces a mapping panel, and Submit downloads a `.msp` file (this is the one task in this plan worth a manual smoke check before shipping, given it replaces the entire bootstrap path).
+Run: `npm start` and manually open `http://localhost:4300` in a browser — confirm the navbar renders, a spreadsheet uploads and produces a mapping panel, and Submit downloads a `.msp` file (this is the one task in this plan worth a manual smoke check before shipping, given it replaces the entire bootstrap path).
 
 - [ ] **Step 4: Commit**
 
@@ -2132,7 +2098,7 @@ npm run build
 npx http-server dist/Read-Spreadsheet -p 4300 &
 BASE_URL=http://localhost:4300 npx playwright test e2e/src/smoke.e2e-spec.ts --config playwright.config.ts
 ```
-If `playwright.config.ts`'s hardcoded `baseURL: 'http://localhost:4200'` and `webServer` block prevent easily pointing at the static production build on a different port, that's fine for this task — the important coverage is the dev-server run from Step 2 (which already exercises the built Angular app, just via `ng serve` rather than a static file server) plus the existing `npm run build` check every phase already runs. Note in the PR description that a dedicated "serve the static prod build" smoke target is a reasonable future follow-up, not required here.
+If `playwright.config.ts`'s hardcoded `baseURL: 'http://localhost:4300'` and `webServer` block prevent easily pointing at the static production build on a different port, that's fine for this task — the important coverage is the dev-server run from Step 2 (which already exercises the built Angular app, just via `ng serve` rather than a static file server) plus the existing `npm run build` check every phase already runs. Note in the PR description that a dedicated "serve the static prod build" smoke target is a reasonable future follow-up, not required here.
 
 - [ ] **Step 4: Commit**
 
@@ -2149,7 +2115,7 @@ Eight fixtures in `e2e/testing-files/` are never referenced by the existing e2e 
 
 - [ ] **Step 1: Observe real behavior for each fixture**
 
-For each fixture file, run a quick manual check with the dev server up (`npm start` in one terminal) by uploading it through the browser at `http://localhost:4200` and noting: does Submit stay disabled or enable? What does `#error-text` say? Does a `.msp` download happen, and if so does `#file-name-text` say "created" or "created with some issues"? Record these observations — you'll assert on exactly what you see, the same way every existing test in this file asserts on real, previously-observed behavior.
+For each fixture file, run a quick manual check with the dev server up (`npm start` in one terminal) by uploading it through the browser at `http://localhost:4300` and noting: does Submit stay disabled or enable? What does `#error-text` say? Does a `.msp` download happen, and if so does `#file-name-text` say "created" or "created with some issues"? Record these observations — you'll assert on exactly what you see, the same way every existing test in this file asserts on real, previously-observed behavior.
 
 - [ ] **Step 2: Add a test for each fixture, following the file's existing conventions**
 

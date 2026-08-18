@@ -4,7 +4,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 PID_FILE=".dev.pid"
 LOG_FILE=".dev.log"
-PORT="${PORT:-4200}"
+PORT="${PORT:-4300}"
 
 if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     echo "Dev server already running (PID $(cat "$PID_FILE")) at http://localhost:${PORT}/"
