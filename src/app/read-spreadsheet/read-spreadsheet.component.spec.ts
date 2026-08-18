@@ -16,6 +16,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
+import { DownloadFileService } from '../download-file-service/download-file.service';
 import { Observable, of, throwError, Subject } from 'rxjs';
 
 describe('ReadSpreadsheetComponent', () => {
@@ -227,9 +228,7 @@ describe('ReadSpreadsheetComponent', () => {
 	});
 
 	it('should call downloadFileService.downloadFile with the mapped file name when downloadExample is called', () => {
-		// downloadFileService is provided at the component level (see the component's `providers`
-		// array), so grab the exact instance this component instance holds rather than TestBed.inject.
-		const downloadFileService = (component as unknown as { downloadFileService: { downloadFile: (dir: string, name: string) => void } }).downloadFileService;
+		const downloadFileService = TestBed.inject(DownloadFileService);
 		vi.spyOn(downloadFileService, 'downloadFile').mockImplementation(() => {});
 		const anchor = document.createElement('a');
 		anchor.setAttribute('name', 'example_msp-txt');

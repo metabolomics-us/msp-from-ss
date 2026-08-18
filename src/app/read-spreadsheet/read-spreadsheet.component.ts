@@ -14,7 +14,6 @@ import { timeout, take } from 'rxjs/operators';
     styleUrls: ['read-spreadsheet.component.css'],
     // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
     // this component and its tests (TestBed.inject) share the same singleton instance
-    providers: [DownloadFileService, BuildMspService],
     // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- app is NgModule-based with mutable state read across change cycles; switching to OnPush needs its own verification pass
     changeDetection: ChangeDetectionStrategy.Eager,
     // eslint-disable-next-line @angular-eslint/prefer-standalone -- whole app is NgModule-based (AppModule/bootstrapModule); converting to standalone is a dedicated migration, not part of this ESLint setup task
