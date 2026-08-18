@@ -35,13 +35,13 @@ describe('DownloadFileService', () => {
 	});
 
 	it('should download an example file, converting its anchor name to a real filename', () => {
-		const spyObj = { click: vi.fn() };
+		const spyObj: { click: () => void, href?: string, download?: string } = { click: vi.fn() };
 		vi.spyOn(document, 'createElement').mockReturnValue(spyObj as unknown as HTMLElement);
 
 		service.downloadExampleFile('example_msp-txt');
 
-		expect((spyObj as any).href).toBe('../assets/files-to-read/example_msp.txt');
-		expect((spyObj as any).download).toBe('example_msp.txt');
+		expect(spyObj.href).toBe('../assets/files-to-read/example_msp.txt');
+		expect(spyObj.download).toBe('example_msp.txt');
 		expect(spyObj.click).toHaveBeenCalledTimes(1);
 	});
 });
