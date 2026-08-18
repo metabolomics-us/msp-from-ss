@@ -5,8 +5,6 @@ import { Injectable } from '@angular/core';
 })
 export class DownloadFileService {
 
-	constructor() { }
-
 	// Download a file from a path location and file name
 	downloadFile(path: string, fileName: string) {
 		// Create and click an anchor tag that will download the file

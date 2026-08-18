@@ -9,11 +9,12 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 // `matRowDefColumns`) that don't resolve without its full module
 // dependency tree, producing NG0303 console errors in every test that
 // merely renders AppComponent's shell. This stub keeps the
-// `<read-spreadsheet>` tag in AppComponent's template resolvable without
+// `<app-read-spreadsheet>` tag in AppComponent's template resolvable without
 // pulling in that dependency tree.
 @Component({
-	selector: 'read-spreadsheet',
+	selector: 'app-read-spreadsheet',
 	template: '',
+	// eslint-disable-next-line @angular-eslint/prefer-standalone -- mirrors the real (NgModule-based) component; converting is a dedicated migration, not part of this ESLint setup task
 	standalone: false
 })
 class ReadSpreadsheetStubComponent {}

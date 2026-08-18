@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject } from '@angular/core';
 
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
@@ -9,13 +9,15 @@ import { Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
 @Component({
-    selector: 'read-spreadsheet',
+    selector: 'app-read-spreadsheet',
     templateUrl: 'read-spreadsheet.component.html',
     styleUrls: ['read-spreadsheet.component.css'],
     // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
     // this component and its tests (TestBed.inject) share the same singleton instance
     providers: [DownloadFileService, BuildMspService],
+    // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- app is NgModule-based with mutable state read across change cycles; switching to OnPush needs its own verification pass
     changeDetection: ChangeDetectionStrategy.Eager,
+    // eslint-disable-next-line @angular-eslint/prefer-standalone -- whole app is NgModule-based (AppModule/bootstrapModule); converting to standalone is a dedicated migration, not part of this ESLint setup task
     standalone: false
 })
 
@@ -45,10 +47,9 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     notesText: string;
     placeHolderText: string;
     
-    constructor(
-		private readSpreadsheetService: ReadSpreadsheetService,
-		private downloadFileService: DownloadFileService,
-        public buildMspService: BuildMspService) {}
+    private readonly readSpreadsheetService = inject(ReadSpreadsheetService);
+    private readonly downloadFileService = inject(DownloadFileService);
+    readonly buildMspService = inject(BuildMspService);
 
 
 	ngOnInit() {

@@ -25,7 +25,7 @@ describe('ReadSpreadsheetService', () => {
 		const fileList = {
 			0: file,
 			length: 1,
-			item: (index: number) => file
+			item: () => file
 		} as unknown as FileList;
 
 		expect(service.readXlsx(fileList) instanceof Observable).toBe(true);
@@ -38,7 +38,7 @@ describe('ReadSpreadsheetService', () => {
 		const fileList = {
 			0: file,
 			length: 1,
-			item: (index: number) => file
+			item: () => file
 		} as unknown as FileList;
 
 		expect(service.readAlignmentResultTxt(fileList) instanceof Observable).toBe(true);
@@ -52,7 +52,7 @@ describe('ReadSpreadsheetService', () => {
 		const fileList = {
 			0: file,
 			length: 1,
-			item: (index: number) => file
+			item: () => file
 		} as unknown as FileList;
 
 		service.readAlignmentResultTxt(fileList).subscribe({
@@ -79,7 +79,7 @@ describe('ReadSpreadsheetService', () => {
 		const fileList = {
 			0: file,
 			length: 1,
-			item: (index: number) => file
+			item: () => file
 		} as unknown as FileList;
 
 		service.readAlignmentResultTxt(fileList).subscribe({
@@ -103,7 +103,7 @@ describe('ReadSpreadsheetService', () => {
 		const fileList = {
 			0: file,
 			length: 1,
-			item: (index: number) => file
+			item: () => file
 		} as unknown as FileList;
 
 		service.readAlignmentResultTxt(fileList).subscribe({
@@ -131,10 +131,9 @@ describe('ReadSpreadsheetService', () => {
 		const fileList = {
 			0: file,
 			length: 1,
-			item: (index: number) => file
+			item: () => file
         } as unknown as FileList;
 
-		const errorText = '';
 		const bMService = TestBed.inject(BuildMspService);
 		bMService.buildMspFile = vi.fn();
 

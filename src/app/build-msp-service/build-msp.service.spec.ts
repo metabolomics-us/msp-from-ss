@@ -1,6 +1,6 @@
 import type { Mock } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { BuildMspService } from './build-msp.service';
+import { BuildMspService, MspJsonRow } from './build-msp.service';
 import { HeaderMappingService } from '../header-mapping-service/header-mapping.service';
 
 describe('BuildMspService', () => {
@@ -20,7 +20,7 @@ describe('BuildMspService', () => {
 
 	it('should produce formatted string from array', () => {
 
-		const msmsArray: any[] = [{'Name': '1-Methyltryptophan', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+		const msmsArray: MspJsonRow[] = [{'Name': '1-Methyltryptophan', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
 		'Precursor_type': '[M+H]+', 'ExactMass': '219.11317', 'Formula': 'C12H14N2O2',
 		'_extraComments': [{ header: 'RT', value: '6.23', isSubfield: true }],
 		'MSMS SPECTRUM': '35.09272:9 35.16082:7'}];
@@ -311,9 +311,9 @@ describe('BuildMspService', () => {
 
 	// buildMspFile
 	describe('BuildMspService: buildMspFile', () => {
-		let arr: any[][];
+		let arr: string[][];
 		let name: string;
-		let jsonArr: any[];
+		let jsonArr: MspJsonRow[];
 		let testStr: string;
 
 		beforeAll(() => {
@@ -533,19 +533,19 @@ describe('BuildMspService', () => {
 	// buildMspStringFromArray: Comments line merge
 
 	it('should write only the global note on the Comments line when there are no extra comments', () => {
-		const msmsArray: any[] = [{ 'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1' }];
+		const msmsArray: MspJsonRow[] = [{ 'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1' }];
 		const result = service.buildMspStringFromArray(msmsArray, 'global note');
 		expect(result).toContain('Comments: global note\n');
 	});
 
 	it('should write only extra comments on the Comments line when there is no global note', () => {
-		const msmsArray: any[] = [{ 'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1', '_extraComments': [{ header: 'NOTES', value: 'peak' }] }];
+		const msmsArray: MspJsonRow[] = [{ 'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1', '_extraComments': [{ header: 'NOTES', value: 'peak' }] }];
 		const result = service.buildMspStringFromArray(msmsArray, '');
 		expect(result).toContain('Comments: NOTES: peak\n');
 	});
 
 	it('should write the global note followed by extra comments, semicolon-separated', () => {
-		const msmsArray: any[] = [{
+		const msmsArray: MspJsonRow[] = [{
 			'METABOLITE NAME': 'X', 'MSMS SPECTRUM': '1:1',
 			'_extraComments': [{ header: 'NOTES', value: 'peak' }, { header: 'BATCH', value: '3' }]
 		}];

@@ -17,8 +17,8 @@ describe('DownloadFileService', () => {
 
 	it('should download example files', () => {
 
-		// create spy object with a click() method
-		const spyObj = { click: vi.fn() };
+		// create spy object with a click() method, plus the props downloadFile() will set on it
+		const spyObj: { click: () => void, href?: string, target?: string, download?: string } = { click: vi.fn() };
 		// spy on document.createElement() and return the spy object
 		vi.spyOn(document, 'createElement').mockReturnValue(spyObj as unknown as HTMLElement);
 
@@ -27,9 +27,9 @@ describe('DownloadFileService', () => {
 		expect(document.createElement).toHaveBeenCalledTimes(1);
 		expect(document.createElement).toHaveBeenCalledWith('a');
 
-		expect((spyObj as any).href).toBe('../assets/files-to-read/example.msp');
-		expect((spyObj as any).target).toBe('_blank');
-		expect((spyObj as any).download).toBe('example.msp');
+		expect(spyObj.href).toBe('../assets/files-to-read/example.msp');
+		expect(spyObj.target).toBe('_blank');
+		expect(spyObj.download).toBe('example.msp');
 		expect(spyObj.click).toHaveBeenCalledTimes(1);
 		expect(spyObj.click).toHaveBeenCalledWith();
 	});

@@ -1,13 +1,27 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { saveAs } from 'file-saver';
 import { HeaderMappingService, HeaderMapping, RecognizedHeader } from '../header-mapping-service/header-mapping.service';
 
 export type MspSourceFormat = 'spreadsheet' | 'msdial';
 
+// A comment-mapped header's per-row value, collected for the .msp Comments line
+//  (isSubfield: true => "key=value" convention, false/absent => "header: value" convention)
+export interface MspExtraComment {
+	header: string;
+	value: string;
+	isSubfield?: boolean;
+}
+
+// A row of spreadsheet data keyed by (normalized/mapped) header name, plus the
+//  comment-mapped values collected by applyCommentMappings
+export type MspJsonRow = Record<string, string> & { _extraComments?: MspExtraComment[] };
+
 @Injectable({
 	providedIn: 'root'
 })
 export class BuildMspService {
+
+	private readonly headerMappingService = inject(HeaderMappingService);
 
     errorWarning: string;
     missingData: string[];
@@ -20,7 +34,7 @@ export class BuildMspService {
     // The real MSP header-tag vocabulary offered in the "Maps to MSP Tag" dropdown
     mspTags: string[];
 
-	constructor(private headerMappingService: HeaderMappingService) {
+	constructor() {
 		// Moving this here b/c Services can't use oninit
         this.resetErrors();
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
@@ -97,13 +111,13 @@ export class BuildMspService {
 	//  A recognized header (targetKey set, e.g. RT/SMILES) is packed under its canonical
 	//  sub-field label with the real-MSP "key=value" convention; an arbitrary user-chosen
 	//  column (targetKey null) keeps the freeform "header: value" convention.
-	applyCommentMappings(jsonArray: any[], mappings: HeaderMapping[]): any[] {
+	applyCommentMappings(jsonArray: MspJsonRow[], mappings: HeaderMapping[]): MspJsonRow[] {
 		const commentMappings = mappings.filter(m => m.action === 'comment');
 		if (commentMappings.length === 0) {
 			return jsonArray;
 		}
 		return jsonArray.map(entry => {
-			const extraComments: { header: string, value: string, isSubfield: boolean }[] = [];
+			const extraComments: MspExtraComment[] = [];
 			commentMappings.forEach(mapping => {
 				const entryKey = mapping.recognizedAs || mapping.header;
 				if (entry[entryKey]) {
@@ -111,13 +125,13 @@ export class BuildMspService {
 					extraComments.push({ header: label, value: entry[entryKey], isSubfield: !!mapping.targetKey });
 				}
 			});
-			return extraComments.length > 0 ? { ...entry, '_extraComments': extraComments } : entry;
+			return extraComments.length > 0 ? { ...entry, '_extraComments': extraComments } as MspJsonRow : entry;
 		});
 	}
 
 
 	// A spectrum-less entry isn't useful in a spectral library, regardless of source format
-	removeRowsWithoutSpectrum(jsonArray: any[]): any[] {
+	removeRowsWithoutSpectrum(jsonArray: MspJsonRow[]): MspJsonRow[] {
 		return jsonArray.filter(entry => !!entry['MSMS SPECTRUM']);
 	}
 
@@ -168,14 +182,14 @@ export class BuildMspService {
 
 
     // Create a string from a 2x2 array of MSMS data
-	buildMspStringFromArray(dataArray: any[], mspNotes: string): string {
+	buildMspStringFromArray(dataArray: MspJsonRow[], mspNotes: string): string {
 
 		// Each pushed string is later joined into the final .msp text
 		const lines: string[] = [];
 
 		// Traverse each row of dataArray and build mspString
 		//  Each row represents data for one metabolite
-		dataArray.forEach((element: any) => {
+		dataArray.forEach(element => {
 
             lines.push(
                 'Name: ' + (element['Name'] || '') + '\n' +
@@ -190,7 +204,7 @@ export class BuildMspService {
                 commentParts.push(mspNotes);
             }
             if (element['_extraComments']) {
-                element['_extraComments'].forEach((comment: { header: string, value: string, isSubfield?: boolean }) => {
+                element['_extraComments'].forEach(comment => {
                     commentParts.push(comment.isSubfield ? comment.header + '=' + comment.value : comment.header + ': ' + comment.value);
                 });
             }
@@ -215,7 +229,7 @@ export class BuildMspService {
 
 
     // Record all lines with missing data
-    collectMissingData(jsonArray: any[], correctionFactor: number, requiredHeaders: string[] = this.vitalHeaders) {
+    collectMissingData(jsonArray: MspJsonRow[], correctionFactor: number, requiredHeaders: string[] = this.vitalHeaders) {
         let keyArray: string[];
         let missingCols: string[];
         for (let i = 0; i < jsonArray.length; i++) {
@@ -229,14 +243,14 @@ export class BuildMspService {
 
 
     // Remove unneeded attributes so that only the required headers remain
-    removeAttributes(jsonArray: any[], requiredHeaders: string[] = this.vitalHeaders): any[] {
-        return jsonArray.map((entry: any) => Object.fromEntries(
-            requiredHeaders.filter(header => header in entry).map(header => [header, entry[header]])
+    removeAttributes(jsonArray: MspJsonRow[], requiredHeaders: string[] = this.vitalHeaders): MspJsonRow[] {
+        return jsonArray.map((entry): MspJsonRow => Object.fromEntries(
+            requiredHeaders.filter(header => header in entry).map((header): [string, string] => [header, entry[header]])
         ));
     }
-    
+
     // Remove duplicate entries in the JSON array based on avg retention time and avg m/z
-    removeDuplicates(jsonArray: any[], correctionFactor: number): any[] {
+    removeDuplicates(jsonArray: MspJsonRow[], correctionFactor: number): MspJsonRow[] {
 
         // Compare attributes that indicate duplicates may have been entered
         //  Turn entries into strings for easy comparison
@@ -251,7 +265,7 @@ export class BuildMspService {
         const firstSeenString = new Map<string, number>();
         const firstSeenHash = new Map<string, number>();
         // Create new JSON array and push only one entry for each name
-        let cleanedArray = [];
+        const cleanedArray: MspJsonRow[] = [];
         for (let i = 0; i < stringsArray.length; i++) {
             const key = stringsArray[i];
             // Check for likely duplicates
@@ -280,19 +294,17 @@ export class BuildMspService {
 
 
 	// Builds array of dictionaries
-	buildJsonArray(headers: string[], data: string[][]): any[] {
+	buildJsonArray(headers: string[], data: string[][]): MspJsonRow[] {
 		// Iterate through data and build dictionary
 		// keys=headers[], values=row of data[][]
 
-		let i: number, j: number;
-		let dict: any = {};
-		const arr: any = [];
-		for (i = 0; i < data.length; i++) {
-			dict = {};
-			for (j = 0; j < headers.length; j++) {
+		const arr: MspJsonRow[] = [];
+		for (const row of data) {
+			const dict: MspJsonRow = {};
+			for (let j = 0; j < headers.length; j++) {
 				// MS-DIAL writes the literal string "null" for missing values instead of an empty cell
-				if (data[i][j] && data[i][j] !== 'null') {
-					dict[headers[j]] = data[i][j];
+				if (row[j] && row[j] !== 'null') {
+					dict[headers[j]] = row[j];
 				}
 			}
 			// Add dictionary to the array
@@ -303,7 +315,7 @@ export class BuildMspService {
 
 
 	// Check for any column headers that are misspelled or missing
-	hasHeaderErrors(headers: any[], requiredHeaders: string[] = this.vitalHeaders): boolean {
+	hasHeaderErrors(headers: string[], requiredHeaders: string[] = this.vitalHeaders): boolean {
 
 		let hasError = false;
 		const headerErrors: string[] = [];
@@ -323,13 +335,13 @@ export class BuildMspService {
 
 
 	// Remove extraneous whitespace and convert all values to uppercase in an array
-	processText(headers: any[]): any[] {
+	processText(headers: string[]): string[] {
 		return headers.map(x => String(x).trim().toUpperCase());
 	}
 
 
 	// Check if array has the vital headers, via exact match or a known synonym
-	lineHasHeaders(line: any[]): boolean {
+	lineHasHeaders(line: string[]): boolean {
 		const formattedHeaders = this.processText(line);
 		return formattedHeaders.some(header => this.headerMappingService.suggestKey(header, this.vitalHeaders) !== null);
 	} // end lineHasHeaders
