@@ -2,12 +2,9 @@
   "compileOnSave": false,
   "compilerOptions": {
     "strict": false,
-    "ignoreDeprecations": "6.0",
-    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
-    "downlevelIteration": true,
     "experimentalDecorators": true,
     "module": "es2020",
     "moduleResolution": "bundler",
@@ -16,7 +13,7 @@
     "typeRoots": [
       "node_modules/@types"
     ],
-    "useDefineForClassFields": false,
+    "useDefineForClassFields": true,
     "skipLibCheck": true
   },
   "angularCompilerOptions": {

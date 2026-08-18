@@ -5,7 +5,7 @@
 FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --force
+RUN npm ci
 COPY angular.json tsconfig.json tsconfig.app.json ./
 COPY src ./src
 RUN npx ng build --configuration production
