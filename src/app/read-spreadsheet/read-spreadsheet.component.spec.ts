@@ -227,13 +227,13 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.showNotes).toBe(false);
 	});
 
-	it('should call downloadFileService.downloadFile with the mapped file name when downloadExample is called', () => {
+	it('should call downloadFileService.downloadExampleFile with the anchor name when downloadExample is called', () => {
 		const downloadFileService = TestBed.inject(DownloadFileService);
-		vi.spyOn(downloadFileService, 'downloadFile').mockImplementation(() => {});
+		vi.spyOn(downloadFileService, 'downloadExampleFile').mockImplementation(() => {});
 		const anchor = document.createElement('a');
 		anchor.setAttribute('name', 'example_msp-txt');
 		component.downloadExample({ target: anchor } as unknown as Event);
-		expect(downloadFileService.downloadFile).toHaveBeenCalledWith('../assets/files-to-read/', 'example_msp.txt');
+		expect(downloadFileService.downloadExampleFile).toHaveBeenCalledWith('example_msp-txt');
 	});
 
 	it('should reject a file with an unsupported extension and clear cached state', () => {
