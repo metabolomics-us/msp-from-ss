@@ -216,7 +216,7 @@ describe('ReadSpreadsheetComponent', () => {
 	it('should update notesText when getTextFromTextArea is called', () => {
 		const textArea = document.createElement('textarea');
 		textArea.value = 'Some notes';
-		component.getTextFromTextArea({ srcElement: textArea } as unknown as Event);
+		component.getTextFromTextArea({ target: textArea } as unknown as Event);
 		expect(component.notesText).toBe('Some notes');
 	});
 
