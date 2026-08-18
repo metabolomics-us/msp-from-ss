@@ -114,8 +114,8 @@
              [hidden]="!showCorrect && !showWrong"
              [class.status-banner--success]="showCorrect"
              [class.status-banner--error]="showWrong">
-            <mat-icon id="correct-image" [hidden]="!showCorrect">thumb_up</mat-icon>
-            <mat-icon id="wrong-image" [hidden]="!showWrong">cancel</mat-icon>{{ fileNameText }}
+            <mat-icon id="correct-image" fontIcon="thumb_up" [hidden]="!showCorrect"></mat-icon>
+            <mat-icon id="wrong-image" fontIcon="cancel" [hidden]="!showWrong"></mat-icon>{{ fileNameText }}
         </div>
 
         <div id="error-box" [hidden]="!showErrorBox">
