@@ -14,7 +14,14 @@ export interface MspExtraComment {
 
 // A row of spreadsheet data keyed by (normalized/mapped) header name, plus the
 //  comment-mapped values collected by applyCommentMappings
-export type MspJsonRow = Record<string, string> & { _extraComments?: MspExtraComment[] };
+export type MspJsonRow = Record<string, string> & {
+	Name?: string;
+	InChIKey?: string;
+	Precursor_type?: string;
+	ExactMass?: string;
+	Formula?: string;
+	_extraComments?: MspExtraComment[];
+};
 
 @Injectable({
 	providedIn: 'root'
