@@ -14,7 +14,6 @@ import { timeout, take } from 'rxjs/operators';
     styleUrls: ['read-spreadsheet.component.css'],
     // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
     // this component and its tests (TestBed.inject) share the same singleton instance
-    providers: [DownloadFileService, BuildMspService],
     // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- app is NgModule-based with mutable state read across change cycles; switching to OnPush needs its own verification pass
     changeDetection: ChangeDetectionStrategy.Eager,
     // eslint-disable-next-line @angular-eslint/prefer-standalone -- whole app is NgModule-based (AppModule/bootstrapModule); converting to standalone is a dedicated migration, not part of this ESLint setup task
@@ -31,6 +30,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     parseSubscription: Subscription;
     cachedMsmsArray: string[][] | null;
     headerMappings: HeaderMapping[];
+    visibleHeaderMappings: HeaderMapping[];
     currentFormat: MspSourceFormat;
     targetInput: HTMLInputElement;
 
@@ -69,6 +69,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.placeHolderText = "Include optional data such as: submitter name, submitter organization, column measurements, etc.";
         this.cachedMsmsArray = null;
         this.headerMappings = [];
+        this.visibleHeaderMappings = [];
     }
 
 
@@ -87,10 +88,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 	// User downloads an example MSMS spreadsheet or .msp file
 	downloadExample(mouseEvent: Event) {
-		// Get the DOM element, get its name, turn the name into the file name to download
-		//  i.e. <a name='example_msp-txt' ...> => example_msp.txt
 		const target = mouseEvent.target as HTMLAnchorElement;
-		this.downloadFileService.downloadFile('../assets/files-to-read/', target.name.replace('-', '.'));
+		this.downloadFileService.downloadExampleFile(target.name);
     }
     
 
@@ -101,11 +100,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
     showMappingPanelToggle() {
         this.showMappingPanel = !this.showMappingPanel;
-    }
-
-
-    get visibleHeaderMappings(): HeaderMapping[] {
-        return this.headerMappings.filter(mapping => !mapping.isSample);
     }
 
 
@@ -146,6 +140,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 this.submitValid = false;
                 this.cachedMsmsArray = null;
                 this.headerMappings = [];
+                this.visibleHeaderMappings = [];
                 this.updateErrorText('Please choose a file with one of these extensions: .xlsx, .xls, .csv, .ods, .numbers, .txt', false);
                 this.showCorrectImage(false);
             }
@@ -178,12 +173,14 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 } else {
                     this.headerMappings = [];
                 }
+                this.visibleHeaderMappings = this.headerMappings.filter(mapping => !mapping.isSample);
                 this.parsing = false;
             },
             error: () => {
                 // Submit's existing error path (via buildMsp) surfaces the real error to the user
                 this.cachedMsmsArray = null;
                 this.headerMappings = [];
+                this.visibleHeaderMappings = [];
                 this.parsing = false;
             }
         });

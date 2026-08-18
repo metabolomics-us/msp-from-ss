@@ -16,6 +16,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTableModule } from '@angular/material/table';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
+import { DownloadFileService } from '../download-file-service/download-file.service';
 import { Observable, of, throwError, Subject } from 'rxjs';
 
 describe('ReadSpreadsheetComponent', () => {
@@ -161,14 +162,18 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.showMappingPanel).toBe(true);
 	});
 
-	it('should exclude sample-flagged headers from visibleHeaderMappings', () => {
-		component.headerMappings = [
-			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true },
-			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
-		];
-		expect(component.visibleHeaderMappings).toEqual([
-			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
-		]);
+	it('should exclude sample-flagged headers from visibleHeaderMappings after a parse', () => {
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
+			['SAMPLE 1', 'BATCH ID'],
+			['1', '2']
+		]));
+
+		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		component.targetInput = { files: fileList } as HTMLInputElement;
+		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		expect(component.visibleHeaderMappings.some(m => m.isSample)).toBe(false);
 	});
 
 	it('should show a fixed "Mapped as list of peaks" label instead of a dropdown for the MSMS SPECTRUM column', async () => {
@@ -176,6 +181,7 @@ describe('ReadSpreadsheetComponent', () => {
 			{ header: 'MSMS SPECTRUM', action: 'map', targetKey: 'MSMS SPECTRUM', isSample: false, recognizedAs: 'MSMS SPECTRUM' },
 			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'Name', isSample: false, recognizedAs: 'METABOLITE NAME' }
 		];
+		component.visibleHeaderMappings = component.headerMappings.filter(mapping => !mapping.isSample);
 		fixture.componentRef.changeDetectorRef.markForCheck();
 		fixture.detectChanges(false);
 
@@ -226,15 +232,13 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.showNotes).toBe(false);
 	});
 
-	it('should call downloadFileService.downloadFile with the mapped file name when downloadExample is called', () => {
-		// downloadFileService is provided at the component level (see the component's `providers`
-		// array), so grab the exact instance this component instance holds rather than TestBed.inject.
-		const downloadFileService = (component as unknown as { downloadFileService: { downloadFile: (dir: string, name: string) => void } }).downloadFileService;
-		vi.spyOn(downloadFileService, 'downloadFile').mockImplementation(() => {});
+	it('should call downloadFileService.downloadExampleFile with the anchor name when downloadExample is called', () => {
+		const downloadFileService = TestBed.inject(DownloadFileService);
+		vi.spyOn(downloadFileService, 'downloadExampleFile').mockImplementation(() => {});
 		const anchor = document.createElement('a');
 		anchor.setAttribute('name', 'example_msp-txt');
 		component.downloadExample({ target: anchor } as unknown as Event);
-		expect(downloadFileService.downloadFile).toHaveBeenCalledWith('../assets/files-to-read/', 'example_msp.txt');
+		expect(downloadFileService.downloadExampleFile).toHaveBeenCalledWith('example_msp-txt');
 	});
 
 	it('should reject a file with an unsupported extension and clear cached state', () => {

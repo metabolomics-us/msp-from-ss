@@ -14,7 +14,14 @@ export interface MspExtraComment {
 
 // A row of spreadsheet data keyed by (normalized/mapped) header name, plus the
 //  comment-mapped values collected by applyCommentMappings
-export type MspJsonRow = Record<string, string> & { _extraComments?: MspExtraComment[] };
+export type MspJsonRow = Record<string, string> & {
+	Name?: string;
+	InChIKey?: string;
+	Precursor_type?: string;
+	ExactMass?: string;
+	Formula?: string;
+	_extraComments?: MspExtraComment[];
+};
 
 @Injectable({
 	providedIn: 'root'
@@ -369,59 +376,57 @@ export class BuildMspService {
         this.resetErrors();
 
         const requiredHeaders = this.getRequiredHeaders(format);
-
-		// Get the row number where the headers are located
 		const headerPosition = this.getHeaderPosition(msmsArray);
-		if (headerPosition >= 0) {
 
-			// Get the headers, convert them to upper case and remove trailing white space
-			const headers = this.normalizeHeaderRow(msmsArray[headerPosition], format);
-			const mappings = headerMappings || this.classifyHeaders(headers);
-			const mappedHeaders = this.applyHeaderMappings(headers, mappings);
+		if (headerPosition < 0) {
+			this.errorWarning = 'Error: column headers not found';
+			return this.errorWarning;
+		}
 
-			// If all required headers are available and without errors, proceed
-			if (!this.hasHeaderErrors(mappedHeaders, requiredHeaders)) {
+		const headers = this.normalizeHeaderRow(msmsArray[headerPosition], format);
+		const mappings = headerMappings || this.classifyHeaders(headers);
+		const mappedHeaders = this.applyHeaderMappings(headers, mappings);
 
-				const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
-				// Create an array of dictionaries
-                let msmsJsonArray = this.buildJsonArray(mappedHeaders, data);
+		if (this.hasHeaderErrors(mappedHeaders, requiredHeaders)) {
+			return this.errorWarning;
+		}
 
-                // Collect comment-mapped columns' values before removeAttributes strips the originals
-                msmsJsonArray = this.applyCommentMappings(msmsJsonArray, mappings);
+		const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
+		let msmsJsonArray: MspJsonRow[] = this.buildJsonArray(mappedHeaders, data);
 
-                // remove unneeded attributes (keep _extraComments alongside the required headers)
-                msmsJsonArray = this.removeAttributes(msmsJsonArray, [...requiredHeaders, '_extraComments']);
+		// Collect comment-mapped columns' values before removeAttributes strips the originals
+		msmsJsonArray = this.applyCommentMappings(msmsJsonArray, mappings);
 
-                // Use header position to get row number; check for missing data per each header
-                //  (a spectrum-less row is filtered below, not reported as missing data, for either format)
-                const missingDataCheckHeaders = this.getMissingDataCheckHeaders(format, requiredHeaders);
-                this.collectMissingData(msmsJsonArray, headerPosition + 2, missingDataCheckHeaders);
-                if (this.missingData.length > 0) {
-                    this.errorWarning = 'Warning: Some entries have missing data; these attributes were left blank';
-                }
+		// remove unneeded attributes (keep _extraComments alongside the required headers)
+		msmsJsonArray = this.removeAttributes(msmsJsonArray, [...requiredHeaders, '_extraComments']);
 
-                // Remove duplicate entries
-                //  Need to get header position and add 2 to get accurate row locations on the spreadsheet
-                msmsJsonArray = this.removeDuplicates(msmsJsonArray, headerPosition + 2);
-                // Tell the user if duplicate entries were not included
-                if (this.duplicates.length > 0) {
-                    if (this.errorWarning.length > 0) {
-                        this.errorWarning += '<br>';
-                    }
-                    this.errorWarning += 'Warning: duplicate entries found but not included in .msp';
-                }
+		// Use header position to get row number; check for missing data per each header
+		//  (a spectrum-less row is filtered below, not reported as missing data, for either format)
+		const missingDataCheckHeaders = this.getMissingDataCheckHeaders(format, requiredHeaders);
+		this.collectMissingData(msmsJsonArray, headerPosition + 2, missingDataCheckHeaders);
+		if (this.missingData.length > 0) {
+			this.errorWarning = 'Warning: Some entries have missing data; these attributes were left blank';
+		}
 
-                // Drop rows with no MS/MS spectrum: not useful in a spectral library, regardless of source
-                msmsJsonArray = this.removeRowsWithoutSpectrum(msmsJsonArray);
-
-				// Turn array into a string
-				const mspString = this.buildMspStringFromArray(msmsJsonArray, notes);
-				// User will be prompted to save a .msp for their data
-                this.saveFile(mspString, fileName.split('.')[0] + '.msp');
+		// Remove duplicate entries
+		//  Need to get header position and add 2 to get accurate row locations on the spreadsheet
+		msmsJsonArray = this.removeDuplicates(msmsJsonArray, headerPosition + 2);
+		// Tell the user if duplicate entries were not included
+		if (this.duplicates.length > 0) {
+			if (this.errorWarning.length > 0) {
+				this.errorWarning += '<br>';
 			}
-		} else {
-            this.errorWarning = 'Error: column headers not found';
-        }
-        return this.errorWarning;
+			this.errorWarning += 'Warning: duplicate entries found but not included in .msp';
+		}
+
+		// Drop rows with no MS/MS spectrum: not useful in a spectral library, regardless of source
+		msmsJsonArray = this.removeRowsWithoutSpectrum(msmsJsonArray);
+
+		// Turn array into a string
+		const mspString = this.buildMspStringFromArray(msmsJsonArray, notes);
+		// User will be prompted to save a .msp for their data
+		this.saveFile(mspString, fileName.split('.')[0] + '.msp');
+
+		return this.errorWarning;
 	}
 }

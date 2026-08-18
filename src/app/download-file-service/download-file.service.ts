@@ -14,4 +14,11 @@ export class DownloadFileService {
 		dummyLink.download = fileName;
 		dummyLink.click();
 	}
+
+	// Anchor `name` attributes encode the target file as e.g. 'example_msp-txt', with a dash
+	//  standing in for the extension's period (see the calling template's comment for why);
+	//  this method owns that decoding so it isn't split between a component method and an HTML comment.
+	downloadExampleFile(anchorName: string) {
+		this.downloadFile('../assets/files-to-read/', anchorName.replace('-', '.'));
+	}
 }
