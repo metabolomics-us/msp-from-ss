@@ -7,9 +7,6 @@ import { AppComponent } from './app.component';
 
 import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.component';
 
-import { FormsModule } from '@angular/forms';
-import { ReactiveFormsModule } from '@angular/forms';
-
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCardModule } from '@angular/material/card';
@@ -25,7 +22,7 @@ import { MatTableModule } from '@angular/material/table';
 		AppComponent, ReadSpreadsheetComponent
 	],
 	imports: [
-		BrowserModule, BrowserAnimationsModule, AppRoutingModule, FormsModule, ReactiveFormsModule,
+		BrowserModule, BrowserAnimationsModule, AppRoutingModule,
 		MatButtonModule, MatSelectModule, MatCardModule, MatIconModule, MatProgressSpinnerModule,
 		MatFormFieldModule, MatInputModule, MatToolbarModule, MatTableModule
 	],
