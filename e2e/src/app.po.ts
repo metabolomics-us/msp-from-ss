@@ -59,12 +59,10 @@ export class AppPage {
         await this.page.locator('input[type="file"]').setInputFiles(absolutePath);
         // Selecting a file with a supported extension kicks off an async client-side parse
         // (used to pre-populate the header-mapping panel) that briefly disables #submit while
-        // in flight via ngx-spinner's fullscreen overlay. Protractor's automatic Angular-
-        // stability detection (browser.waitForAngularEnabled) masked this race; Playwright has
-        // no equivalent, so wait for the overlay to clear before returning. If parsing never
-        // started (e.g. an unsupported extension) or already finished, the overlay is already
-        // absent and this resolves immediately.
-        await this.page.locator('.ngx-spinner-overlay').waitFor({ state: 'hidden' });
+        // in flight via a *ngIf="parsing" overlay (#loading-overlay). Wait for it to detach
+        // before returning; if parsing never started or already finished, it's already absent
+        // and this resolves immediately.
+        await this.page.locator('#loading-overlay').waitFor({ state: 'detached' });
     }
 
     async isSubmitDisabled(): Promise<string | null> {
@@ -110,6 +108,7 @@ export class AppPage {
     }
 
     async selectMappingOption(header: string, optionText: string) {
-        await this.page.locator(`tr[data-header="${header}"] select`).selectOption({ label: optionText });
+        await this.page.locator(`tr[data-header="${header}"] mat-select`).click();
+        await this.page.locator('.cdk-overlay-pane mat-option', { hasText: optionText }).click();
     }
 }
