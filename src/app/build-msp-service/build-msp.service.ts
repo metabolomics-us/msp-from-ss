@@ -170,23 +170,20 @@ export class BuildMspService {
     // Create a string from a 2x2 array of MSMS data
 	buildMspStringFromArray(dataArray: any[], mspNotes: string): string {
 
-        let dataMissing = '';
-
-		// Initialize string to be returned
-        let mspString = '';
-		// A list of mass and intensity for each peak
-        let spectrum: string[];
+		// Each pushed string is later joined into the final .msp text
+		const lines: string[] = [];
 
 		// Traverse each row of dataArray and build mspString
 		//  Each row represents data for one metabolite
 		dataArray.forEach((element: any) => {
 
-            mspString +=
-            'Name: ' + (element['Name'] || '') + '\n' +
-            'InChIKey: ' + (element['InChIKey'] || '') + '\n' +
-            'Precursor_type: ' + (element['Precursor_type'] || '') + '\n' +
-            'ExactMass: ' + (element['ExactMass'] || '') + '\n' +
-            'Formula: ' + (element['Formula'] || '') + '\n';
+            lines.push(
+                'Name: ' + (element['Name'] || '') + '\n' +
+                'InChIKey: ' + (element['InChIKey'] || '') + '\n' +
+                'Precursor_type: ' + (element['Precursor_type'] || '') + '\n' +
+                'ExactMass: ' + (element['ExactMass'] || '') + '\n' +
+                'Formula: ' + (element['Formula'] || '') + '\n'
+            );
 
             const commentParts: string[] = [];
             if (mspNotes) {
@@ -198,22 +195,22 @@ export class BuildMspService {
                 });
             }
             if (commentParts.length > 0) {
-                mspString += 'Comments: ' + commentParts.join('; ') + '\n';
+                lines.push('Comments: ' + commentParts.join('; ') + '\n');
             }
             // Create array of mass/intensity peaks to be written into the string line by line
             //  First check that MSMS spectrum data exists
             if (element['MSMS SPECTRUM'] && element['MSMS SPECTRUM'].length > 0) {
-                spectrum = element['MSMS SPECTRUM'].split(' ');
-                mspString += 'Num Peaks: ' + spectrum.length.toString() + '\n';
+                const spectrum: string[] = element['MSMS SPECTRUM'].split(' ');
+                lines.push('Num Peaks: ' + spectrum.length.toString() + '\n');
                 spectrum.forEach(massIntensity => {
-                    mspString += massIntensity.replace(':', ' ') + '\n';
+                    lines.push(massIntensity.replace(':', ' ') + '\n');
                 });
             } else {
-                mspString += 'Num Peaks: ';
+                lines.push('Num Peaks: ');
             }
-            mspString += '\n\n';
+            lines.push('\n\n');
         });
-		return mspString;
+		return lines.join('');
     } // end buildMspStringFromArray
 
 
