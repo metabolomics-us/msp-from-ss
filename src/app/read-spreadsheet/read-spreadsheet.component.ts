@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
@@ -15,6 +15,7 @@ import { timeout, take } from 'rxjs/operators';
     // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
     // this component and its tests (TestBed.inject) share the same singleton instance
     providers: [DownloadFileService, BuildMspService],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 
