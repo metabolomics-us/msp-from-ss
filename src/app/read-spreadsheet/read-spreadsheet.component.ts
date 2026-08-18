@@ -61,8 +61,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
         this.submitValid = false;
         this.parsing = false;
         this.showNotes = false;
-        this.showMappingPanel = false;
-        this.mspKeys = this.buildMspService.vitalHeaders;
+        this.showMappingPanel = true;
+        this.mspKeys = this.buildMspService.mspTags;
 
         this.notesText = "";
         this.placeHolderText = "Include optional data such as: submitter name, submitter organization, column measurements, etc.";

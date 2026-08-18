@@ -184,7 +184,7 @@ test.describe('workspace-project App', () => {
     test('should tell the user what headers are missing', async () => {
         await page.uploadSpreadsheet('../testing-files/Height_0_20197191136negCSH.xlsx');
         await page.submitFile();
-        const text = 'These headers may be misspelled or missing: ADDUCT TYPE';
+        const text = 'These headers may be misspelled or missing: Precursor_type';
         expect(await page.getErrorText()).toEqual(text);
         expect(await page.getElementById('file-name-text').innerText()).toEqual('Fix errors, then retry upload');
         expect(await page.isElementHidden('correct-image')).toBe('true');
@@ -234,28 +234,29 @@ test.describe('workspace-project App', () => {
         expect(fileExists(errorFile)).toBe(true);
     });
 
-    test('should show a hidden-by-default mapping panel after uploading a file with unmatched columns', async () => {
+    test('should show the mapping panel expanded by default, collapsible via the toggle button', async () => {
         await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
         expect(await page.elementExists('show-mapping-button')).toBe(true);
+        expect(await page.isMappingPanelHidden()).toBe(null);
+        await page.toggleMappingPanel();
         expect(await page.isMappingPanelHidden()).toBe('true');
     });
 
     test('should exclude a Sample N style column from the mapping panel', async () => {
         await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
-        await page.toggleMappingPanel();
         expect(await page.isMappingRowPresent('SAMPLE 1')).toBe(false);
         expect(await page.isMappingRowPresent('NOTES')).toBe(true);
     });
 
     test('should include a user-added MSP Comment from an unmatched column after a mapping override', async () => {
         await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
-        await page.toggleMappingPanel();
         await page.selectMappingOption('NOTES', 'Add as comment');
         const download = await page.submitFileAndWaitForDownload();
         const name = './e2e/downloads/msdial_alignment_result_with_extra_column_override.txt';
         await download.saveAs(name);
         const mspContent = fs.readFileSync(name, 'utf8');
-        expect(mspContent).toContain('Comments: NOTES: Interesting peak');
+        // Shares the Comments line with the auto-classified AVERAGE RT(MIN) sub-field (RT=)
+        expect(mspContent).toContain('NOTES: Interesting peak');
     });
 
     test('should still download an unmodified .msp when the mapping panel is left untouched', async () => {
@@ -265,7 +266,10 @@ test.describe('workspace-project App', () => {
         await download.saveAs(name);
         const mspContent = fs.readFileSync(name, 'utf8');
         expect(mspContent).toContain('Name: 1-Methyltryptophan');
-        expect(mspContent).not.toContain('Comments:');
+        // AVERAGE RT(MIN) still auto-classifies to its own Comments sub-field (RT=), but NOTES
+        //  wasn't opted in, so only RT= should appear on the Comments line, not the NOTES text.
+        expect(mspContent).toContain('Comments: RT=');
+        expect(mspContent).not.toContain('NOTES');
         expect(mspContent).not.toContain('Interesting peak');
     });
 });

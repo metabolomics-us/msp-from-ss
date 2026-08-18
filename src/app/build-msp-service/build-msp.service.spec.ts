@@ -20,12 +20,13 @@ describe('BuildMspService', () => {
 
 	it('should produce formatted string from array', () => {
 
-		const msmsArray: any[] = [{'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-		'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
-		'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'}];
+		const msmsArray: any[] = [{'Name': '1-Methyltryptophan', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+		'Precursor_type': '[M+H]+', 'ExactMass': '219.11317', 'Formula': 'C12H14N2O2',
+		'_extraComments': [{ header: 'RT', value: '6.23', isSubfield: true }],
+		'MSMS SPECTRUM': '35.09272:9 35.16082:7'}];
 
-		const msmsStr: string = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor Type: [M+H]+\n' +
-		'Precursor Mz: 219.11317\nRetention Time: 6.23\nFormula: C12H14N2O2\nNum Peaks: 2\n35.09272 9\n35.16082 7\n\n\n';
+		const msmsStr: string = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor_type: [M+H]+\n' +
+		'ExactMass: 219.11317\nFormula: C12H14N2O2\nComments: RT=6.23\nNum Peaks: 2\n35.09272 9\n35.16082 7\n\n\n';
 
 		const testStr = service.buildMspStringFromArray(msmsArray, '');
 		expect(testStr).toEqual(msmsStr);
@@ -40,11 +41,11 @@ describe('BuildMspService', () => {
 
     it('should return array of length 1', () => {
         const jsonArr = [
-            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            {'AVERAGE RT(MIN)': '6.23', 'ExactMass': '219.11317', 'Name': '1-Methyltryptophan',
+            'Precursor_type': '[M+H]+', 'Formula': 'C12H14N2O2', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'},
-            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            {'AVERAGE RT(MIN)': '6.23', 'ExactMass': '219.11317', 'Name': '1-Methyltryptophan',
+            'Precursor_type': '[M+H]+', 'Formula': 'C12H14N2O2', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'}
         ];
         expect(service.removeDuplicates(jsonArr, 0).length).toBe(1);
@@ -52,11 +53,11 @@ describe('BuildMspService', () => {
 
     it('should return array of length 2', () => {
         const jsonArr = [
-            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            {'AVERAGE RT(MIN)': '6.23', 'ExactMass': '219.11317', 'Name': '1-Methyltryptophan',
+            'Precursor_type': '[M+H]+', 'Formula': 'C12H14N2O2', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'},
-            {'AVERAGE RT(MIN)': '5.874', 'AVERAGE MZ': '228.0988', 'METABOLITE NAME': '2\'-Deoxycytidine',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C9H13N3O4', 'INCHIKEY': 'CKTSBUTUHBMZGZ-SHYZEUOFSA-N',
+            {'AVERAGE RT(MIN)': '5.874', 'ExactMass': '228.0988', 'Name': '2\'-Deoxycytidine',
+            'Precursor_type': '[M+H]+', 'Formula': 'C9H13N3O4', 'InChIKey': 'CKTSBUTUHBMZGZ-SHYZEUOFSA-N',
             'MS1 SPECTRUM': '228.0988:275396', 'MSMS SPECTRUM': '35.25149:14 35.48236:5'}
         ];
         expect(service.removeDuplicates(jsonArr, 0).length).toBe(2);
@@ -64,27 +65,27 @@ describe('BuildMspService', () => {
 
     it('should return array of length 2 after minor change (AVERAGE RT(MIN))', () => {
         const jsonArr = [
-            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            {'AVERAGE RT(MIN)': '6.23', 'ExactMass': '219.11317', 'Name': '1-Methyltryptophan',
+            'Precursor_type': '[M+H]+', 'Formula': 'C12H14N2O2', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'},
-            {'AVERAGE RT(MIN)': '6.25', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
+            {'AVERAGE RT(MIN)': '6.25', 'ExactMass': '219.11317', 'Name': '1-Methyltryptophan',
+            'Precursor_type': '[M+H]+', 'Formula': 'C12H14N2O2', 'InChIKey': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
             'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'}
         ];
         expect(service.removeDuplicates(jsonArr, 0).length).toBe(2);
     });
 
-    it('should not flag rows as possible duplicates when INCHIKEY is missing on all of them', () => {
-        // 3 otherwise-distinct entries (different RT/MZ/spectrum), none with an INCHIKEY.
-        //  The old indexOf-based code turned the missing INCHIKEY into the literal string 'UNDEFINED'
+    it('should not flag rows as possible duplicates when InChIKey is missing on all of them', () => {
+        // 3 otherwise-distinct entries (different RT/MZ/spectrum), none with an InChIKey.
+        //  The old indexOf-based code turned the missing InChIKey into the literal string 'UNDEFINED'
         //  via processText, so every row after the first would be flagged as a possible duplicate of it.
         const jsonArr = [
-            {'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': 'A',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'},
-            {'AVERAGE RT(MIN)': '5.874', 'AVERAGE MZ': '228.0988', 'METABOLITE NAME': 'B',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C9H13N3O4', 'MSMS SPECTRUM': '35.25149:14 35.48236:5'},
-            {'AVERAGE RT(MIN)': '3.33', 'AVERAGE MZ': '200.0', 'METABOLITE NAME': 'C',
-            'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C1H1', 'MSMS SPECTRUM': '50.7019:2412 77.88785:2832'}
+            {'AVERAGE RT(MIN)': '6.23', 'ExactMass': '219.11317', 'Name': 'A',
+            'Precursor_type': '[M+H]+', 'Formula': 'C12H14N2O2', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'},
+            {'AVERAGE RT(MIN)': '5.874', 'ExactMass': '228.0988', 'Name': 'B',
+            'Precursor_type': '[M+H]+', 'Formula': 'C9H13N3O4', 'MSMS SPECTRUM': '35.25149:14 35.48236:5'},
+            {'AVERAGE RT(MIN)': '3.33', 'ExactMass': '200.0', 'Name': 'C',
+            'Precursor_type': '[M+H]+', 'Formula': 'C1H1', 'MSMS SPECTRUM': '50.7019:2412 77.88785:2832'}
         ];
         expect(service.removeDuplicates(jsonArr, 0).length).toBe(3);
         expect(service.possibleDuplicates.length).toBe(0);
@@ -133,13 +134,15 @@ describe('BuildMspService', () => {
 
 	// getRequiredHeaders
 
-	it('should return vitalHeaders unchanged for spreadsheet format', () => {
-		expect(service.getRequiredHeaders('spreadsheet')).toEqual(service.vitalHeaders);
+	it('should return the post-mapping required key for each required header, for spreadsheet format', () => {
+		expect(service.getRequiredHeaders('spreadsheet')).toEqual(
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MS1 SPECTRUM', 'MSMS SPECTRUM']
+		);
 	});
 
 	it('should exclude MS1 SPECTRUM for msdial format', () => {
 		expect(service.getRequiredHeaders('msdial')).toEqual(
-			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MSMS SPECTRUM']
 		);
 	});
 
@@ -158,13 +161,13 @@ describe('BuildMspService', () => {
 	// hasHeaderErrors with an explicit requiredHeaders param
 
 	it('should return false for msdial headers missing MS1 SPECTRUM when checked against msdial required headers', () => {
-		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM'];
+		const headers = ['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MSMS SPECTRUM'];
 		expect(service.hasHeaderErrors(headers, service.getRequiredHeaders('msdial'))).toBe(false);
 	});
 
-	it('should still return true when MS1 SPECTRUM is missing and no requiredHeaders param is given (spreadsheet default)', () => {
-		const headers = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MSMS SPECTRUM'];
-		expect(service.hasHeaderErrors(headers)).toBe(true);
+	it('should still return true when MS1 SPECTRUM is missing and checked against the spreadsheet-format required headers', () => {
+		const headers = ['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MSMS SPECTRUM'];
+		expect(service.hasHeaderErrors(headers, service.getRequiredHeaders('spreadsheet'))).toBe(true);
 	});
 
 	// buildJsonArray
@@ -267,12 +270,20 @@ describe('BuildMspService', () => {
 
 	// classifyHeaders
 
-	it('should classify headers against the full vitalHeaders list', () => {
-		const result = service.classifyHeaders(['RETENTION TIME', 'SAMPLE 1', 'BATCH ID']);
+	it('should classify headers against the full recognizedHeaders list, applying each header\'s configured default action', () => {
+		const result = service.classifyHeaders(['RETENTION TIME', 'SAMPLE 1', 'BATCH ID', 'METABOLITE NAME']);
 		expect(result).toEqual([
-			{ header: 'RETENTION TIME', action: 'map', targetKey: 'AVERAGE RT(MIN)', isSample: false },
-			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true },
-			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+			{ header: 'RETENTION TIME', action: 'comment', targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' },
+			{ header: 'SAMPLE 1', action: 'ignore', targetKey: null, isSample: true, recognizedAs: null },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null },
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'Name', isSample: false, recognizedAs: 'METABOLITE NAME' }
+		]);
+	});
+
+	it('should recognize an optional SMILES column and default it to a Comment sub-field', () => {
+		const result = service.classifyHeaders(['smiles']);
+		expect(result).toEqual([
+			{ header: 'smiles', action: 'comment', targetKey: 'SMILES', isSample: false, recognizedAs: 'SMILES' }
 		]);
 	});
 
@@ -320,8 +331,8 @@ describe('BuildMspService', () => {
 				'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'}
 			];
 
-			testStr = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor Type: [M+H]+\n' +
-			'Precursor Mz: 219.11317\nRetention Time: 6.23\nFormula: C12H14N2O2\nNum Peaks: 2\n35.09272 9\n35.16082 7\n\n\n';
+			testStr = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor_type: [M+H]+\n' +
+			'ExactMass: 219.11317\nFormula: C12H14N2O2\nComments: RT=6.23\nNum Peaks: 2\n35.09272 9\n35.16082 7\n\n\n';
 		});
 
 		it('should call lineHasHeaders', () => {
@@ -352,6 +363,23 @@ describe('BuildMspService', () => {
 			expect(service.saveFile).toHaveBeenCalled();
 		});
 
+		it('should save the output file with a .msp extension, regardless of the uploaded file\'s extension', () => {
+			service.getHeaderPosition = vi.fn().mockReturnValue(0);
+			service.processText = vi.fn().mockReturnValue(arr[0]);
+			service.hasHeaderErrors = vi.fn().mockReturnValue(false);
+			service.buildJsonArray = vi.fn().mockReturnValue(jsonArr);
+			service.removeAttributes = vi.fn().mockReturnValue(jsonArr);
+			service.collectMissingData = vi.fn();
+			service.removeDuplicates = vi.fn().mockReturnValue(jsonArr);
+			service.removeRowsWithoutSpectrum = vi.fn().mockReturnValue(jsonArr);
+			service.buildMspStringFromArray = vi.fn().mockReturnValue(testStr);
+			service.saveFile = vi.fn();
+
+			service.buildMspFile(arr, name, '');
+
+			expect(service.saveFile).toHaveBeenCalledWith(testStr, 'test.msp');
+		});
+
 	});
 
 	// removeRowsWithoutSpectrum
@@ -369,7 +397,7 @@ describe('BuildMspService', () => {
 	it('should exclude MSMS SPECTRUM from the missing-data check for msdial format', () => {
 		const requiredHeaders = service.getRequiredHeaders('msdial');
 		expect(service.getMissingDataCheckHeaders('msdial', requiredHeaders)).toEqual(
-			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey']
 		);
 	});
 
@@ -378,7 +406,7 @@ describe('BuildMspService', () => {
 		//  shouldn't be reported as "missing data" (which implies the row survives with a blank field).
 		const requiredHeaders = service.getRequiredHeaders('spreadsheet');
 		expect(service.getMissingDataCheckHeaders('spreadsheet', requiredHeaders)).toEqual(
-			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MS1 SPECTRUM']
 		);
 	});
 
@@ -405,7 +433,7 @@ describe('BuildMspService', () => {
 			// Row 2 (Unknown, null Formula/INCHIKEY) is reported as missing data.
 			//  Row number is 3: headerPosition is 0 (no metadata rows precede the header in this fixture),
 			//  so correctionFactor = 0 + 2 = 2, and row 2 is at data-array index 1 (2 + 1 = 3).
-			expect(service.missingData).toEqual(['3: FORMULA, INCHIKEY']);
+			expect(service.missingData).toEqual(['3: Formula, InChIKey']);
 
 			// Row 3 has no spectrum: filtered out, and NOT reported as missing data (would be row 4: 2 + 2)
 			expect(service.missingData.some(entry => entry.startsWith('4:'))).toBe(false);
@@ -476,17 +504,30 @@ describe('BuildMspService', () => {
 
 	// applyCommentMappings
 
-	it('should collect a comment-marked header\'s value into _extraComments', () => {
+	it('should collect a comment-marked header\'s value into _extraComments, labeled by its own header text when unrecognized', () => {
 		const jsonArray = [{ 'METABOLITE NAME': 'X', 'NOTES': 'Interesting peak' }];
 		const mappings = [{ header: 'NOTES', action: 'comment' as const, targetKey: null, isSample: false }];
 		expect(service.applyCommentMappings(jsonArray, mappings)).toEqual([
-			{ 'METABOLITE NAME': 'X', 'NOTES': 'Interesting peak', '_extraComments': [{ header: 'NOTES', value: 'Interesting peak' }] }
+			{ 'METABOLITE NAME': 'X', 'NOTES': 'Interesting peak', '_extraComments': [{ header: 'NOTES', value: 'Interesting peak', isSubfield: false }] }
 		]);
 	});
 
 	it('should leave rows unchanged when there are no comment mappings', () => {
 		const jsonArray = [{ 'METABOLITE NAME': 'X' }];
 		expect(service.applyCommentMappings(jsonArray, [])).toEqual([{ 'METABOLITE NAME': 'X' }]);
+	});
+
+	it('should collect a recognized header (e.g. AVERAGE RT(MIN), possibly renamed from a synonym like RETENTION TIME) into _extraComments under its canonical sub-field label, reading via recognizedAs', () => {
+		// By the time applyCommentMappings runs, applyHeaderMappings has already renamed a
+		// synonym column like 'RETENTION TIME' to its canonical recognizedAs key, so the
+		// dict key here is 'AVERAGE RT(MIN)', not the original spreadsheet header text.
+		const jsonArray = [{ 'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X' }];
+		const mappings = [
+			{ header: 'RETENTION TIME', action: 'comment' as const, targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' }
+		];
+		expect(service.applyCommentMappings(jsonArray, mappings)).toEqual([
+			{ 'AVERAGE RT(MIN)': '6.23', 'METABOLITE NAME': 'X', '_extraComments': [{ header: 'RT', value: '6.23', isSubfield: true }] }
+		]);
 	});
 
 	// buildMspStringFromArray: Comments line merge
@@ -520,12 +561,42 @@ describe('BuildMspService', () => {
 			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM', 'NOTES'],
 			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7', 'Interesting peak']
 		];
-		const headerMappings = [
-			{ header: 'NOTES', action: 'comment' as const, targetKey: null, isSample: false }
-		];
+		// Start from the real auto-classification for every header, then override just NOTES
+		//  to "comment" (as a user would via the mapping panel), so the other 8 required
+		//  headers still carry their real mapping (and get renamed/validated correctly).
+		const headerMappings = service.classifyHeaders(arr[0]).map(mapping =>
+			mapping.header === 'NOTES' ? { ...mapping, action: 'comment' as const, targetKey: null } : mapping
+		);
 		service.buildMspFile(arr, 'test.csv', '', 'spreadsheet', headerMappings);
 		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
-		expect(mspString).toContain('Comments: NOTES: Interesting peak\n');
+		// AVERAGE RT(MIN) also auto-classifies to a Comments sub-field, so NOTES shares the line with RT=
+		expect(mspString).toContain('NOTES: Interesting peak');
+	});
+
+	// buildMspFile end-to-end: optional SMILES column
+
+	it('should pack a present SMILES column into Comments as a SMILES= sub-field', () => {
+		vi.spyOn(service, 'saveFile').mockImplementation(() => {});
+		const arr = [
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM', 'SMILES'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7', 'CN1C=C(C(=O)O)...']
+		];
+		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
+		expect(errorWarning).not.toContain('may be misspelled or missing');
+		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
+		expect(mspString).toContain('SMILES=CN1C=C(C(=O)O)...');
+	});
+
+	it('should not error when SMILES is absent (optional column)', () => {
+		vi.spyOn(service, 'saveFile').mockImplementation(() => {});
+		const arr = [
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7']
+		];
+		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
+		expect(errorWarning).not.toContain('may be misspelled or missing');
+		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
+		expect(mspString).not.toContain('SMILES');
 	});
 
 });

@@ -128,8 +128,8 @@ describe('ReadSpreadsheetComponent', () => {
 
 		expect(component.cachedMsmsArray).toEqual([['AVERAGE RT(MIN)', 'BATCH ID'], ['6.23', '3']]);
 		expect(component.headerMappings).toEqual([
-			{ header: 'AVERAGE RT(MIN)', action: 'map', targetKey: 'AVERAGE RT(MIN)', isSample: false },
-			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false }
+			{ header: 'AVERAGE RT(MIN)', action: 'comment', targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null }
 		]);
 	});
 
@@ -155,12 +155,12 @@ describe('ReadSpreadsheetComponent', () => {
 		);
 	});
 
-	it('should toggle showMappingPanel', () => {
-		expect(component.showMappingPanel).toBe(false);
-		component.showMappingPanelToggle();
+	it('should default showMappingPanel to expanded, and toggle it', () => {
 		expect(component.showMappingPanel).toBe(true);
 		component.showMappingPanelToggle();
 		expect(component.showMappingPanel).toBe(false);
+		component.showMappingPanelToggle();
+		expect(component.showMappingPanel).toBe(true);
 	});
 
 	it('should exclude sample-flagged headers from visibleHeaderMappings', () => {
@@ -327,7 +327,7 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.fileName).toBe('fileB.xlsx');
 		expect(component.cachedMsmsArray).toEqual([['METABOLITE NAME'], ['From File B']]);
 		expect(component.headerMappings).toEqual([
-			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false }
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'Name', isSample: false, recognizedAs: 'METABOLITE NAME' }
 		]);
 	});
 

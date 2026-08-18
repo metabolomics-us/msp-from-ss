@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
 import { _ } from 'underscore';
-import { HeaderMappingService, HeaderMapping } from '../header-mapping-service/header-mapping.service';
+import { HeaderMappingService, HeaderMapping, RecognizedHeader } from '../header-mapping-service/header-mapping.service';
 
 export type MspSourceFormat = 'spreadsheet' | 'msdial';
 
@@ -15,22 +15,43 @@ export class BuildMspService {
     duplicates: string[];
     possibleDuplicates: string[];
     vitalHeaders: string[];
+    // Drives auto-classification: each spreadsheet-side header's default action/output tag,
+    //  plus whether it's required for a valid upload.
+    recognizedHeaders: (RecognizedHeader & { required: boolean })[];
+    // The real MSP header-tag vocabulary offered in the "Maps to MSP Tag" dropdown
+    mspTags: string[];
 
 	constructor(private headerMappingService: HeaderMappingService) {
 		// Moving this here b/c Services can't use oninit
         this.resetErrors();
 		this.vitalHeaders = ['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE',
 		'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'];
+		this.recognizedHeaders = [
+			{ key: 'AVERAGE RT(MIN)', action: 'comment', targetKey: 'RT', required: true },
+			{ key: 'AVERAGE MZ', action: 'map', targetKey: 'ExactMass', required: true },
+			{ key: 'METABOLITE NAME', action: 'map', targetKey: 'Name', required: true },
+			{ key: 'ADDUCT TYPE', action: 'map', targetKey: 'Precursor_type', required: true },
+			{ key: 'FORMULA', action: 'map', targetKey: 'Formula', required: true },
+			{ key: 'INCHIKEY', action: 'map', targetKey: 'InChIKey', required: true },
+			{ key: 'MS1 SPECTRUM', action: 'ignore', targetKey: null, required: true },
+			{ key: 'MSMS SPECTRUM', action: 'map', targetKey: 'MSMS SPECTRUM', required: true },
+			{ key: 'SMILES', action: 'comment', targetKey: 'SMILES', required: false }
+		];
+		this.mspTags = ['Name', 'Synon', 'MW', 'Formula', 'ExactMass', 'CAS#', 'NIST#', 'DB#',
+		'Comment', 'Mods', 'InChIKey', 'RelativeArea', 'Precursor_type'];
     }
 
 
 	// Vital headers required for a given source format
 	//  MS-DIAL uploads don't require MS1 SPECTRUM: it's validated but never written into the .msp output
 	getRequiredHeaders(format: MspSourceFormat): string[] {
+		const required = this.recognizedHeaders
+			.filter(config => config.required)
+			.map(config => config.action === 'map' ? (config.targetKey as string) : config.key);
 		if (format === 'msdial') {
-			return this.vitalHeaders.filter(header => header !== 'MS1 SPECTRUM');
+			return required.filter(header => header !== 'MS1 SPECTRUM');
 		}
-		return this.vitalHeaders;
+		return required;
 	}
 
 
@@ -49,32 +70,46 @@ export class BuildMspService {
 		return normalized;
 	}
 
-	// Classify already-normalized headers against the full known-key list
+	// Classify already-normalized headers against the full recognized-header list
 	classifyHeaders(headers: string[]): HeaderMapping[] {
-		return this.headerMappingService.classify(headers, this.vitalHeaders);
+		return this.headerMappingService.classify(headers, this.recognizedHeaders);
 	}
 
 
-	// Rename headers with action "map" to their canonical targetKey; leave comment/ignore headers as-is
+	// Rename headers with action "map" to their targetKey (real MSP tag or pinned key);
+	//  a recognized comment/ignore header (e.g. a synonym like RETENTION TIME) is renamed to
+	//  its canonical recognizedAs key instead, so required-header validation still finds it.
+	//  An unrecognized header (no mapping match) is left as-is.
 	applyHeaderMappings(headers: string[], mappings: HeaderMapping[]): string[] {
 		return headers.map(header => {
 			const mapping = mappings.find(m => m.header === header);
-			return (mapping && mapping.action === 'map' && mapping.targetKey) ? mapping.targetKey : header;
+			if (!mapping) {
+				return header;
+			}
+			if (mapping.action === 'map' && mapping.targetKey) {
+				return mapping.targetKey;
+			}
+			return mapping.recognizedAs || header;
 		});
 	}
 
 
-	// Collect each comment-mapped header's per-row value into a row's _extraComments array
+	// Collect each comment-mapped header's per-row value into a row's _extraComments array.
+	//  A recognized header (targetKey set, e.g. RT/SMILES) is packed under its canonical
+	//  sub-field label with the real-MSP "key=value" convention; an arbitrary user-chosen
+	//  column (targetKey null) keeps the freeform "header: value" convention.
 	applyCommentMappings(jsonArray: any[], mappings: HeaderMapping[]): any[] {
 		const commentMappings = mappings.filter(m => m.action === 'comment');
 		if (commentMappings.length === 0) {
 			return jsonArray;
 		}
 		return jsonArray.map(entry => {
-			const extraComments: { header: string, value: string }[] = [];
+			const extraComments: { header: string, value: string, isSubfield: boolean }[] = [];
 			commentMappings.forEach(mapping => {
-				if (entry[mapping.header]) {
-					extraComments.push({ header: mapping.header, value: entry[mapping.header] });
+				const entryKey = mapping.recognizedAs || mapping.header;
+				if (entry[entryKey]) {
+					const label = mapping.targetKey || mapping.header;
+					extraComments.push({ header: label, value: entry[entryKey], isSubfield: !!mapping.targetKey });
 				}
 			});
 			return extraComments.length > 0 ? { ...entry, '_extraComments': extraComments } : entry;
@@ -149,20 +184,19 @@ export class BuildMspService {
 		dataArray.forEach((element: any) => {
 
             mspString +=
-            'Name: ' + (element['METABOLITE NAME'] || '') + '\n' +
-            'InChIKey: ' + (element['INCHIKEY'] || '') + '\n' +
-            'Precursor Type: ' + (element['ADDUCT TYPE'] || '') + '\n' +
-            'Precursor Mz: ' + (element['AVERAGE MZ'] || '') + '\n' +
-            'Retention Time: ' + (element['AVERAGE RT(MIN)'] || '') + '\n' +
-            'Formula: ' + (element['FORMULA'] || '') + '\n';
+            'Name: ' + (element['Name'] || '') + '\n' +
+            'InChIKey: ' + (element['InChIKey'] || '') + '\n' +
+            'Precursor_type: ' + (element['Precursor_type'] || '') + '\n' +
+            'ExactMass: ' + (element['ExactMass'] || '') + '\n' +
+            'Formula: ' + (element['Formula'] || '') + '\n';
 
             const commentParts: string[] = [];
             if (mspNotes) {
                 commentParts.push(mspNotes);
             }
             if (element['_extraComments']) {
-                element['_extraComments'].forEach((comment: { header: string, value: string }) => {
-                    commentParts.push(comment.header + ': ' + comment.value);
+                element['_extraComments'].forEach((comment: { header: string, value: string, isSubfield?: boolean }) => {
+                    commentParts.push(comment.isSubfield ? comment.header + '=' + comment.value : comment.header + ': ' + comment.value);
                 });
             }
             if (commentParts.length > 0) {
@@ -209,11 +243,11 @@ export class BuildMspService {
 
         // Compare attributes that indicate duplicates may have been entered
         //  Turn entries into strings for easy comparison
-        let stringsArray = jsonArray.map(x => JSON.stringify([x['AVERAGE RT(MIN)'], x['AVERAGE MZ'], x['MSMS SPECTRUM']]));
+        let stringsArray = jsonArray.map(x => JSON.stringify([x['AVERAGE RT(MIN)'], x['ExactMass'], x['MSMS SPECTRUM']]));
         stringsArray = this.processText(stringsArray);
         // Create array of connectivity hashes from InChiKey (i.e. first section of InChiKey)
         //  If these are the same for two entries, they may be duplicates
-        let firstHashArray = jsonArray.map(x => x['INCHIKEY']);
+        let firstHashArray = jsonArray.map(x => x['InChIKey']);
         firstHashArray = this.processText(firstHashArray);
 
         // Track the first index at which each string/hash was seen, for O(1) lookups instead of O(n) indexOf
@@ -228,9 +262,9 @@ export class BuildMspService {
                 firstSeenString.set(key, i);
                 cleanedArray.push(jsonArray[i]);
                 const hash = firstHashArray[i];
-                // Skip the connectivity-hash comparison when INCHIKEY is missing (processText
+                // Skip the connectivity-hash comparison when InChIKey is missing (processText
                 // turns a missing value into the literal string 'UNDEFINED') — otherwise every
-                // row lacking an INCHIKEY collapses into one meaningless "possible duplicate" bucket
+                // row lacking an InChIKey collapses into one meaningless "possible duplicate" bucket
                 if (hash !== 'UNDEFINED') {
                     // Check for possible duplicates; mark them, don't remove them
                     if (firstSeenHash.has(hash)) {
@@ -374,7 +408,7 @@ export class BuildMspService {
 				// Turn array into a string
 				const mspString = this.buildMspStringFromArray(msmsJsonArray, notes);
 				// User will be prompted to save a .msp for their data
-                this.saveFile(mspString, fileName.split('.')[0] + '.txt');
+                this.saveFile(mspString, fileName.split('.')[0] + '.msp');
 			}
 		} else {
             this.errorWarning = 'Error: column headers not found';
