@@ -268,3 +268,14 @@ mat-toolbar.app-navbar {
 	border-radius: 999px;
 	background: color-mix(in srgb, var(--mat-sys-tertiary) 12%, transparent);
 }
+
+// Qualified with the `mat-icon` element to out-specificity Material's own
+// `.mat-icon { display: inline-block; ... }` rule. The browser's native
+// `[hidden] { display: none }` UA-stylesheet rule has the same specificity as
+// `.mat-icon` (0,1,0), and Material's author-stylesheet rule is loaded after
+// the UA stylesheet, so it wins the cascade tie and `[hidden]` silently stops
+// hiding any `<mat-icon>` — same mechanism as Task 6c's navbar bug. This
+// selector's specificity (0,1,1) unconditionally beats `.mat-icon`'s.
+mat-icon[hidden] {
+	display: none;
+}
