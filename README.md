@@ -13,7 +13,23 @@ Build .msp files from spreadsheets of mass spectrometry data, or from a MS-DIAL 
 - MS1 spectrum
 - MSMS spectrum
 
+An optional `SMILES` column (matched case-insensitively) is packed into the output's `Comments:` line as a `SMILES=` sub-field when present; its absence is not an error.
+
 Rows with no MS/MS spectrum are skipped for both upload types — they're silently dropped, not written out with a blank `Num Peaks:` line.
+
+Each uploaded column is auto-classified against the real MSP tags below, shown for review/override in the "Maps to MSP Tag" panel:
+
+| Spreadsheet column | MSP output |
+| --- | --- |
+| Metabolite name | `Name:` |
+| Formula | `Formula:` |
+| INCHIKEY | `InChIKey:` |
+| Average Mz | `ExactMass:` |
+| Adduct type | `Precursor_type:` |
+| Average Rt(min) | `Comments:` sub-field `RT=` |
+| SMILES (optional) | `Comments:` sub-field `SMILES=` |
+| MS1 spectrum | validated on input, never written to output |
+| MSMS spectrum | drives `Num Peaks:` and the peak list |
 
 **MS-DIAL AlignmentResult upload** (.txt): MS-DIAL's own column names are used directly (`MS/MS spectrum`, etc.); `MS1 isotopic spectrum` isn't used. Rows with an unidentified ("Unknown") metabolite name are kept as long as they have a spectrum.
 
@@ -37,6 +53,7 @@ The `.msp` format is a NIST/Mascot spectral-library text format: one block per s
 - `Mods:` — peptide modification list (position/residue/name)
 - `InChIKey:` — structure identifier
 - `RelativeArea:` — relative peak-area weighting (GC-library variant)
+- `Precursor_type:` — adduct/ionization type (e.g. `[M+H]+`)
 
 **Peak list**
 
