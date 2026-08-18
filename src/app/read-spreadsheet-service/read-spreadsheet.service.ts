@@ -23,7 +23,10 @@ export class ReadSpreadsheetService {
                 //  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows
                 //  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long
                 let msmsArray: string[][];
-                const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
+                // An empty sheet has no '!ref' range; fall back to a single-cell range so
+                // decode_range still returns a valid (empty) range instead of throwing.
+                const sheetRef = wb.Sheets[wb.SheetNames[0]]['!ref'] ?? 'A1';
+                const range = XLSX.utils.decode_range(sheetRef);
                 const numRows = range.e.r;
 
                 if (numRows < 10000) {

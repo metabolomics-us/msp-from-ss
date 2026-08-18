@@ -22,30 +22,30 @@ import { timeout, take } from 'rxjs/operators';
 
 export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     
-    submitValid: boolean;
-    parsing: boolean;
-    files: FileList;
-    fileName: string;
-    fileNameText: string;
-    parseSubscription: Subscription;
-    cachedMsmsArray: string[][] | null;
-    headerMappings: HeaderMapping[];
-    visibleHeaderMappings: HeaderMapping[];
-    currentFormat: MspSourceFormat;
-    targetInput: HTMLInputElement;
+    submitValid = false;
+    parsing = false;
+    files: FileList | null = null;
+    fileName = '';
+    fileNameText = 'Click \'Browse\' to choose a spreadsheet';
+    parseSubscription?: Subscription;
+    cachedMsmsArray: string[][] | null = null;
+    headerMappings: HeaderMapping[] = [];
+    visibleHeaderMappings: HeaderMapping[] = [];
+    currentFormat: MspSourceFormat = 'spreadsheet';
+    targetInput: HTMLInputElement | null = null;
 
-    showCorrect: boolean;
-    showWrong: boolean;
-    showErrorBox: boolean;
-    showErrorFile: boolean;
-    showNotes: boolean;
-    showMappingPanel: boolean;
-    mspKeys: string[];
+    showCorrect = false;
+    showWrong = false;
+    showErrorBox = false;
+    showErrorFile = false;
+    showNotes = false;
+    showMappingPanel = true;
+    mspKeys: string[] = [];
 
-    errorText: string;
+    errorText = '';
 
-    notesText: string;
-    placeHolderText: string;
+    notesText = '';
+    placeHolderText = '';
     
     private readonly readSpreadsheetService = inject(ReadSpreadsheetService);
     private readonly downloadFileService = inject(DownloadFileService);
@@ -120,15 +120,16 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 	// Called when user selects spreadsheet to be turned into a .msp
 	fileSelected(changeEvent: Event) {
         this.targetInput = changeEvent.target as HTMLInputElement;
+        const inputFiles = this.targetInput.files;
 
-        if (this.targetInput.files.length > 0) {
+        if (inputFiles && inputFiles.length > 0) {
             // Store selected file
-            this.fileName = this.targetInput.files[0].name;
+            this.fileName = inputFiles[0].name;
             this.fileNameText = this.fileName;
 
             // Check for proper file type
             if (/\.(xlsx|csv|xls|ods|numbers|txt)$/g.test(this.fileNameText)) {
-                this.files = this.targetInput.files;
+                this.files = inputFiles;
                 // Submit button can now be clicked
                 this.submitValid = true;
                 this.updateErrorText('', false);
@@ -150,6 +151,11 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 	// Eagerly parse the selected file so the mapping panel has real headers before Submit
 	parseSelectedFile() {
+        // Only called from fileSelected() right after this.files is set to a real FileList
+        if (!this.files) {
+            return;
+        }
+
         // Cancel any still-in-flight parse from a previous file selection so its (now-stale)
         // result can never land after this selection's result and overwrite it (I1).
         if (this.parseSubscription) {
@@ -203,7 +209,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
             this.showCorrectImage(false);
         }
         this.submitValid = false;
-        this.targetInput.value = null;
+        this.targetInput!.value = '';
     }
 
 

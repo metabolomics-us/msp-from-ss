@@ -30,10 +30,10 @@ export class BuildMspService {
 
 	private readonly headerMappingService = inject(HeaderMappingService);
 
-    errorWarning: string;
-    missingData: string[];
-    duplicates: string[];
-    possibleDuplicates: string[];
+    errorWarning = '';
+    missingData: string[] = [];
+    duplicates: string[] = [];
+    possibleDuplicates: string[] = [];
     vitalHeaders: string[];
     // Drives auto-classification: each spreadsheet-side header's default action/output tag,
     //  plus whether it's required for a valid upload.
@@ -265,8 +265,7 @@ export class BuildMspService {
         stringsArray = this.processText(stringsArray);
         // Create array of connectivity hashes from InChiKey (i.e. first section of InChiKey)
         //  If these are the same for two entries, they may be duplicates
-        let firstHashArray = jsonArray.map(x => x['InChIKey']);
-        firstHashArray = this.processText(firstHashArray);
+        const firstHashArray: string[] = this.processText(jsonArray.map(x => x['InChIKey']));
 
         // Track the first index at which each string/hash was seen, for O(1) lookups instead of O(n) indexOf
         const firstSeenString = new Map<string, number>();
@@ -275,8 +274,9 @@ export class BuildMspService {
         const cleanedArray: MspJsonRow[] = [];
         for (let i = 0; i < stringsArray.length; i++) {
             const key = stringsArray[i];
+            const firstStringIndex = firstSeenString.get(key);
             // Check for likely duplicates
-            if (!firstSeenString.has(key)) {
+            if (firstStringIndex === undefined) {
                 firstSeenString.set(key, i);
                 cleanedArray.push(jsonArray[i]);
                 const hash = firstHashArray[i];
@@ -285,14 +285,15 @@ export class BuildMspService {
                 // row lacking an InChIKey collapses into one meaningless "possible duplicate" bucket
                 if (hash !== 'UNDEFINED') {
                     // Check for possible duplicates; mark them, don't remove them
-                    if (firstSeenHash.has(hash)) {
-                        this.possibleDuplicates.push(String(firstSeenHash.get(hash) + correctionFactor) + ' & ' + String(i + correctionFactor))
+                    const firstHashIndex = firstSeenHash.get(hash);
+                    if (firstHashIndex !== undefined) {
+                        this.possibleDuplicates.push(String(firstHashIndex + correctionFactor) + ' & ' + String(i + correctionFactor))
                     } else {
                         firstSeenHash.set(hash, i);
                     }
                 }
             } else {
-                this.duplicates.push(String(firstSeenString.get(key) + correctionFactor) + ' & ' + String(i + correctionFactor));
+                this.duplicates.push(String(firstStringIndex + correctionFactor) + ' & ' + String(i + correctionFactor));
             }
 
         }
@@ -342,7 +343,10 @@ export class BuildMspService {
 
 
 	// Remove extraneous whitespace and convert all values to uppercase in an array
-	processText(headers: string[]): string[] {
+	//  Accepts undefined entries (e.g. a row missing an optional column like InChIKey) and
+	//  stringifies them via String(x), which intentionally turns a missing value into the
+	//  literal text 'UNDEFINED' rather than an empty string — callers rely on that sentinel.
+	processText(headers: (string | undefined)[]): string[] {
 		return headers.map(x => String(x).trim().toUpperCase());
 	}
 
@@ -370,20 +374,24 @@ export class BuildMspService {
     
 
     // Create .msp file from a 2x2 array of data
-	buildMspFile(msmsArray: string[][], fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet', headerMappings?: HeaderMapping[]): string {
+	//  msmsArray accepts null so callers that guard on a possibly-null cached array
+	//  (e.g. ReadSpreadsheetComponent.cachedMsmsArray) don't need a non-null assertion;
+	//  a null/empty array is treated as "no header row found", same as any other malformed input.
+	buildMspFile(msmsArray: string[][] | null, fileName: string, notes: string, format: MspSourceFormat = 'spreadsheet', headerMappings?: HeaderMapping[]): string {
 
 		// Reset the error text
         this.resetErrors();
 
+        const rows = msmsArray || [];
         const requiredHeaders = this.getRequiredHeaders(format);
-		const headerPosition = this.getHeaderPosition(msmsArray);
+		const headerPosition = this.getHeaderPosition(rows);
 
 		if (headerPosition < 0) {
 			this.errorWarning = 'Error: column headers not found';
 			return this.errorWarning;
 		}
 
-		const headers = this.normalizeHeaderRow(msmsArray[headerPosition], format);
+		const headers = this.normalizeHeaderRow(rows[headerPosition], format);
 		const mappings = headerMappings || this.classifyHeaders(headers);
 		const mappedHeaders = this.applyHeaderMappings(headers, mappings);
 
@@ -391,7 +399,7 @@ export class BuildMspService {
 			return this.errorWarning;
 		}
 
-		const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
+		const data = rows.slice(headerPosition + 1, rows.length);
 		let msmsJsonArray: MspJsonRow[] = this.buildJsonArray(mappedHeaders, data);
 
 		// Collect comment-mapped columns' values before removeAttributes strips the originals
