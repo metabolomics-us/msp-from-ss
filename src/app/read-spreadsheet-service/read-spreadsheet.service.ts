@@ -8,9 +8,10 @@ import { Observable } from 'rxjs';
 export class ReadSpreadsheetService {
 
 	// Return observable where excel file is converted into 2x2 array that can be used by the subscriber
-	readXlsx(sheetData: FileList): Observable<any> {
+	//  Same array shape as readAlignmentResultTxt() produces, so the rest of the pipeline is shared
+	readXlsx(sheetData: FileList): Observable<string[][]> {
 
-		return new Observable(subscriber => {
+		return new Observable<string[][]>(subscriber => {
 			const reader = new FileReader();
 			// Create callback function for when the excel file has been loaded by the FileReader()
 			reader.addEventListener('load', (loadEvent) => {
@@ -19,9 +20,9 @@ export class ReadSpreadsheetService {
                 const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
 
                 // Make sure the length of the array is appropriate
-                //  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows 
-                //  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long 
-                let msmsArray: any[][];
+                //  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows
+                //  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long
+                let msmsArray: string[][];
                 const range = XLSX.utils.decode_range(wb.Sheets[wb.SheetNames[0]]['!ref']);
                 const numRows = range.e.r;
 

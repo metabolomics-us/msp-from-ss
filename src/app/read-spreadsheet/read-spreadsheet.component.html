@@ -30,11 +30,11 @@
             <!-- Hence whey there are both underscores and dashes -->
             <p>
                 See a full spreadsheet with highlighted columns
-                <a name="example_spreadsheet_large-xlsx" (click)="downloadExample($event)">here</a>.<br>
+                <a name="example_spreadsheet_large-xlsx" tabindex="0" (click)="downloadExample($event)" (keydown.enter)="downloadExample($event)">here</a>.<br>
                 See a spreadsheet with only the necessary columns
-                <a name="example_spreadsheet_small-xlsx" (click)="downloadExample($event)">here</a>.<br>
+                <a name="example_spreadsheet_small-xlsx" tabindex="0" (click)="downloadExample($event)" (keydown.enter)="downloadExample($event)">here</a>.<br>
                 See a resulting .msp file
-                <a name="example_msp-txt" (click)="downloadExample($event)">here</a>.
+                <a name="example_msp-txt" tabindex="0" (click)="downloadExample($event)" (keydown.enter)="downloadExample($event)">here</a>.
             </p>
         </mat-card-content>
     </mat-card>
@@ -76,15 +76,18 @@
                     <ng-container matColumnDef="tag">
                         <th mat-header-cell *matHeaderCellDef>Maps to MSP Tag</th>
                         <td mat-cell *matCellDef="let mapping">
-                            <span *ngIf="mapping.recognizedAs === 'MSMS SPECTRUM'; else mappingSelect" class="rs-mapping-table__fixed-label">Mapped as list of peaks</span>
-                            <ng-template #mappingSelect>
+                            @if (mapping.recognizedAs === 'MSMS SPECTRUM') {
+                                <span class="rs-mapping-table__fixed-label">Mapped as list of peaks</span>
+                            } @else {
                                 <mat-select [value]="mapping.action === 'map' ? mapping.targetKey : mapping.action"
                                             (selectionChange)="updateMapping(mapping, $event.value)">
                                     <mat-option value="ignore">Ignore</mat-option>
                                     <mat-option value="comment">Add as comment</mat-option>
-                                    <mat-option *ngFor="let key of mspKeys" [value]="key">{{ key }}</mat-option>
+                                    @for (key of mspKeys; track key) {
+                                        <mat-option [value]="key">{{ key }}</mat-option>
+                                    }
                                 </mat-select>
-                            </ng-template>
+                            }
                         </td>
                     </ng-container>
                     <tr mat-header-row *matHeaderRowDef="['header', 'tag']"></tr>
@@ -127,7 +130,9 @@
     </mat-card>
 </div>
 
-<div id="loading-overlay" class="rs-loading-overlay" *ngIf="parsing">
-    <mat-spinner diameter="60"></mat-spinner>
-    <p class="rs-loading-overlay__text">Working...</p>
-</div>
+@if (parsing) {
+    <div id="loading-overlay" class="rs-loading-overlay">
+        <mat-spinner diameter="60"></mat-spinner>
+        <p class="rs-loading-overlay__text">Working...</p>
+    </div>
+}

@@ -24,7 +24,7 @@ export class HeaderMappingService {
 	private readonly sampleColumnPattern = /^SAMPLE[\s_-]*\d+$/;
 	private readonly mxColumnPattern = /_MX\d+_/;
 
-	private readonly synonyms: { [key: string]: string[] } = {
+	private readonly synonyms: Record<string, string[]> = {
 		'METABOLITE NAME': ['NAME', 'COMPOUND NAME', 'COMPOUND'],
 		'ADDUCT TYPE': ['ADDUCT', 'PRECURSOR TYPE', 'ION TYPE'],
 		'AVERAGE MZ': ['MZ', 'PRECURSOR MZ', 'M/Z'],

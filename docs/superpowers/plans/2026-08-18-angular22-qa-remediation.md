@@ -845,51 +845,45 @@ git add -A
 git commit -m "refactor: move example-file name decoding into DownloadFileService"
 ```
 
-### Task 23: Add `MspRow` typing to the core data pipeline (Q8)
+### Task 23: Add named-field type safety to the core data pipeline (Q8)
+
+**Superseded by Task 18 — narrowed in scope.** Task 18 (Phase 3, ESLint cleanup) already eliminated every `any`/`any[]` in this file's row-shaped methods while fixing `@typescript-eslint/no-explicit-any` violations: it introduced `export type MspJsonRow = Record<string, string> & { _extraComments?: MspExtraComment[] };` and threaded it through `applyCommentMappings`, `removeRowsWithoutSpectrum`, `removeAttributes`, `removeDuplicates`, `buildJsonArray`, `collectMissingData`, and `buildMspStringFromArray` — exactly the methods this task originally targeted. Re-doing that work under a second, differently-named type (`MspRow`) would leave two parallel, conflicting row types in the same file.
+
+What Task 18's `MspJsonRow` does NOT yet provide, and what's left of Q8's original intent: `Record<string, string>` accepts *any* string key, so a typo'd field name (`entry['Formuula']`) still compiles cleanly — there's no compile-time guard against a typo on one of the handful of well-known output fields. This narrower task adds that, without introducing a second type.
 
 **Files:** Modify `src/app/build-msp-service/build-msp.service.ts`
 
-- [ ] **Step 1: Define the interface**
+- [ ] **Step 1: Add named optional fields to the existing `MspJsonRow` type**
 
-At the top of `build-msp.service.ts`, after the existing type exports, add:
+Find the existing type (added by Task 18):
 ```typescript
-export interface MspRow {
+export type MspJsonRow = Record<string, string> & { _extraComments?: MspExtraComment[] };
+```
+Change it to name the fields `buildMspStringFromArray` reads by bracket notation, while keeping the index signature for the rest (spreadsheet-header pass-through columns like `'AVERAGE RT(MIN)'`, `'MSMS SPECTRUM'`, etc., which have no fixed vocabulary):
+```typescript
+export type MspJsonRow = Record<string, string> & {
 	Name?: string;
 	InChIKey?: string;
 	Precursor_type?: string;
 	ExactMass?: string;
 	Formula?: string;
-	'MSMS SPECTRUM'?: string;
-	_extraComments?: { header: string, value: string, isSubfield?: boolean }[];
-	[key: string]: unknown;
-}
+	_extraComments?: MspExtraComment[];
+};
 ```
 
-- [ ] **Step 2: Thread it through the row-shaped methods' signatures**
-
-Replace `any[]`/`any` with `MspRow[]`/`MspRow` in these method signatures only (leave their bodies untouched — this is a pure typing pass, not a logic change):
-- `applyCommentMappings(jsonArray: MspRow[], mappings: HeaderMapping[]): MspRow[]`
-- `removeRowsWithoutSpectrum(jsonArray: MspRow[]): MspRow[]`
-- `removeAttributes(jsonArray: MspRow[], requiredHeaders: string[] = this.vitalHeaders): MspRow[]`
-- `removeDuplicates(jsonArray: MspRow[], correctionFactor: number): MspRow[]`
-- `buildJsonArray(headers: string[], data: string[][]): MspRow[]` (the `dict: any` local variable inside it becomes `dict: MspRow`, `arr: any` becomes `arr: MspRow[] = []`)
-- `collectMissingData(jsonArray: MspRow[], correctionFactor: number, requiredHeaders: string[] = this.vitalHeaders): void`
-- `buildMspStringFromArray(dataArray: MspRow[], mspNotes: string): string` (the `element: any` in the `forEach` becomes `element: MspRow`)
-- `buildMspFile`'s local variable `let msmsJsonArray = this.buildJsonArray(...)` gets its explicit type: `let msmsJsonArray: MspRow[] = this.buildJsonArray(...)`
-
-- [ ] **Step 3: Verify**
+- [ ] **Step 2: Verify**
 
 Run: `npm run build`
-Expected: PASS. If a type error surfaces (e.g. an index-signature narrowing issue), the interface's `[key: string]: unknown;` index signature should cover pass-through columns like `'AVERAGE RT(MIN)'` — if TypeScript still complains about a specific known field being accessed with bracket notation, add that field to the interface explicitly rather than loosening the index signature to `any`.
+Expected: PASS — this is a strictly additive narrowing (named optional properties on top of an existing index signature), so nothing that previously compiled should now fail. If TypeScript reports a conflict between an index signature and a named property's type (it shouldn't, since both are `string`-compatible here), keep the index signature as the source of truth and drop the conflicting named field rather than loosening anything to `any`.
 
 Run: `npm test`
-Expected: PASS, unchanged results (this task changes types only, never runtime logic)
+Expected: PASS, unchanged results (types only, never runtime logic)
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add src/app/build-msp-service/build-msp.service.ts
-git commit -m "refactor: type the core row-transformation pipeline with MspRow instead of any"
+git commit -m "refactor: add named-field type safety to MspJsonRow for known output columns"
 ```
 
 ### Task 24: Flatten `buildMspFile`'s nested conditionals (Q9)
@@ -928,7 +922,7 @@ Replace the entire `buildMspFile` method with an early-return version that prese
 		}
 
 		const data = msmsArray.slice(headerPosition + 1, msmsArray.length);
-		let msmsJsonArray: MspRow[] = this.buildJsonArray(mappedHeaders, data);
+		let msmsJsonArray: MspJsonRow[] = this.buildJsonArray(mappedHeaders, data);
 
 		// Collect comment-mapped columns' values before removeAttributes strips the originals
 		msmsJsonArray = this.applyCommentMappings(msmsJsonArray, mappings);
@@ -1314,7 +1308,7 @@ import { Subscription } from 'rxjs';
 import { timeout, take } from 'rxjs/operators';
 
 @Component({
-    selector: 'read-spreadsheet',
+    selector: 'app-read-spreadsheet',
     templateUrl: 'read-spreadsheet.component.html',
     styleUrls: ['read-spreadsheet.component.css'],
     changeDetection: ChangeDetectionStrategy.Eager,
@@ -1377,10 +1371,10 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 // `matRowDefColumns`) that don't resolve without its full module
 // dependency tree, producing NG0303 console errors in every test that
 // merely renders AppComponent's shell. This stub keeps the
-// `<read-spreadsheet>` tag in AppComponent's template resolvable without
+// `<app-read-spreadsheet>` tag in AppComponent's template resolvable without
 // pulling in that dependency tree.
 @Component({
-	selector: 'read-spreadsheet',
+	selector: 'app-read-spreadsheet',
 	template: '',
 	standalone: false
 })
