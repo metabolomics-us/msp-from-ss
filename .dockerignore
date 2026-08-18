@@ -1,0 +1,8 @@
+node_modules
+dist
+.git
+.angular
+e2e
+docker/.keys
+docker/.env
+*.log

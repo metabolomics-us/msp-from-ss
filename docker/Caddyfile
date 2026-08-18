@@ -1,0 +1,4 @@
+{$DOMAIN} {
+    email {$EMAIL}
+    reverse_proxy web:80
+}
