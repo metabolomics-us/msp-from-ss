@@ -15,10 +15,6 @@ module.exports = defineConfig([
     ],
     processor: angular.processInlineTemplates,
     rules: {
-      // Empty arrow functions are the idiomatic no-op stub for vi.spyOn(...).mockImplementation(() => {})
-      // in this codebase's tests (suppressing a real side effect, e.g. file download, during a test run).
-      // Named/method empty functions elsewhere are still flagged.
-      "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
       "@angular-eslint/directive-selector": [
         "error",
         {
@@ -35,6 +31,15 @@ module.exports = defineConfig([
           style: "kebab-case",
         },
       ],
+    },
+  },
+  {
+    files: ["**/*.spec.ts"],
+    rules: {
+      // Empty arrow functions are the idiomatic no-op stub for vi.spyOn(...).mockImplementation(() => {})
+      // in this codebase's tests (suppressing a real side effect, e.g. file download, during a test run).
+      // Scoped to spec files only: production code still has empty arrow functions flagged.
+      "@typescript-eslint/no-empty-function": ["error", { allow: ["arrowFunctions"] }],
     },
   },
   {
