@@ -22,7 +22,6 @@
     "@angular/platform-browser-dynamic": "^22.1.2",
     "@angular/router": "^22.1.2",
     "file-saver": "^2.0.2",
-    "fs": "0.0.1-security",
     "rxjs": "^7.8.2",
     "tslib": "^2.0.0",
     "xlsx": "npm:@e965/xlsx@^0.20.3",
