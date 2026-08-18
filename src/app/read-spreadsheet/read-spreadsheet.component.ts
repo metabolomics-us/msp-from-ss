@@ -1,4 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
 
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
@@ -14,10 +22,13 @@ import { timeout, take } from 'rxjs/operators';
     styleUrls: ['read-spreadsheet.component.css'],
     // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
     // this component and its tests (TestBed.inject) share the same singleton instance
-    // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- app is NgModule-based with mutable state read across change cycles; switching to OnPush needs its own verification pass
+    // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- app has mutable state read across change cycles; switching to OnPush needs its own verification pass
     changeDetection: ChangeDetectionStrategy.Eager,
-    // eslint-disable-next-line @angular-eslint/prefer-standalone -- whole app is NgModule-based (AppModule/bootstrapModule); converting to standalone is a dedicated migration, not part of this ESLint setup task
-    standalone: false
+    standalone: true,
+    imports: [
+        MatButtonModule, MatSelectModule, MatCardModule, MatIconModule,
+        MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, MatTableModule
+    ]
 })
 
 export class ReadSpreadsheetComponent implements OnInit, OnDestroy {

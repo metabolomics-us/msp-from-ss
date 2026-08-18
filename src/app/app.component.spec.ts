@@ -1,23 +1,6 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AppComponent } from './app.component';
-import { MatToolbarModule } from '@angular/material/toolbar';
-
-// Stub for ReadSpreadsheetComponent: the real component's template binds
-// `mat-table` directives (`dataSource`, `matHeaderRowDef`,
-// `matRowDefColumns`) that don't resolve without its full module
-// dependency tree, producing NG0303 console errors in every test that
-// merely renders AppComponent's shell. This stub keeps the
-// `<app-read-spreadsheet>` tag in AppComponent's template resolvable without
-// pulling in that dependency tree.
-@Component({
-	selector: 'app-read-spreadsheet',
-	template: '',
-	// eslint-disable-next-line @angular-eslint/prefer-standalone -- mirrors the real (NgModule-based) component; converting is a dedicated migration, not part of this ESLint setup task
-	standalone: false
-})
-class ReadSpreadsheetStubComponent {}
 
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
@@ -25,13 +8,7 @@ describe('AppComponent', () => {
 
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
-			imports: [
-				RouterTestingModule, MatToolbarModule
-			],
-			declarations: [
-				AppComponent, ReadSpreadsheetStubComponent
-			],
-			schemas: [CUSTOM_ELEMENTS_SCHEMA]
+			imports: [AppComponent, NoopAnimationsModule]
 		}).compileComponents();
 	}));
 
