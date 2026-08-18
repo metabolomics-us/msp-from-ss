@@ -1,19 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { MatSelectHarness } from '@angular/material/select/testing';
-// Doesn't seem to fix problem of Template parse errors
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatTableModule } from '@angular/material/table';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
@@ -25,15 +13,9 @@ describe('ReadSpreadsheetComponent', () => {
 
 	beforeEach(waitForAsync(() => {
 		TestBed.configureTestingModule({
-        declarations: [ ReadSpreadsheetComponent ],
-        imports: [
-			CommonModule, FormsModule, NoopAnimationsModule,
-			MatButtonModule, MatSelectModule, MatCardModule, MatIconModule,
-			MatProgressSpinnerModule, MatFormFieldModule, MatInputModule, MatTableModule
-		],
-		schemas: [CUSTOM_ELEMENTS_SCHEMA]
-	})
-	.compileComponents(); }));
+			imports: [ReadSpreadsheetComponent, NoopAnimationsModule]
+		})
+		.compileComponents(); }));
 
 	beforeEach(() => {
 		fixture = TestBed.createComponent(ReadSpreadsheetComponent);
