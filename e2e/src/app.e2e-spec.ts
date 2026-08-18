@@ -38,7 +38,7 @@ test.describe('workspace-project App', () => {
         expect(await page.elementExists('instructions')).toBe(true);
         expect(await page.elementExists('examples')).toBe(true);
         expect(await page.elementExists('file-name-text')).toBe(true);
-        expect(await page.getTitleText()).toEqual('MSP Creator');
+        expect(await page.getTitleText()).toEqual('MSP CREATOR');
     });
 
     test('should have interaction elements', async () => {

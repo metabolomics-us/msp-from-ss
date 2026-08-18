@@ -308,21 +308,19 @@ mat-toolbar.app-navbar {
 
 .app-navbar__brand {
 	color: var(--mat-sys-on-primary);
-	font-weight: 700;
-	font-size: 1.75rem;
-	letter-spacing: 0.01em;
+	font-weight: 900;
+	font-size: 1.95rem;
+    text-transform: uppercase;
 	margin: 0;
 }
 
 .app-navbar__badge {
 	border: 1px solid var(--mat-sys-tertiary);
 	color: var(--mat-sys-on-primary);
-	font-weight: 600;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
+	font-weight: lighter;
 	padding: 4px 10px;
 	border-radius: 999px;
-	background: color-mix(in srgb, var(--mat-sys-tertiary) 12%, transparent);
+	background: color-mix(in srgb, var(--mat-sys-tertiary) 30%, transparent);
 }
 
 // Qualified with the `mat-icon` element to out-specificity Material's own
