@@ -56,3 +56,7 @@ Thumbs.db
 # Dev server pid/log (dev-start.sh / dev-stop.sh)
 /.dev.pid
 /.dev.log
+
+# Docker/Lightsail deployment secrets
+/docker/.env
+/docker/.keys/
