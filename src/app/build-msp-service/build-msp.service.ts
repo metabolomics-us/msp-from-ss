@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { saveAs } from 'file-saver';
-import { _ } from 'underscore';
+import _ from 'underscore';
 import { HeaderMappingService, HeaderMapping, RecognizedHeader } from '../header-mapping-service/header-mapping.service';
 
 export type MspSourceFormat = 'spreadsheet' | 'msdial';
