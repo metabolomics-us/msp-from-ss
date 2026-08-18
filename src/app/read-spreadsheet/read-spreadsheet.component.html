@@ -104,7 +104,7 @@
                 </button>
                 <input #fileInput id="file-input" type="file" hidden (change)="fileSelected($event)">
             </span>
-            <button id="submit" mat-raised-button color="primary" [disabled]="!submitValid || parsing" (click)="readFile()">
+            <button id="submit" mat-flat-button color="primary" [disabled]="!submitValid || parsing" (click)="readFile()">
                 <mat-icon>check_circle</mat-icon>
                 Submit
             </button>

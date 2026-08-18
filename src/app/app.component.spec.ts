@@ -1,10 +1,22 @@
+import { Component, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
-import { ReadSpreadsheetComponent } from './read-spreadsheet/read-spreadsheet.component';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
-import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+// Stub for ReadSpreadsheetComponent: the real component's template binds
+// `mat-table` directives (`dataSource`, `matHeaderRowDef`,
+// `matRowDefColumns`) that don't resolve without its full module
+// dependency tree, producing NG0303 console errors in every test that
+// merely renders AppComponent's shell. This stub keeps the
+// `<read-spreadsheet>` tag in AppComponent's template resolvable without
+// pulling in that dependency tree.
+@Component({
+	selector: 'read-spreadsheet',
+	template: '',
+	standalone: false
+})
+class ReadSpreadsheetStubComponent {}
 
 describe('AppComponent', () => {
 	let fixture: ComponentFixture<AppComponent>;
@@ -16,7 +28,7 @@ describe('AppComponent', () => {
 				RouterTestingModule, MatToolbarModule
 			],
 			declarations: [
-				AppComponent, ReadSpreadsheetComponent
+				AppComponent, ReadSpreadsheetStubComponent
 			],
 			schemas: [CUSTOM_ELEMENTS_SCHEMA]
 		}).compileComponents();
@@ -25,9 +37,17 @@ describe('AppComponent', () => {
 	beforeEach(() => {
 		fixture = TestBed.createComponent(AppComponent);
 		component = fixture.debugElement.componentInstance;
+		fixture.detectChanges();
 	});
 
 	it('should create the app', () => {
 		expect(component).toBeTruthy();
+	});
+
+	it('should render the migrated navbar', () => {
+		const compiled = fixture.nativeElement as HTMLElement;
+		expect(compiled.querySelector('mat-toolbar.app-navbar')).toBeTruthy();
+		expect(compiled.querySelector('.app-navbar__brand')?.textContent?.trim())
+			.toBe('MSP Creator');
 	});
 });
