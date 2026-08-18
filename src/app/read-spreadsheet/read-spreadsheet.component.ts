@@ -41,7 +41,6 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     mspKeys: string[];
 
     errorText: string;
-    // form: FormGroup;
 
     notesText: string;
     placeHolderText: string;
@@ -80,7 +79,7 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
 
 
     getTextFromTextArea(changeEvent: Event) {
-        const textArea = changeEvent.srcElement as HTMLInputElement;
+        const textArea = changeEvent.target as HTMLInputElement;
         this.notesText = textArea.value;
     }
 

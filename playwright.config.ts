@@ -7,12 +7,12 @@ export default defineConfig({
     retries: process.env.CI ? 2 : 0,
     reporter: 'list',
     use: {
-        baseURL: 'http://localhost:4200',
+        baseURL: 'http://localhost:4300',
         trace: 'on-first-retry',
     },
     webServer: {
-        command: 'npm start',
-        url: 'http://localhost:4200',
+        command: 'npx ng serve --port 4300',
+        url: 'http://localhost:4300',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
     },
