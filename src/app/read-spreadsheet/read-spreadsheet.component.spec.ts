@@ -130,6 +130,12 @@ describe('ReadSpreadsheetComponent', () => {
 		//  Task 37, not a logic-replacing mock — buildMspFile's own behavior is covered by
 		//  build-msp.service.spec.ts.
 		vi.spyOn(component.buildMspService, 'buildMspFile').mockReturnValue('');
+		// Non-replacing spy (no mockReturnValue/mockImplementation): still calls through to the
+		//  real readAlignmentResultTxt, so the parse itself stays real, while letting us assert
+		//  on call count below — that assertion is what actually verifies this test's own claim
+		//  ("without re-reading the file").
+		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
+		const readSpy = vi.spyOn(readSpreadsheetService, 'readAlignmentResultTxt');
 
 		const file = tabDelimitedFile('test.txt', [['METABOLITE NAME'], ['Test Compound']]);
 		const fileList = { length: 1, 0: file } as unknown as FileList;
@@ -139,6 +145,7 @@ describe('ReadSpreadsheetComponent', () => {
 
 		component.readFile();
 
+		expect(readSpy).toHaveBeenCalledTimes(1);
 		expect(component.buildMspService.buildMspFile).toHaveBeenCalledWith(
 			[['METABOLITE NAME'], ['Test Compound']],
 			expect.any(String),

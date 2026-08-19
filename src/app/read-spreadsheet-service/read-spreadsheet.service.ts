@@ -51,36 +51,42 @@ export class ReadSpreadsheetService {
 		return new Observable<string[][]>(subscriber => {
 			const reader = new FileReader();
 			const onLoad = (loadEvent: ProgressEvent<FileReader>) => {
-				try {
-					const target = loadEvent.target as FileReader;
-					const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
+				const target = loadEvent.target as FileReader;
 
-					// Make sure the length of the array is appropriate
-					//  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows
-					//  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long
-					let msmsArray: string[][];
+				// Make sure the length of the array is appropriate
+				//  This accounts for an error with spreadsheets made in LibreOffice; whereby if you manually delete rows
+				//  from your spreadsheet, XLSX reads the spreadsheet as being over 1 million lines long
+				let numRows: number;
+				let msmsArray: string[][] | undefined;
+				try {
+					// XLSX.read (or the sheet access/decode below) throws synchronously on a corrupted/
+					//  unparseable file; this listener runs as a raw DOM event callback, outside the
+					//  Observable executor's own try/catch scope, so without this the exception would
+					//  otherwise escape as an unhandled error instead of reaching subscribers. Only the
+					//  calls that can actually throw belong in this try block — the subscriber.next/
+					//  complete/error calls below are not parsing calls and stay outside it.
+					const wb: XLSX.WorkBook = XLSX.read(target.result, { type: 'binary' });
 					// An empty sheet has no '!ref' range; fall back to a single-cell range so
 					// decode_range still returns a valid (empty) range instead of throwing.
 					const sheetRef = wb.Sheets[wb.SheetNames[0]]['!ref'] ?? 'A1';
 					const range = XLSX.utils.decode_range(sheetRef);
-					const numRows = range.e.r;
-
+					numRows = range.e.r;
 					if (numRows < 10000) {
 						// Convert spreadsheet data to JSON data
 						//  Using {header:1} will generate a 2x2 array
 						msmsArray = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-						subscriber.next(msmsArray);
-						subscriber.complete();
-					} else {
-						subscriber.error(`Error: file may be corrupted or too large;
-                    Try using another spreadsheet reader or converting file to another format`);
 					}
 				} catch {
-					// XLSX.read (or the sheet access above) throws synchronously on a corrupted/
-					//  unparseable file; this listener runs as a raw DOM event callback, outside the
-					//  Observable executor's own try/catch scope, so without this the exception would
-					//  otherwise escape as an unhandled error instead of reaching subscribers.
 					subscriber.error('Error: file may be corrupted or may not exist');
+					return;
+				}
+
+				if (numRows < 10000) {
+					subscriber.next(msmsArray as string[][]);
+					subscriber.complete();
+				} else {
+					subscriber.error(`Error: file may be corrupted or too large;
+                    Try using another spreadsheet reader or converting file to another format`);
 				}
 			};
 			const onError = () => subscriber.error('Error: file may be corrupted or may not exist');
