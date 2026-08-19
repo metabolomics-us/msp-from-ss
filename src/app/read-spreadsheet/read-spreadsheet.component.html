@@ -49,7 +49,7 @@
             <div id="more-info" [hidden]="false">
                 <p>
                     Click to include any additional comments for all entries before submitting:
-                    <button id="show-notes-button" mat-icon-button (click)="showNotesTextArea()">
+                    <button id="show-notes-button" mat-icon-button type="button" (click)="showNotesTextArea()">
                         <mat-icon>{{ showNotes ? 'remove' : 'add' }}</mat-icon>
                     </button>
                 </p>
@@ -64,7 +64,7 @@
             <div id="mapping-info" class="rs-mapping" [hidden]="headerMappings.length === 0">
                 <p class="rs-mapping__intro">
                     Review how this file's columns are mapped to MSP fields:
-                    <button id="show-mapping-button" mat-icon-button (click)="showMappingPanelToggle()">
+                    <button id="show-mapping-button" mat-icon-button type="button" (click)="showMappingPanelToggle()">
                         <mat-icon>{{ showMappingPanel ? 'remove' : 'add' }}</mat-icon>
                     </button>
                 </p>
