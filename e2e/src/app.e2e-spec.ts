@@ -15,7 +15,15 @@ test.describe('workspace-project App', () => {
     test.beforeEach(async ({ page: rawPage }) => {
         consoleErrors.length = 0;
         rawPage.on('console', msg => {
-            if (msg.type() === 'error') {
+            // The xlsx library itself calls console.error() when an .ods file's number-format XML
+            // uses a conditional style (value()>0 / value()<0 / value()=0, e.g. for red-negative-
+            // number formatting) that it doesn't map to a specific format code. This is a benign,
+            // known quirk of the underlying library surfaced via console.error rather than a thrown
+            // exception -- it doesn't affect parsing correctness (see
+            // AveRt_AveMZ_MSMSSpec_small_duplicates.ods / _possible_duplicates.ods below, both of
+            // which parse and build a correct .msp despite emitting it) -- so it's excluded from the
+            // "no console errors" invariant the same way a real app defect would not be.
+            if (msg.type() === 'error' && !msg.text().startsWith('ODS number format may be incorrect')) {
                 consoleErrors.push(msg.text());
             }
         });
@@ -56,6 +64,17 @@ test.describe('workspace-project App', () => {
 
     test('should have a hidden error box and enabled submit button after uploading a valid .xlsx spreadsheet', async () => {
         await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+    });
+
+    test('should have a hidden error box and enabled submit button after uploading a valid .numbers spreadsheet', async () => {
+        // Confirms the .numbers extension (documented in the README as a supported spreadsheet
+        // format) actually parses via the same XLSX.read() path as .xlsx/.ods -- SheetJS supports
+        // Apple Numbers' zip-based format enough to read this file's rows and header row.
+        await page.uploadSpreadsheet('../testing-files/made_with_numbers.numbers');
         expect(await page.isSubmitDisabled()).toBe(null);
         expect(await page.isElementHidden('error-box')).toBe('true');
         expect(await page.isElementHidden('correct-image')).toBe(null);
@@ -150,6 +169,46 @@ test.describe('workspace-project App', () => {
         expect(fileExists(errorFile)).toBe(true);
     });
 
+    test('should download .msp and show error box with an .ods file containing duplicates', async () => {
+        await page.uploadSpreadsheet('../testing-files/AveRt_AveMZ_MSMSSpec_small_duplicates.ods');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/AveRt_AveMZ_MSMSSpec_small_duplicates.txt';
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created with some issues');
+        const text = 'Warning: duplicate entries found but not included in .msp';
+        expect(await page.getErrorText()).toEqual(text);
+        const errorFile = './e2e/downloads/error_file_AveRt_AveMZ_MSMSSpec_small_duplicates.txt';
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
+    });
+
+    // Built to exercise the INCHIKEY-connectivity-hash "possible duplicate" path specifically, but in
+    // practice this fixture triggers the same exact-duplicate detection (and therefore the same
+    // on-screen warning text) as AveRt_AveMZ_MSMSSpec_small_duplicates.ods above -- confirmed by
+    // comparing both files' downloaded error-file contents, which list identical duplicate/possible-
+    // duplicate row pairs. Asserting the real observed text rather than a distinct "possible duplicate"
+    // message that the app doesn't actually surface.
+    test('should download .msp and show error box with an .ods file containing possible duplicates', async () => {
+        await page.uploadSpreadsheet('../testing-files/AveRt_AveMZ_MSMSSpec_small_possible_duplicates.ods');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/AveRt_AveMZ_MSMSSpec_small_possible_duplicates.txt';
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created with some issues');
+        const text = 'Warning: duplicate entries found but not included in .msp';
+        expect(await page.getErrorText()).toEqual(text);
+        const errorFile = './e2e/downloads/error_file_AveRt_AveMZ_MSMSSpec_small_possible_duplicates.txt';
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
+    });
+
     test('should NOT show error box with medium sized complete file', async () => {
         await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF LIB Run2 08082014_MSMS Hits only.xlsx');
         const download = await page.submitFileAndWaitForDownload();
@@ -169,6 +228,36 @@ test.describe('workspace-project App', () => {
         expect(await page.isElementHidden('error-box')).toBe(null);
         const text = 'Error: column headers not found';
         expect(await page.getErrorText()).toEqual(text);
+    });
+
+    test('should tell the user column headers were not found when uploading an empty .csv file', async () => {
+        await page.uploadSpreadsheet('../testing-files/test_empty.csv');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        await page.submitFile();
+        const text = 'Error: column headers not found';
+        expect(await page.getErrorText()).toEqual(text);
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('Fix errors, then retry upload');
+    });
+
+    // Built by manually deleting a row from an .xlsx in LibreOffice; per the guard comment in
+    // read-spreadsheet.service.ts this causes SheetJS to read the sheet's dimension as spanning
+    // all the way to row 1,048,576 (Excel's row limit) rather than shrinking. Confirmed independently
+    // via `XLSX.read()` in Node: `!ref` decodes to "A1:DB1048576", tripping the >=10000-row guard.
+    // The eager background parse (parseSelectedFile) therefore fails and leaves Submit enabled but
+    // cachedMsmsArray null; readFile()'s `else` branch always reports the same generic message
+    // for *any* eager-parse failure (collapsing the more specific "too large" text into this one),
+    // and fully resets the upload prompt rather than leaving a "Fix errors, then retry upload" state.
+    test('should show a generic corrupted-file error and reset the upload prompt when submitting a spreadsheet whose eager parse fails', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_remove_1_row.xlsx');
+        expect(await page.isSubmitDisabled()).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
+        await page.submitFile();
+        expect(await page.isSubmitDisabled()).toBe('true');
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('error-file')).toBe('true');
+        const text = 'Error: file may be corrupted or may not exist';
+        expect(await page.getErrorText()).toEqual(text);
+        expect(await page.getElementById('file-name-text').innerText()).toEqual("Click 'Browse' to choose a spreadsheet");
     });
 
     test('should tell the user that headers are not found', async () => {
@@ -232,6 +321,107 @@ test.describe('workspace-project App', () => {
         const errorDownload = await page.downloadErrorFile();
         await errorDownload.saveAs(errorFile);
         expect(fileExists(errorFile)).toBe(true);
+    });
+
+    test('should download .msp and show a missing-data warning for a small xlsx file with missing data', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_missing_data.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/Height_0_20198281030_QTOF_small_missing_data.txt';
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created with some issues');
+        const text = 'Warning: Some entries have missing data; these attributes were left blank';
+        expect(await page.getErrorText()).toEqual(text);
+    });
+
+    test('should download an error file listing the xlsx row with missing data', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_missing_data.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        await download.saveAs('./e2e/downloads/Height_0_20198281030_QTOF_small_missing_data.txt');
+        const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_missing_data.txt';
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
+    });
+
+    test('should download .msp and show a combined warning for a small xlsx file with both missing data and duplicates', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates_missing_data.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/Height_0_20198281030_QTOF_small_duplicates_missing_data.txt';
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('.msp created with some issues');
+    });
+
+    test('should download an error file for a small xlsx file with both missing data and duplicates', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates_missing_data.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        await download.saveAs('./e2e/downloads/Height_0_20198281030_QTOF_small_duplicates_missing_data.txt');
+        const errorFile = './e2e/downloads/error_file_Height_0_20198281030_QTOF_small_duplicates_missing_data.txt';
+        const errorDownload = await page.downloadErrorFile();
+        await errorDownload.saveAs(errorFile);
+        expect(fileExists(errorFile)).toBe(true);
+    });
+
+    // BUG (newly discovered, out of scope for Task 41): when both the missing-data warning and the
+    // duplicates warning fire together, build-msp.service.ts joins them with a literal '<br>' string
+    // (see errorWarning +=), but #error-text is bound via plain text interpolation
+    // (`<p id="error-text">{{ errorText }}</p>` in read-spreadsheet.component.html) rather than
+    // [innerHTML] -- so Angular escapes it and the user sees the literal characters "<br>" on screen
+    // instead of the two warnings appearing on separate lines. Switching the binding to [innerHTML]
+    // isn't a safe one-line fix on its own: errorText elsewhere embeds user-controlled spreadsheet
+    // header text (e.g. "These headers may be misspelled or missing: <header>"), so rendering it as
+    // HTML would need sanitization to avoid a stored-XSS vector via a maliciously named column.
+    // This test documents the CORRECT expected behavior (a real line break) and is skipped pending
+    // a proper fix (join with sanitized HTML, or switch #error-text to render each warning as its
+    // own line via *ngFor instead of a single interpolated string).
+    test.skip('should join multiple warnings with a line break, not a literal "<br>" tag (see follow-up bug)', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates_missing_data.xlsx');
+        await page.submitFile();
+        const text = 'Warning: Some entries have missing data; these attributes were left blank\n'
+            + 'Warning: duplicate entries found but not included in .msp';
+        expect(await page.getErrorText()).toEqual(text);
+    });
+
+    // Built from a large xlsx file to exercise "Unknown"-named-metabolite handling. The README only
+    // explicitly documents "rows with an unidentified (Unknown) metabolite name are kept as long as
+    // they have a spectrum" for the MS-DIAL AlignmentResult (.txt) upload path, but buildMspService
+    // applies no name-based filtering for the generic spreadsheet path either -- confirmed here that a
+    // plain .xlsx upload keeps hundreds of Unknown-named rows in the output, the same as the msdial
+    // .txt path already covered above.
+    test('should download .msp from a large xlsx file, keeping Unknown-named rows that have a spectrum', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_3_20191021141_posHILIC_wUnknowns.xlsx');
+        const download = await page.submitFileAndWaitForDownload();
+        const name = './e2e/downloads/Height_3_20191021141_posHILIC_wUnknowns.txt';
+        await download.saveAs(name);
+        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('correct-image')).toBe(null);
+        expect(await page.isElementHidden('wrong-image')).toBe('true');
+        const text = 'Warning: Some entries have missing data; these attributes were left blank';
+        expect(await page.getErrorText()).toEqual(text);
+        const mspContent = fs.readFileSync(name, 'utf8');
+        expect(mspContent).toContain('Name: Unknown');
+    });
+
+    // Real observed behavior diverges from this fixture's original intent: made_with_numbers.numbers'
+    // actual header row (row 5) is an MS-DIAL AlignmentResult export's own column names (e.g.
+    // "MS1 isotopic spectrum" rather than the generic "MS1 spectrum" the spreadsheet path requires),
+    // so uploading it here -- as a generic spreadsheet, not via the .txt msdial path -- correctly
+    // surfaces a missing-header validation error rather than a clean .msp download. This still proves
+    // the .numbers extension is accepted and parsed through the real XLSX.read()-based pipeline all
+    // the way to header validation, rather than being rejected for its extension.
+    test('should tell the user what headers are missing when uploading a .numbers file built from an MS-DIAL export', async () => {
+        await page.uploadSpreadsheet('../testing-files/made_with_numbers.numbers');
+        await page.submitFile();
+        const text = 'These headers may be misspelled or missing: MS1 SPECTRUM';
+        expect(await page.getErrorText()).toEqual(text);
+        expect(await page.getElementById('file-name-text').innerText()).toEqual('Fix errors, then retry upload');
+        expect(await page.isElementHidden('correct-image')).toBe('true');
+        expect(await page.isElementHidden('wrong-image')).toBe(null);
     });
 
     test('should show the mapping panel expanded by default, collapsible via the toggle button', async () => {
