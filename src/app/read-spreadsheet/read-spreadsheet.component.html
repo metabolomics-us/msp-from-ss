@@ -81,7 +81,7 @@
                             } @else {
                                 <mat-select [value]="mapping.action === 'map' ? mapping.targetKey : mapping.action"
                                             (selectionChange)="updateMapping(mapping, $event.value)">
-                                    @if (!isExactKeyMatch(mapping)) {
+                                    @if (canOverrideAsIgnoreOrComment(mapping)) {
                                         <mat-option value="ignore">Ignore</mat-option>
                                         <mat-option value="comment">Add as comment</mat-option>
                                     }

@@ -118,4 +118,8 @@ export class AppPage {
         await this.page.keyboard.press('Escape');
         return texts;
     }
+
+    async getMappingSelectedText(header: string): Promise<string> {
+        return this.page.locator(`tr[data-header="${header}"] mat-select .mat-mdc-select-value-text`).innerText();
+    }
 }
