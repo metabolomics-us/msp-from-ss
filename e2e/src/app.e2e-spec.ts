@@ -368,7 +368,7 @@ test.describe('workspace-project App', () => {
     });
 
     // #error-text is now bound via [innerHTML] (read-spreadsheet.component.html), so the literal
-    // '<br>' build-msp.service.ts joins warnings with renders as a real line break. Angular
+    // '<br>' that build-msp.service.ts joins warnings with renders as a real line break. Angular
     // sanitizes [innerHTML] bindings automatically, and every errorWarning assignment only ever
     // embeds the app's own hardcoded strings/header names, never user-uploaded content -- see the
     // made_with_numbers.numbers test above still saying "MS1 SPECTRUM" even though that file's real
