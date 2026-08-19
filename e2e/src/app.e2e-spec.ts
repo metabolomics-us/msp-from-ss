@@ -367,24 +367,13 @@ test.describe('workspace-project App', () => {
         expect(fileExists(errorFile)).toBe(true);
     });
 
-    // BUG (newly discovered, out of scope for Task 41): when both the missing-data warning and the
-    // duplicates warning fire together, build-msp.service.ts joins them with a literal '<br>' string
-    // (see errorWarning +=), but #error-text is bound via plain text interpolation
-    // (`<p id="error-text">{{ errorText }}</p>` in read-spreadsheet.component.html) rather than
-    // [innerHTML] -- so Angular escapes it and the user sees the literal characters "<br>" on screen
-    // instead of the two warnings appearing on separate lines. Switching the binding to [innerHTML]
-    // isn't a safe one-line fix on its own: today, every errorWarning assignment in
-    // build-msp.service.ts only ever embeds the app's own hardcoded header names (e.g.
-    // "These headers may be misspelled or missing: MS1 SPECTRUM" -- never the user's actual uploaded
-    // column name, confirmed by the made_with_numbers.numbers test above still saying "MS1 SPECTRUM"
-    // even though that file's real column is named "MS1 isotopic spectrum"), so there's no live
-    // stored-XSS path today. But if a future change ever echoed real user-uploaded header text into
-    // errorText, switching to [innerHTML] without sanitization would open one -- so the safer
-    // long-term fix is still to sanitize + [innerHTML], or render each warning as its own line via
-    // *ngFor instead of a single interpolated string, rather than flipping the binding as-is.
-    // This test documents the CORRECT expected behavior (a real line break) and is skipped pending
-    // that fix.
-    test.skip('should join multiple warnings with a line break, not a literal "<br>" tag (see follow-up bug)', async () => {
+    // #error-text is now bound via [innerHTML] (read-spreadsheet.component.html), so the literal
+    // '<br>' that build-msp.service.ts joins warnings with renders as a real line break. Angular
+    // sanitizes [innerHTML] bindings automatically, and every errorWarning assignment only ever
+    // embeds the app's own hardcoded strings/header names, never user-uploaded content -- see the
+    // made_with_numbers.numbers test above still saying "MS1 SPECTRUM" even though that file's real
+    // column is named "MS1 isotopic spectrum" -- so this isn't a stored-XSS risk.
+    test('should join multiple warnings with a line break, not a literal "<br>" tag', async () => {
         await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates_missing_data.xlsx');
         await page.submitFile();
         const text = 'Warning: Some entries have missing data; these attributes were left blank\n'
