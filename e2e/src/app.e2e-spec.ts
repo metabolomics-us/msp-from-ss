@@ -432,6 +432,17 @@ test.describe('workspace-project App', () => {
         expect(await page.isMappingRowPresent('NOTES')).toBe(true);
     });
 
+    // This real MS-DIAL export names its 78 per-sample intensity columns like "POS_002_AGIL_A" --
+    // no naming-convention regex catches that, so these are only excluded via the structural
+    // (data-driven) sample heuristic: a trailing block of unrecognized, all-numeric columns.
+    test('should exclude a real MS-DIAL export\'s unnamed intensity-column block from the mapping panel', async () => {
+        await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small.xlsx');
+        expect(await page.isMappingRowPresent('POS_002_AGIL_A')).toBe(false);
+        expect(await page.isMappingRowPresent('POS_071_AGIL_BO')).toBe(false);
+        // A real, non-sample metadata column earlier in the same header row stays visible
+        expect(await page.isMappingRowPresent('POST CURATION RESULT')).toBe(true);
+    });
+
     test('should include a user-added MSP Comment from an unmatched column after a mapping override', async () => {
         await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
         await page.selectMappingOption('NOTES', 'Add as comment');

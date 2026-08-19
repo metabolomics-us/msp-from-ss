@@ -91,8 +91,8 @@ export class BuildMspService {
 	}
 
 	// Classify already-normalized headers against the full recognized-header list
-	classifyHeaders(headers: string[]): HeaderMapping[] {
-		return this.headerMappingService.classify(headers, this.recognizedHeaders);
+	classifyHeaders(headers: string[], dataRows: string[][] = []): HeaderMapping[] {
+		return this.headerMappingService.classify(headers, this.recognizedHeaders, dataRows);
 	}
 
 
@@ -392,14 +392,14 @@ export class BuildMspService {
 		}
 
 		const headers = this.normalizeHeaderRow(rows[headerPosition], format);
-		const mappings = headerMappings || this.classifyHeaders(headers);
+		const data = rows.slice(headerPosition + 1, rows.length);
+		const mappings = headerMappings || this.classifyHeaders(headers, data);
 		const mappedHeaders = this.applyHeaderMappings(headers, mappings);
 
 		if (this.hasHeaderErrors(mappedHeaders, requiredHeaders)) {
 			return this.errorWarning;
 		}
 
-		const data = rows.slice(headerPosition + 1, rows.length);
 		let msmsJsonArray: MspJsonRow[] = this.buildJsonArray(mappedHeaders, data);
 
 		// Collect comment-mapped columns' values before removeAttributes strips the originals
