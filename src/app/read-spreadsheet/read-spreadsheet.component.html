@@ -25,8 +25,8 @@
             <mat-card-title>Example files</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-            <!-- In downloadExample(), the name attribute is acquired and the dash is replaced by a period -->
-            <!-- This allows the correct file to be downloaded i.e. example_msp-txt => example_msp.txt -->
+            <!-- DownloadFileService.downloadExampleFile() decodes the name attribute below, -->
+            <!-- replacing the dash with a period, e.g. example_msp-txt => example_msp.txt -->
             <!-- Hence whey there are both underscores and dashes -->
             <p>
                 See a full spreadsheet with highlighted columns

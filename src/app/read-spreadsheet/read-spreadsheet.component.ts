@@ -20,8 +20,8 @@ import { timeout, take } from 'rxjs/operators';
     selector: 'app-read-spreadsheet',
     templateUrl: 'read-spreadsheet.component.html',
     styleUrls: ['read-spreadsheet.component.css'],
-    // ReadSpreadsheetService is providedIn: 'root' and stateless; not re-provided here so that
-    // this component and its tests (TestBed.inject) share the same singleton instance
+    // The injected services below are all providedIn: 'root' and stateless; not re-provided
+    // here so that this component and its tests (TestBed.inject) share the same singleton instances
     // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection -- app has mutable state read across change cycles; switching to OnPush needs its own verification pass
     changeDetection: ChangeDetectionStrategy.Eager,
     standalone: true,
