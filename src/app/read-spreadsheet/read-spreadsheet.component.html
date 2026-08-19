@@ -81,8 +81,10 @@
                             } @else {
                                 <mat-select [value]="mapping.action === 'map' ? mapping.targetKey : mapping.action"
                                             (selectionChange)="updateMapping(mapping, $event.value)">
-                                    <mat-option value="ignore">Ignore</mat-option>
-                                    <mat-option value="comment">Add as comment</mat-option>
+                                    @if (!isExactKeyMatch(mapping)) {
+                                        <mat-option value="ignore">Ignore</mat-option>
+                                        <mat-option value="comment">Add as comment</mat-option>
+                                    }
                                     @for (key of mspKeys; track key) {
                                         <mat-option [value]="key">{{ key }}</mat-option>
                                     }

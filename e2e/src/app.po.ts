@@ -111,4 +111,11 @@ export class AppPage {
         await this.page.locator(`tr[data-header="${header}"] mat-select`).click();
         await this.page.locator('.cdk-overlay-pane mat-option', { hasText: optionText }).click();
     }
+
+    async getMappingOptionTexts(header: string): Promise<string[]> {
+        await this.page.locator(`tr[data-header="${header}"] mat-select`).click();
+        const texts = await this.page.locator('.cdk-overlay-pane mat-option').allInnerTexts();
+        await this.page.keyboard.press('Escape');
+        return texts;
+    }
 }

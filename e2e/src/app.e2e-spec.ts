@@ -432,6 +432,20 @@ test.describe('workspace-project App', () => {
         expect(await page.isMappingRowPresent('NOTES')).toBe(true);
     });
 
+    // "Ignore"/"Add as comment" are no-ops (or worse, duplicate the value) for a column whose
+    // literal name already exactly matches a canonical MSP key, since applyHeaderMappings falls
+    // back to recognizedAs regardless of the chosen action -- see build-msp.service.ts.
+    test('should hide "Ignore" and "Add as comment" from the dropdown for an exact canonical-key match, but not for an unrecognized column', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        const inchikeyOptions = await page.getMappingOptionTexts('INCHIKEY');
+        expect(inchikeyOptions).not.toContain('Ignore');
+        expect(inchikeyOptions).not.toContain('Add as comment');
+
+        const notesOptions = await page.getMappingOptionTexts('NOTES');
+        expect(notesOptions).toContain('Ignore');
+        expect(notesOptions).toContain('Add as comment');
+    });
+
     // This real MS-DIAL export names its 78 per-sample intensity columns like "POS_002_AGIL_A" --
     // no naming-convention regex catches that, so these are only excluded via the structural
     // (data-driven) sample heuristic: a trailing block of unrecognized, all-numeric columns.

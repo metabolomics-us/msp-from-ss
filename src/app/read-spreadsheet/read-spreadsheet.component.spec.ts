@@ -196,6 +196,20 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(await nameRowLoader.getAllHarnesses(MatSelectHarness)).toHaveLength(1);
 	});
 
+	// "Ignore"/"Add as comment" are no-ops (or worse, duplicate the value) for a column whose
+	//  literal name is already an exact canonical-key match, since applyHeaderMappings falls
+	//  back to recognizedAs regardless of the chosen action -- see build-msp.service.ts. Hiding
+	//  these options for exact matches avoids offering a choice that doesn't do what it implies.
+	//  (Verified against the real rendered dropdown via an e2e test -- opening a mat-select's
+	//  overlay panel to read its options isn't supported by this project's jsdom test environment.)
+	it('isExactKeyMatch should be true only when the header text already equals its recognized key', () => {
+		expect(component.isExactKeyMatch({ header: 'INCHIKEY', action: 'map', targetKey: 'InChIKey', isSample: false, recognizedAs: 'INCHIKEY' })).toBe(true);
+		// Synonym match: the raw header differs from the canonical key it resolved to
+		expect(component.isExactKeyMatch({ header: 'RETENTION TIME', action: 'comment', targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' })).toBe(false);
+		// Unrecognized column: no recognizedAs at all
+		expect(component.isExactKeyMatch({ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null })).toBe(false);
+	});
+
 	it('should update a mapping to "comment" when updateMapping is called with value "comment"', () => {
 		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
 		component.headerMappings = [mapping];
