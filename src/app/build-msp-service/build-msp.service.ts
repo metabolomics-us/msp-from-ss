@@ -422,6 +422,7 @@ export class BuildMspService {
 		// Tell the user if duplicate entries were not included
 		if (this.duplicates.length > 0) {
 			if (this.errorWarning.length > 0) {
+				// KNOWN BUG: renders as literal text, not a line break — see the skipped e2e test in app.e2e-spec.ts for why this isn't fixed here
 				this.errorWarning += '<br>';
 			}
 			this.errorWarning += 'Warning: duplicate entries found but not included in .msp';
