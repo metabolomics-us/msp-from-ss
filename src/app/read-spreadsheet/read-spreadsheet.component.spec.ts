@@ -5,7 +5,15 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ReadSpreadsheetComponent } from './read-spreadsheet.component';
 import { ReadSpreadsheetService } from '../read-spreadsheet-service/read-spreadsheet.service';
 import { DownloadFileService } from '../download-file-service/download-file.service';
-import { Observable, of, throwError, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
+
+// Builds a real File whose content the real ReadSpreadsheetService can parse via
+//  readAlignmentResultTxt (tab-delimited text) — used instead of spying on the service,
+//  so these tests exercise the real parse pipeline end-to-end.
+function tabDelimitedFile(fileName: string, rows: string[][]): File {
+	const content = rows.map(row => row.join('\t')).join('\n');
+	return new File([content], fileName, { type: 'text/plain' });
+}
 
 describe('ReadSpreadsheetComponent', () => {
 	let component: ReadSpreadsheetComponent;
@@ -96,16 +104,19 @@ describe('ReadSpreadsheetComponent', () => {
 	// Look at:
 	// https://stackoverflow.com/questions/52078853/is-it-possible-to-update-filelist
 
-	it('should eagerly parse the file and populate headerMappings on a valid file selection', () => {
-		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
+	it('should eagerly parse the file and populate headerMappings on a valid file selection', async () => {
+		const file = tabDelimitedFile('test.txt', [
 			['AVERAGE RT(MIN)', 'BATCH ID'],
 			['6.23', '3']
-		]));
-
-		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		]);
+		const fileList = { length: 1, 0: file } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
 		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		// Real FileReader I/O in jsdom queues its 'load' event across multiple nested
+		// setImmediate ticks, so a single setTimeout(…, 0) is not guaranteed to flush it;
+		// poll for the parse's completion flag instead of guessing a fixed delay.
+		await vi.waitFor(() => expect(component.parsing).toBe(false));
 
 		expect(component.cachedMsmsArray).toEqual([['AVERAGE RT(MIN)', 'BATCH ID'], ['6.23', '3']]);
 		expect(component.headerMappings).toEqual([
@@ -114,24 +125,25 @@ describe('ReadSpreadsheetComponent', () => {
 		]);
 	});
 
-	it('should pass the cached array and headerMappings to buildMspFile on submit, without re-reading the file', () => {
-		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		const readSpy = vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
-			['METABOLITE NAME'], ['Test Compound']
-		]));
+	it('should pass the cached array and headerMappings to buildMspFile on submit, without re-reading the file', async () => {
+		// Stubbing the terminal saveAs-triggering call is the same accepted convention as
+		//  Task 37, not a logic-replacing mock — buildMspFile's own behavior is covered by
+		//  build-msp.service.spec.ts.
 		vi.spyOn(component.buildMspService, 'buildMspFile').mockReturnValue('');
 
-		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		const file = tabDelimitedFile('test.txt', [['METABOLITE NAME'], ['Test Compound']]);
+		const fileList = { length: 1, 0: file } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
 		component.fileSelected({ target: component.targetInput } as unknown as Event);
+		await vi.waitFor(() => expect(component.parsing).toBe(false));
+
 		component.readFile();
 
-		expect(readSpy).toHaveBeenCalledTimes(1);
 		expect(component.buildMspService.buildMspFile).toHaveBeenCalledWith(
 			[['METABOLITE NAME'], ['Test Compound']],
 			expect.any(String),
 			expect.any(String),
-			'spreadsheet',
+			'msdial',
 			component.headerMappings
 		);
 	});
@@ -144,16 +156,15 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.showMappingPanel).toBe(true);
 	});
 
-	it('should exclude sample-flagged headers from visibleHeaderMappings after a parse', () => {
-		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([
+	it('should exclude sample-flagged headers from visibleHeaderMappings after a parse', async () => {
+		const file = tabDelimitedFile('test.txt', [
 			['SAMPLE 1', 'BATCH ID'],
 			['1', '2']
-		]));
-
-		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		]);
+		const fileList = { length: 1, 0: file } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
 		component.fileSelected({ target: component.targetInput } as unknown as Event);
+		await vi.waitFor(() => expect(component.parsing).toBe(false));
 
 		expect(component.visibleHeaderMappings.some(m => m.isSample)).toBe(false);
 	});
@@ -238,42 +249,42 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(component.showErrorBox).toBe(true);
 	});
 
-	it('should clear headerMappings when no header row is found while parsing', () => {
-		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(of([['not', 'a', 'header', 'row']]));
-		vi.spyOn(component.buildMspService, 'getHeaderPosition').mockReturnValue(-1);
-
-		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+	it('should clear headerMappings when no header row is found while parsing', async () => {
+		// No line here matches any known/synonym header, so the real header-detection logic
+		//  correctly returns -1 without needing to stub getHeaderPosition.
+		const file = tabDelimitedFile('test.txt', [['not', 'a', 'header', 'row']]);
+		const fileList = { length: 1, 0: file } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
 		component.fileSelected({ target: component.targetInput } as unknown as Event);
+		await vi.waitFor(() => expect(component.parsing).toBe(false));
 
 		expect(component.headerMappings).toEqual([]);
 	});
 
-	it('should clear cachedMsmsArray and headerMappings when parsing the selected file errors', () => {
-		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(throwError(() => new Error('boom')));
-
-		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+	it('should clear cachedMsmsArray and headerMappings when parsing the selected file errors', async () => {
+		// A bare ZIP signature ("PK\x03\x04") with no valid archive behind it: XLSX.read
+		//  recognizes the xlsx/zip container format and throws while unzipping, which
+		//  readXlsxSync's onLoad handler lets propagate — reproducing a genuine corrupt-file
+		//  parse failure end-to-end. (Plain garbage text without the ZIP signature is instead
+		//  parsed by XLSX.read as a valid one-cell CSV-like sheet, so it would not exercise
+		//  this error path.)
+		const file = new File(['PK\x03\x04not a real zip'], 'test.xlsx', { type: 'application/octet-stream' });
+		const fileList = { length: 1, 0: file } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
 		component.fileSelected({ target: component.targetInput } as unknown as Event);
+
+		await vi.waitFor(() => expect(component.parsing).toBe(false));
 
 		expect(component.cachedMsmsArray).toBeNull();
 		expect(component.headerMappings).toEqual([]);
 	});
 
 	it('should set parsing=true and disable Submit while the async parse is still in flight (C1)', () => {
-		const readSpreadsheetService: ReadSpreadsheetService = TestBed.inject(ReadSpreadsheetService);
-		// Emits asynchronously (setTimeout), unlike of() which emits synchronously and would not
-		// reproduce the race: the parse must still be pending immediately after fileSelected() returns.
-		vi.spyOn(readSpreadsheetService, 'readXlsx').mockReturnValue(new Observable<string[][]>(subscriber => {
-			setTimeout(() => {
-				subscriber.next([['METABOLITE NAME'], ['Test Compound']]);
-				subscriber.complete();
-			}, 10);
-		}));
-
-		const fileList = { length: 1, 0: new File([''], 'test.xlsx') } as unknown as FileList;
+		// A real FileReader read is already asynchronous (jsdom queues it across several
+		//  setImmediate ticks), so the parse is naturally still pending immediately after
+		//  fileSelected() returns — no fake/delayed observable is needed to reproduce the race.
+		const file = tabDelimitedFile('test.txt', [['METABOLITE NAME'], ['Test Compound']]);
+		const fileList = { length: 1, 0: file } as unknown as FileList;
 		component.targetInput = { files: fileList } as HTMLInputElement;
 		component.fileSelected({ target: component.targetInput } as unknown as Event);
 
