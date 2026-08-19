@@ -313,7 +313,6 @@ describe('BuildMspService', () => {
 	describe('BuildMspService: buildMspFile', () => {
 		let arr: string[][];
 		let name: string;
-		let jsonArr: MspJsonRow[];
 		let testStr: string;
 
 		beforeAll(() => {
@@ -325,59 +324,19 @@ describe('BuildMspService', () => {
 			];
 			name = 'test.csv';
 
-			jsonArr = [
-				{'AVERAGE RT(MIN)': '6.23', 'AVERAGE MZ': '219.11317', 'METABOLITE NAME': '1-Methyltryptophan',
-				'ADDUCT TYPE': '[M+H]+', 'FORMULA': 'C12H14N2O2', 'INCHIKEY': 'ZADWXFSZEAPBJS-JTQLQIEISA-N',
-				'MS1 SPECTRUM': '219.11317:1287575', 'MSMS SPECTRUM': '35.09272:9 35.16082:7'}
-			];
-
 			testStr = 'Name: 1-Methyltryptophan\nInChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N\nPrecursor_type: [M+H]+\n' +
 			'ExactMass: 219.11317\nFormula: C12H14N2O2\nComments: RT=6.23\nNum Peaks: 2\n35.09272 9\n35.16082 7\n\n\n';
 		});
 
-		it('should call lineHasHeaders', () => {
-			vi.spyOn(service, 'lineHasHeaders').mockImplementation(() => false);
-			service.buildMspFile(arr, name, '');
-			expect(service.lineHasHeaders).toHaveBeenCalled();
-		});
-
-		it('should call functions from buildMspFile()', () => {
-			service.getHeaderPosition = vi.fn().mockReturnValue(0);
-			service.processText = vi.fn().mockReturnValue(arr[0]);
-			service.hasHeaderErrors = vi.fn().mockReturnValue(false);
-			service.buildJsonArray = vi.fn().mockReturnValue(jsonArr);
-			service.removeAttributes = vi.fn().mockReturnValue(jsonArr);
-			service.collectMissingData = vi.fn();
-			service.removeDuplicates = vi.fn().mockReturnValue(jsonArr);
-			service.removeRowsWithoutSpectrum = vi.fn().mockReturnValue(jsonArr);
-			service.buildMspStringFromArray = vi.fn().mockReturnValue(testStr);
-			service.saveFile = vi.fn();
+		it('should run the real pipeline and save the output file with a .msp extension, regardless of the uploaded file\'s extension', () => {
+			vi.spyOn(service, 'saveFile').mockImplementation(() => {});
 
 			service.buildMspFile(arr, name, '');
 
-			expect(service.getHeaderPosition).toHaveBeenCalled();
-			expect(service.processText).toHaveBeenCalled();
-			expect(service.hasHeaderErrors).toHaveBeenCalled();
-			expect(service.buildJsonArray).toHaveBeenCalled();
-			expect(service.buildMspStringFromArray).toHaveBeenCalled();
-			expect(service.saveFile).toHaveBeenCalled();
-		});
-
-		it('should save the output file with a .msp extension, regardless of the uploaded file\'s extension', () => {
-			service.getHeaderPosition = vi.fn().mockReturnValue(0);
-			service.processText = vi.fn().mockReturnValue(arr[0]);
-			service.hasHeaderErrors = vi.fn().mockReturnValue(false);
-			service.buildJsonArray = vi.fn().mockReturnValue(jsonArr);
-			service.removeAttributes = vi.fn().mockReturnValue(jsonArr);
-			service.collectMissingData = vi.fn();
-			service.removeDuplicates = vi.fn().mockReturnValue(jsonArr);
-			service.removeRowsWithoutSpectrum = vi.fn().mockReturnValue(jsonArr);
-			service.buildMspStringFromArray = vi.fn().mockReturnValue(testStr);
-			service.saveFile = vi.fn();
-
-			service.buildMspFile(arr, name, '');
-
-			expect(service.saveFile).toHaveBeenCalledWith(testStr, 'test.msp');
+			expect(service.saveFile).toHaveBeenCalledTimes(1);
+			const [savedContent, savedName] = (service.saveFile as Mock).mock.calls[0];
+			expect(savedName).toBe('test.msp');
+			expect(savedContent).toEqual(testStr);
 		});
 
 	});
