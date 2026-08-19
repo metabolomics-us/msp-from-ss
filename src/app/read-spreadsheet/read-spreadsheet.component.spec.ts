@@ -196,6 +196,33 @@ describe('ReadSpreadsheetComponent', () => {
 		expect(await nameRowLoader.getAllHarnesses(MatSelectHarness)).toHaveLength(1);
 	});
 
+	// (Verified against the real rendered dropdown via an e2e test -- opening a mat-select's
+	//  overlay panel to read its options isn't supported by this project's jsdom test environment.)
+	it('isExactKeyMatch should be true only when the header text already equals its recognized key', () => {
+		expect(component.isExactKeyMatch({ header: 'INCHIKEY', action: 'map', targetKey: 'InChIKey', isSample: false, recognizedAs: 'INCHIKEY' })).toBe(true);
+		// Synonym match: the raw header differs from the canonical key it resolved to
+		expect(component.isExactKeyMatch({ header: 'RETENTION TIME', action: 'comment', targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' })).toBe(false);
+		// Unrecognized column: no recognizedAs at all
+		expect(component.isExactKeyMatch({ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null })).toBe(false);
+	});
+
+	// "Ignore"/"Add as comment" are a no-op (or worse, a duplicate) ONLY when overriding an exact
+	//  match's "map" action -- applyHeaderMappings falls back to recognizedAs regardless of the
+	//  chosen action, so such an override doesn't do what it implies. But an exact match whose
+	//  OWN configured action is already comment/ignore (AVERAGE RT(MIN), SMILES, MS1 SPECTRUM)
+	//  must stay selectable -- hiding it would leave the dropdown showing blank for its own
+	//  correct, intended value.
+	it('canOverrideAsIgnoreOrComment should be false only for an exact match currently mapped', () => {
+		expect(component.canOverrideAsIgnoreOrComment({ header: 'INCHIKEY', action: 'map', targetKey: 'InChIKey', isSample: false, recognizedAs: 'INCHIKEY' })).toBe(false);
+		// Exact match, but its own configured action is "comment" (e.g. AVERAGE RT(MIN)/SMILES) -- not an override
+		expect(component.canOverrideAsIgnoreOrComment({ header: 'AVERAGE RT(MIN)', action: 'comment', targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' })).toBe(true);
+		// Exact match, but its own configured action is "ignore" (e.g. MS1 SPECTRUM) -- not an override
+		expect(component.canOverrideAsIgnoreOrComment({ header: 'MS1 SPECTRUM', action: 'ignore', targetKey: null, isSample: false, recognizedAs: 'MS1 SPECTRUM' })).toBe(true);
+		// Synonym match and unrecognized columns are always fully overridable
+		expect(component.canOverrideAsIgnoreOrComment({ header: 'RETENTION TIME', action: 'comment', targetKey: 'RT', isSample: false, recognizedAs: 'AVERAGE RT(MIN)' })).toBe(true);
+		expect(component.canOverrideAsIgnoreOrComment({ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null })).toBe(true);
+	});
+
 	it('should update a mapping to "comment" when updateMapping is called with value "comment"', () => {
 		const mapping = { header: 'BATCH ID', action: 'ignore' as const, targetKey: null, isSample: false };
 		component.headerMappings = [mapping];

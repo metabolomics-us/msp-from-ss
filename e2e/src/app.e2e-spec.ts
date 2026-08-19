@@ -432,6 +432,34 @@ test.describe('workspace-project App', () => {
         expect(await page.isMappingRowPresent('NOTES')).toBe(true);
     });
 
+    // "Ignore"/"Add as comment" are no-ops (or worse, duplicate the value) for a column whose
+    // literal name already exactly matches a canonical MSP key, since applyHeaderMappings falls
+    // back to recognizedAs regardless of the chosen action -- see build-msp.service.ts.
+    test('should hide "Ignore" and "Add as comment" from the dropdown for an exact canonical-key match, but not for an unrecognized column', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        const inchikeyOptions = await page.getMappingOptionTexts('INCHIKEY');
+        expect(inchikeyOptions).not.toContain('Ignore');
+        expect(inchikeyOptions).not.toContain('Add as comment');
+
+        const notesOptions = await page.getMappingOptionTexts('NOTES');
+        expect(notesOptions).toContain('Ignore');
+        expect(notesOptions).toContain('Add as comment');
+    });
+
+    // AVERAGE RT(MIN) is an exact canonical-key match whose OWN configured default action is
+    // "comment", not "map" -- overriding it to ignore/comment isn't a no-op like it is for a
+    // "map"-default exact match (e.g. INCHIKEY above), it's a real, selectable behavior. A prior
+    // version of this feature hid Ignore/Add as comment for ALL exact matches unconditionally,
+    // which broke this: the dropdown rendered blank since its own selected value ("comment") had
+    // no matching option left to display.
+    test('should keep "Ignore" and "Add as comment" selectable, and correctly displayed, for an exact match whose own default action is "comment"', async () => {
+        await page.uploadSpreadsheet('../testing-files/msdial_alignment_result_with_extra_column.txt');
+        expect(await page.getMappingSelectedText('AVERAGE RT(MIN)')).toEqual('Add as comment');
+        const options = await page.getMappingOptionTexts('AVERAGE RT(MIN)');
+        expect(options).toContain('Ignore');
+        expect(options).toContain('Add as comment');
+    });
+
     // This real MS-DIAL export names its 78 per-sample intensity columns like "POS_002_AGIL_A" --
     // no naming-convention regex catches that, so these are only excluded via the structural
     // (data-driven) sample heuristic: a trailing block of unrecognized, all-numeric columns.

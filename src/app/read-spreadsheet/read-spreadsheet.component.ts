@@ -114,6 +114,22 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
     }
 
 
+    isExactKeyMatch(mapping: HeaderMapping): boolean {
+        return !!mapping.recognizedAs && mapping.header === mapping.recognizedAs;
+    }
+
+
+    // Overriding an exact match's "map" action to ignore/comment is a no-op (or, for a required
+    //  field, a duplicate): applyHeaderMappings falls back to recognizedAs regardless of the
+    //  chosen action, so the column ends up renamed the same way either way -- see
+    //  build-msp.service.ts. But an exact match whose OWN configured action is already
+    //  comment/ignore (e.g. AVERAGE RT(MIN), SMILES, MS1 SPECTRUM) is a legitimate, meaningful
+    //  choice, not a no-op override, so those options must stay available and selectable.
+    canOverrideAsIgnoreOrComment(mapping: HeaderMapping): boolean {
+        return !this.isExactKeyMatch(mapping) || mapping.action !== 'map';
+    }
+
+
     updateMapping(mapping: HeaderMapping, value: string) {
         if (value === 'ignore') {
             mapping.action = 'ignore';
