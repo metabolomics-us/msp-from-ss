@@ -186,7 +186,8 @@ export class ReadSpreadsheetComponent implements OnInit, OnDestroy {
                 const headerPosition = this.buildMspService.getHeaderPosition(msmsArray);
                 if (headerPosition >= 0) {
                     const headers = this.buildMspService.normalizeHeaderRow(msmsArray[headerPosition], this.currentFormat);
-                    this.headerMappings = this.buildMspService.classifyHeaders(headers);
+                    const dataRows = msmsArray.slice(headerPosition + 1);
+                    this.headerMappings = this.buildMspService.classifyHeaders(headers, dataRows);
                 } else {
                     this.headerMappings = [];
                 }

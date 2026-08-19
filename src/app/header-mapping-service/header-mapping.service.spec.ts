@@ -96,6 +96,77 @@ describe('HeaderMappingService', () => {
 		expect(result).toEqual([{ header: 'Batch ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null }]);
 	});
 
+	// Structural (data-driven) sample detection: real MS-DIAL-style exports name their per-sample
+	// intensity columns like "POS_002_AGIL_A" -- no regex can enumerate every lab's naming scheme,
+	// so a trailing block of unrecognized, purely-numeric columns is treated as a sample block
+	// instead. A single such column is deliberately NOT enough -- see the dedicated test below.
+
+	it('should classify a trailing block of unrecognized columns as sample columns when their data is all numeric', () => {
+		const dataRows = [
+			['1-Methyltryptophan', '406', '12'],
+			['2\'-Deoxycytidine', '0', '0']
+		];
+		const result = service.classify(['METABOLITE NAME', 'POS_002_AGIL_A', 'POS_003_AGIL_B'], recognizedHeaders, dataRows);
+		expect(result).toEqual([
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false, recognizedAs: 'METABOLITE NAME' },
+			{ header: 'POS_002_AGIL_A', action: 'ignore', targetKey: null, isSample: true, recognizedAs: null },
+			{ header: 'POS_003_AGIL_B', action: 'ignore', targetKey: null, isSample: true, recognizedAs: null }
+		]);
+	});
+
+	it('should NOT classify a single trailing numeric column as a sample column -- real metadata fields (Batch ID, Injection order) look identical in isolation', () => {
+		const dataRows = [
+			['1-Methyltryptophan', '3'],
+			['2\'-Deoxycytidine', '3']
+		];
+		const result = service.classify(['METABOLITE NAME', 'BATCH ID'], recognizedHeaders, dataRows);
+		expect(result).toEqual([
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false, recognizedAs: 'METABOLITE NAME' },
+			{ header: 'BATCH ID', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null }
+		]);
+	});
+
+	it('should NOT classify a trailing block of unrecognized columns as sample columns when any of their data is non-numeric', () => {
+		const dataRows = [
+			['1-Methyltryptophan', 'Interesting peak', '12'],
+			['2\'-Deoxycytidine', '0', '0']
+		];
+		const result = service.classify(['METABOLITE NAME', 'NOTES', 'POS_003_AGIL_B'], recognizedHeaders, dataRows);
+		expect(result).toEqual([
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false, recognizedAs: 'METABOLITE NAME' },
+			{ header: 'NOTES', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null },
+			// Only 1 qualifying numeric column remains once NOTES fails the check -- below the
+			// minimum block size, so POS_003_AGIL_B is left visible too (matches the isolated-
+			// column case above; a sample-only column never shows up alone).
+			{ header: 'POS_003_AGIL_B', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null }
+		]);
+	});
+
+	it('should NOT classify a block of unrecognized numeric columns as sample columns when positioned before the last recognized header', () => {
+		const dataRows = [
+			['95', '10', '1-Methyltryptophan'],
+			['98', '11', '2\'-Deoxycytidine']
+		];
+		const result = service.classify(['FILL %', 'TOTAL SCORE', 'METABOLITE NAME'], recognizedHeaders, dataRows);
+		expect(result).toEqual([
+			{ header: 'FILL %', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null },
+			{ header: 'TOTAL SCORE', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null },
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false, recognizedAs: 'METABOLITE NAME' }
+		]);
+	});
+
+	it('should NOT classify a trailing unrecognized column as a sample column when its data is entirely blank', () => {
+		const dataRows = [
+			['1-Methyltryptophan', ''],
+			['2\'-Deoxycytidine', undefined]
+		];
+		const result = service.classify(['METABOLITE NAME', 'EMPTY COLUMN'], recognizedHeaders, dataRows as string[][]);
+		expect(result).toEqual([
+			{ header: 'METABOLITE NAME', action: 'map', targetKey: 'METABOLITE NAME', isSample: false, recognizedAs: 'METABOLITE NAME' },
+			{ header: 'EMPTY COLUMN', action: 'ignore', targetKey: null, isSample: false, recognizedAs: null }
+		]);
+	});
+
 	it('should not shadow an exact canonical match by renaming a co-occurring synonym to the same key', () => {
 		const result = service.classify(['METABOLITE NAME', 'NAME', 'AVERAGE RT(MIN)'], recognizedHeaders);
 		expect(result).toEqual([
