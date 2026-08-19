@@ -384,7 +384,7 @@ test.describe('workspace-project App', () => {
     // *ngFor instead of a single interpolated string, rather than flipping the binding as-is.
     // This test documents the CORRECT expected behavior (a real line break) and is skipped pending
     // that fix.
-    test.skip('should join multiple warnings with a line break, not a literal "<br>" tag (see follow-up bug)', async () => {
+    test('should join multiple warnings with a line break, not a literal "<br>" tag', async () => {
         await page.uploadSpreadsheet('../testing-files/Height_0_20198281030_QTOF_small_duplicates_missing_data.xlsx');
         await page.submitFile();
         const text = 'Warning: Some entries have missing data; these attributes were left blank\n'

@@ -119,7 +119,7 @@
         </div>
 
         <div id="error-box" [hidden]="!showErrorBox">
-            <p id="error-text">{{ errorText }}</p>
+            <p id="error-text" [innerHTML]="errorText"></p>
             <p id="error-file" [hidden]="!showErrorFile">
                 Download Error Data:
                 <button id="get-error-file" mat-stroked-button color="warn" (click)="getErrorFile()">Click</button>
