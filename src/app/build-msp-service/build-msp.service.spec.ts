@@ -135,15 +135,22 @@ describe('BuildMspService', () => {
 	// getRequiredHeaders
 
 	it('should return the post-mapping required key for each required header, for spreadsheet format', () => {
+		// FORMULA and INCHIKEY are optional: absent from the required-header list
 		expect(service.getRequiredHeaders('spreadsheet')).toEqual(
-			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MS1 SPECTRUM', 'MSMS SPECTRUM']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'MS1 SPECTRUM', 'MSMS SPECTRUM']
 		);
 	});
 
 	it('should exclude MS1 SPECTRUM for msdial format', () => {
 		expect(service.getRequiredHeaders('msdial')).toEqual(
-			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MSMS SPECTRUM']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'MSMS SPECTRUM']
 		);
+	});
+
+	it('should not flag missing headers when FORMULA and INCHIKEY columns are entirely absent', () => {
+		// Post-mapping header names (as hasHeaderErrors receives them in the real pipeline), with no Formula/InChIKey
+		const headers = ['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'MS1 SPECTRUM', 'MSMS SPECTRUM'];
+		expect(service.hasHeaderErrors(headers, service.getRequiredHeaders('spreadsheet'))).toBe(false);
 	});
 
 	// applyMsdialHeaderAliases
@@ -356,7 +363,7 @@ describe('BuildMspService', () => {
 	it('should exclude MSMS SPECTRUM from the missing-data check for msdial format', () => {
 		const requiredHeaders = service.getRequiredHeaders('msdial');
 		expect(service.getMissingDataCheckHeaders('msdial', requiredHeaders)).toEqual(
-			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type']
 		);
 	});
 
@@ -365,7 +372,7 @@ describe('BuildMspService', () => {
 		//  shouldn't be reported as "missing data" (which implies the row survives with a blank field).
 		const requiredHeaders = service.getRequiredHeaders('spreadsheet');
 		expect(service.getMissingDataCheckHeaders('spreadsheet', requiredHeaders)).toEqual(
-			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'Formula', 'InChIKey', 'MS1 SPECTRUM']
+			['AVERAGE RT(MIN)', 'ExactMass', 'Name', 'Precursor_type', 'MS1 SPECTRUM']
 		);
 	});
 
@@ -386,16 +393,11 @@ describe('BuildMspService', () => {
 			const errorWarning = service.buildMspFile(arr, 'test.txt', '', 'msdial');
 
 			// MS1 SPECTRUM is not required for msdial: no header error even though there's no matching column
-			expect(errorWarning).toContain('Warning: Some entries have missing data');
 			expect(errorWarning).not.toContain('column headers not found');
 
-			// Row 2 (Unknown, null Formula/INCHIKEY) is reported as missing data.
-			//  Row number is 3: headerPosition is 0 (no metadata rows precede the header in this fixture),
-			//  so correctionFactor = 0 + 2 = 2, and row 2 is at data-array index 1 (2 + 1 = 3).
-			expect(service.missingData).toEqual(['3: Formula, InChIKey']);
-
-			// Row 3 has no spectrum: filtered out, and NOT reported as missing data (would be row 4: 2 + 2)
-			expect(service.missingData.some(entry => entry.startsWith('4:'))).toBe(false);
+			// FORMULA and INCHIKEY are optional: row 2's null Formula/INCHIKEY is not reported as missing data
+			expect(service.missingData.length).toBe(0);
+			expect(errorWarning).not.toContain('Warning: Some entries have missing data');
 
 			const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
 			expect(mspString).toContain('Name: 1-Methyltryptophan');
@@ -556,6 +558,39 @@ describe('BuildMspService', () => {
 		expect(errorWarning).not.toContain('may be misspelled or missing');
 		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
 		expect(mspString).not.toContain('SMILES');
+	});
+
+	// buildMspFile end-to-end: FORMULA and INCHIKEY are optional fields
+
+	it('should not error and should still write real Formula/InChIKey values when both columns are present with data', () => {
+		vi.spyOn(service, 'saveFile').mockImplementation(() => {});
+		const arr = [
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'FORMULA', 'INCHIKEY', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', 'C12H14N2O2', 'ZADWXFSZEAPBJS-JTQLQIEISA-N', '219.11317:1287575', '35.09272:9 35.16082:7']
+		];
+		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
+		expect(errorWarning.length).toBe(0);
+		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
+		// Optional or not, a present value must still reach the output -- this pins down that
+		//  removeAttributes keeps every mapped header, not just the required ones.
+		expect(mspString).toContain('Formula: C12H14N2O2');
+		expect(mspString).toContain('InChIKey: ZADWXFSZEAPBJS-JTQLQIEISA-N');
+	});
+
+	it('should not report a header error or missing data when FORMULA and INCHIKEY columns are entirely absent', () => {
+		vi.spyOn(service, 'saveFile').mockImplementation(() => {});
+		const arr = [
+			['AVERAGE RT(MIN)', 'AVERAGE MZ', 'METABOLITE NAME', 'ADDUCT TYPE', 'MS1 SPECTRUM', 'MSMS SPECTRUM'],
+			['6.23', '219.11317', '1-Methyltryptophan', '[M+H]+', '219.11317:1287575', '35.09272:9 35.16082:7']
+		];
+		const errorWarning = service.buildMspFile(arr, 'test.csv', '');
+		expect(errorWarning).not.toContain('may be misspelled or missing');
+		expect(errorWarning).not.toContain('Warning: Some entries have missing data');
+		expect(service.missingData.length).toBe(0);
+		const mspString = (service.saveFile as Mock).mock.calls.at(-1)[0] as string;
+		expect(mspString).toContain('Name: 1-Methyltryptophan');
+		expect(mspString).toContain('Formula: \n');
+		expect(mspString).toContain('InChIKey: \n');
 	});
 
 });

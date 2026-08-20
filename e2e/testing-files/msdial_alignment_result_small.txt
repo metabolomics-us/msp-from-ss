@@ -4,5 +4,5 @@ Injection order
 Batch ID
 Alignment ID	Average Rt(min)	Average Mz	Metabolite name	Adduct type	Formula	INCHIKEY	MS1 isotopic spectrum	MS/MS spectrum
 1	6.23	219.11317	1-Methyltryptophan	[M+H]+	C12H14N2O2	ZADWXFSZEAPBJS-JTQLQIEISA-N	219.1:100	35.09272:9 35.16082:7
-2	9.543	80.04929	Unknown	[M+H]+	null	null	228.1:50	50.7019:2412 77.88785:2832
+2	9.543	80.04929	Unknown	null	C4H8O2	AAAAAAAAAA-UHFFFAOYSA-N	228.1:50	50.7019:2412 77.88785:2832
 3	3.33	200.0	ShouldBeFiltered	[M+H]+	C1H1	XXXXXXXXXX-UHFFFAOYSA-N		

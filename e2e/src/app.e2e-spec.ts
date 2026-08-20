@@ -387,16 +387,16 @@ test.describe('workspace-project App', () => {
     // applies no name-based filtering for the generic spreadsheet path either -- confirmed here that a
     // plain .xlsx upload keeps hundreds of Unknown-named rows in the output, the same as the msdial
     // .txt path already covered above.
+    // This fixture's only missing-data source was a handful of rows missing FORMULA/INCHIKEY, both
+    // now optional fields (see build-msp.service.ts), so it downloads cleanly with no warning.
     test('should download .msp from a large xlsx file, keeping Unknown-named rows that have a spectrum', async () => {
         await page.uploadSpreadsheet('../testing-files/Height_3_20191021141_posHILIC_wUnknowns.xlsx');
         const download = await page.submitFileAndWaitForDownload();
         const name = './e2e/downloads/Height_3_20191021141_posHILIC_wUnknowns.txt';
         await download.saveAs(name);
-        expect(await page.isElementHidden('error-box')).toBe(null);
+        expect(await page.isElementHidden('error-box')).toBe('true');
         expect(await page.isElementHidden('correct-image')).toBe(null);
         expect(await page.isElementHidden('wrong-image')).toBe('true');
-        const text = 'Warning: Some entries have missing data; these attributes were left blank';
-        expect(await page.getErrorText()).toEqual(text);
         const mspContent = fs.readFileSync(name, 'utf8');
         expect(mspContent).toContain('Name: Unknown');
     });
