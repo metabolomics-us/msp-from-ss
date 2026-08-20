@@ -51,8 +51,8 @@ export class BuildMspService {
 			{ key: 'AVERAGE MZ', action: 'map', targetKey: 'ExactMass', required: true },
 			{ key: 'METABOLITE NAME', action: 'map', targetKey: 'Name', required: true },
 			{ key: 'ADDUCT TYPE', action: 'map', targetKey: 'Precursor_type', required: true },
-			{ key: 'FORMULA', action: 'map', targetKey: 'Formula', required: true },
-			{ key: 'INCHIKEY', action: 'map', targetKey: 'InChIKey', required: true },
+			{ key: 'FORMULA', action: 'map', targetKey: 'Formula', required: false },
+			{ key: 'INCHIKEY', action: 'map', targetKey: 'InChIKey', required: false },
 			{ key: 'MS1 SPECTRUM', action: 'ignore', targetKey: null, required: true },
 			{ key: 'MSMS SPECTRUM', action: 'map', targetKey: 'MSMS SPECTRUM', required: true },
 			{ key: 'SMILES', action: 'comment', targetKey: 'SMILES', required: false }
@@ -62,16 +62,31 @@ export class BuildMspService {
     }
 
 
-	// Vital headers required for a given source format
-	//  MS-DIAL uploads don't require MS1 SPECTRUM: it's validated but never written into the .msp output
-	getRequiredHeaders(format: MspSourceFormat): string[] {
-		const required = this.recognizedHeaders
-			.filter(config => config.required)
+	// Post-mapping key for every recognized header matching predicate, for a given source format
+	//  MS-DIAL uploads never include MS1 SPECTRUM: it's excluded from both lists for that format
+	private collectHeaderKeys(format: MspSourceFormat, predicate: (config: RecognizedHeader & { required: boolean }) => boolean): string[] {
+		const keys = this.recognizedHeaders
+			.filter(predicate)
 			.map(config => config.action === 'map' ? (config.targetKey as string) : config.key);
 		if (format === 'msdial') {
-			return required.filter(header => header !== 'MS1 SPECTRUM');
+			return keys.filter(header => header !== 'MS1 SPECTRUM');
 		}
-		return required;
+		return keys;
+	}
+
+	// Vital headers required for a given source format: drives column-presence validation
+	//  (hasHeaderErrors) and per-row missing-data checks (collectMissingData). FORMULA and
+	//  INCHIKEY are optional, so they're mapped/kept in the output (see getMappedHeaders) but
+	//  never required here.
+	getRequiredHeaders(format: MspSourceFormat): string[] {
+		return this.collectHeaderKeys(format, config => config.required);
+	}
+
+	// Every recognized header's post-mapping key, required or not: the full set of columns
+	//  removeAttributes should keep in each row's dict so an optional field's real value (e.g.
+	//  Formula, InChIKey) still reaches the .msp output even when the column isn't required.
+	getMappedHeaders(format: MspSourceFormat): string[] {
+		return this.collectHeaderKeys(format, () => true);
 	}
 
 
@@ -405,8 +420,8 @@ export class BuildMspService {
 		// Collect comment-mapped columns' values before removeAttributes strips the originals
 		msmsJsonArray = this.applyCommentMappings(msmsJsonArray, mappings);
 
-		// remove unneeded attributes (keep _extraComments alongside the required headers)
-		msmsJsonArray = this.removeAttributes(msmsJsonArray, [...requiredHeaders, '_extraComments']);
+		// remove unneeded attributes (keep _extraComments alongside every mapped header, required or not)
+		msmsJsonArray = this.removeAttributes(msmsJsonArray, [...this.getMappedHeaders(format), '_extraComments']);
 
 		// Use header position to get row number; check for missing data per each header
 		//  (a spectrum-less row is filtered below, not reported as missing data, for either format)
