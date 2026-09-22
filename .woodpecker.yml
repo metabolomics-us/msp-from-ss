@@ -1,0 +1,47 @@
+# Woodpecker CI (ci.metabolomics.us) -- the msp-from-ss gate.
+#
+# Replaces the TeamCity build `backend_MspFromSsCi` ("msp-from-ss ci"), whose
+# single step ran lint, build, the vitest unit suite and Playwright e2e inside
+# a Playwright Apptainer image on quobyte. Everything but the Playwright step
+# is reproduced here; see ops/ci/woodpecker-gates.sh for why e2e is not.
+#
+# Exec hosts are Slurm jobs on Rocky 9 nodes and the agent runs its whole
+# workflow inside one Apptainer image, so:
+#
+#  * `image:` names an EXECUTABLE on the agent, not a container to pull:
+#    `bash` is the agent's own shell. There is no docker, no apt and no sudo.
+#    Whatever a step needs is either already in the image or is fetched by the
+#    step into a directory that step owns.
+#  * The clone plugin fails invisibly on this backend (plugins produce no step
+#    logs), so skip_clone + a plain git checkout, with the forge credential
+#    staged by the agent at /etc/woodpecker-git-credentials.
+#  * The agent reproducibly drops a step's final log chunk, so the gate script
+#    prints its journal path FIRST and tees everything to it. A fast failure
+#    is exactly the run whose log goes missing.
+#
+# The step logic lives in this repo (ops/ci/woodpecker-gates.sh) rather than on
+# the CI host, so a check changes in the same commit as the code it covers. It
+# takes no Woodpecker-specific input: `bash ops/ci/woodpecker-gates.sh` from a
+# clean checkout reproduces CI exactly.
+when:
+  - event: [push, pull_request, manual]
+
+skip_clone: true
+
+steps:
+  - name: checkout
+    image: bash
+    commands:
+      - 'set -eu'
+      - 'test -r /etc/woodpecker-git-credentials || { echo "the job staged no forge credential" >&2; exit 1; }'
+      - 'git init -q -b "${CI_COMMIT_BRANCH:-master}" .'
+      - 'git remote add origin "https://github.com/${CI_REPO}.git"'
+      - 'git fetch --no-tags --depth=1 origin "$CI_COMMIT_SHA"'
+      - 'git checkout -q FETCH_HEAD'
+      - 'git --no-pager log --oneline -1'
+
+  - name: gates
+    image: bash
+    commands:
+      - 'set -eu'
+      - 'bash ops/ci/woodpecker-gates.sh'
