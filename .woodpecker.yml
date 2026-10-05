@@ -28,6 +28,9 @@ when:
 
 skip_clone: true
 
+labels:
+  cluster: hive
+
 steps:
   - name: checkout
     image: bash
